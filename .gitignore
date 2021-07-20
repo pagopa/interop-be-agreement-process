@@ -1,0 +1,15 @@
+target/
+.idea
+project/project
+project/target
+.vscode
+metals.sbt
+.bloop
+.metals
+.bsp
+.openapi-generator
+generated/src/
+client/src/
+openapitools.json
+.DS_Store
+client/project/build.properties
