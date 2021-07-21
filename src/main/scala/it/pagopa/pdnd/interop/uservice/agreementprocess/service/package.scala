@@ -10,12 +10,12 @@ package object service {
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   object AgreementManagementInvoker {
     def apply()(implicit actorSystem: ActorSystem): AgreementManagementInvoker =
-      agreementmanagement.client.invoker.ApiInvoker()
+      agreementmanagement.client.invoker.ApiInvoker(agreementmanagement.client.api.EnumsSerializers.all)
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   object CatalogManagementInvoker {
     def apply()(implicit actorSystem: ActorSystem): CatalogManagementInvoker =
-      catalogmanagement.client.invoker.ApiInvoker()
+      catalogmanagement.client.invoker.ApiInvoker(catalogmanagement.client.api.EnumsSerializers.all)
   }
 }
