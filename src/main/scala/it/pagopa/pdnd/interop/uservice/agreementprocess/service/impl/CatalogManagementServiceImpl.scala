@@ -1,11 +1,10 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.ApiRequest
-
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{CatalogManagementInvoker, CatalogManagementService}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.BearerToken
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EService
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{EService, EServiceEnums}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,5 +35,17 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
         logger.error(s"Retrieving e-service ${ex.getMessage}")
         Future.failed[EService](ex)
       }
+  }
+
+  override def checkEServiceActivation(eservice: EService): Future[EService] = {
+    Future.fromTry(
+      Either
+        .cond(
+          eservice.status.equals(EServiceEnums.Status.Active),
+          eservice,
+          new RuntimeException(s"Eservice ${eservice.id} is not active: it's in state ${eservice.status}")
+        )
+        .toTry
+    )
   }
 }

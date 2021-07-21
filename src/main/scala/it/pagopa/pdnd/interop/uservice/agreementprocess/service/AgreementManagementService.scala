@@ -6,4 +6,5 @@ import scala.concurrent.Future
 
 trait AgreementManagementService {
   def getAgreementById(bearerToken: String, agreementId: String): Future[Agreement]
+  def checkAgreementActivation(agreement: Agreement): Future[Agreement]
 }
