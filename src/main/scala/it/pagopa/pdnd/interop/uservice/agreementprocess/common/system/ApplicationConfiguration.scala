@@ -17,7 +17,7 @@ object ApplicationConfiguration {
 
   def catalogManagementURL: String = {
     val catalogMgmtURL: String = config.getString("services.catalog-management")
-    s"http://$catalogMgmtURL/pdnd-interop-uservice-catalog-management/0.0.1"
+    s"$catalogMgmtURL/pdnd-interop-uservice-catalog-management/0.0.1"
     //    s"https://gateway.interop.pdnd.dev/pdnd-interop-uservice-catalog-management/0.0.1"
   }
 }
