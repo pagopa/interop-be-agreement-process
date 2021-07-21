@@ -37,9 +37,11 @@ class ProcessApiServiceImpl(
     val bearerToken = contexts.map(_._2)(0)
     logger.info(s"Getting audience for agreement $agreementId")
     val result = for {
-      agreement <- agreementManagementService.getAgreementById(bearerToken, agreementId)
-      eservice  <- catalogManagementService.getEServiceById(bearerToken, agreement.eserviceId.toString)
-    } yield Audience(eservice.name, List.empty)
+      agreement       <- agreementManagementService.getAgreementById(bearerToken, agreementId)
+      activeAgreement <- agreementManagementService.checkAgreementActivation(agreement)
+      eservice        <- catalogManagementService.getEServiceById(bearerToken, activeAgreement.eserviceId.toString)
+      activeEservice  <- catalogManagementService.checkEServiceActivation(eservice)
+    } yield Audience(activeEservice.name, List.empty)
 
     onComplete(result) {
       case Success(res) => getAudienceByAgreementId200(res)

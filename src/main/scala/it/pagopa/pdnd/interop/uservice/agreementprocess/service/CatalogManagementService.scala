@@ -6,4 +6,5 @@ import scala.concurrent.Future
 
 trait CatalogManagementService {
   def getEServiceById(bearerToken: String, eServiceId: String): Future[EService]
+  def checkEServiceActivation(eservice: EService): Future[EService]
 }

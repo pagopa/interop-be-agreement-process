@@ -2,7 +2,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.api.AgreementApi
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.ApiRequest
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.Agreement
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{Agreement, AgreementEnums}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.BearerToken
 import org.slf4j.{Logger, LoggerFactory}
@@ -35,5 +35,17 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.error(s"Retrieving person ${ex.getMessage}")
         Future.failed[Agreement](ex)
       }
+  }
+
+  override def checkAgreementActivation(agreement: Agreement): Future[Agreement] = {
+    Future.fromTry(
+      Either
+        .cond(
+          agreement.status.equals(AgreementEnums.Status.Active),
+          agreement,
+          new RuntimeException(s"Agreement ${agreement.id} is not active")
+        )
+        .toTry
+    )
   }
 }
