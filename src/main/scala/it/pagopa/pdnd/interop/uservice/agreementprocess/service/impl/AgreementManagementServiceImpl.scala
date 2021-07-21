@@ -37,6 +37,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   override def checkAgreementActivation(agreement: Agreement): Future[Agreement] = {
     Future.fromTry(
       Either
