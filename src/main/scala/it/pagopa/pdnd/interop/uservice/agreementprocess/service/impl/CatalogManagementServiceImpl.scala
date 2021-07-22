@@ -4,7 +4,7 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.ApiReque
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{CatalogManagementInvoker, CatalogManagementService}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.BearerToken
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{EService, EServiceEnums}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{EService, EServiceDescriptorEnums}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -42,9 +42,9 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
     Future.fromTry(
       Either
         .cond(
-          eservice.status.equals(EServiceEnums.Status.Active),
+          eservice.descriptors.filter(d => d.status.equals(EServiceDescriptorEnums.Status.Published)).nonEmpty,
           eservice,
-          new RuntimeException(s"Eservice ${eservice.id} is not active: it's in state ${eservice.status}")
+          new RuntimeException(s"Eservice ${eservice.id} does not contain published versions")
         )
         .toTry
     )
