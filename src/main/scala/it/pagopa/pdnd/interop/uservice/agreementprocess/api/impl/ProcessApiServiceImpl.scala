@@ -41,7 +41,7 @@ class ProcessApiServiceImpl(
       activeAgreement <- agreementManagementService.checkAgreementActivation(agreement)
       eservice        <- catalogManagementService.getEServiceById(bearerToken, activeAgreement.eserviceId.toString)
       activeEservice  <- catalogManagementService.checkEServiceActivation(eservice)
-    } yield Audience(activeEservice.name, List.empty)
+    } yield Audience(activeEservice.name, activeEservice.audience)
 
     onComplete(result) {
       case Success(res) => getAudienceByAgreementId200(res)
