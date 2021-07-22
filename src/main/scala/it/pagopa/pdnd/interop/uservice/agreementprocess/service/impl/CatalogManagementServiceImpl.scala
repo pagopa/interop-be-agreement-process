@@ -42,7 +42,7 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
     Future.fromTry(
       Either
         .cond(
-          eservice.descriptors.count(_.status == Published) == 1,
+          eservice.descriptors.find(_.status == Published).nonEmpty,
           eservice,
           new RuntimeException(s"Eservice ${eservice.id} does not contain published versions")
         )
