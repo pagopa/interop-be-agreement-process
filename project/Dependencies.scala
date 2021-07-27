@@ -23,6 +23,8 @@ object Dependencies {
       namespace %% "pdnd-interop-uservice-agreement-management-client" % agreementManagementVersion
     lazy val catalogManagementClient =
       namespace %% "pdnd-interop-uservice-catalog-management-client" % catalogManagementVersion
+    lazy val partyManagementClient =
+      namespace %% "pdnd-interop-uservice-party-management-client" % partyManagementVersion
   }
 
   private[this] object json4s {
@@ -64,6 +66,11 @@ object Dependencies {
     lazy val core      = namespace % "mockito-core" % mockitoVersion
   }
 
+  private[this] object scalamock {
+    lazy val namespace = "org.scalamock"
+    lazy val core      = namespace %% "scalamock" % scalaMockVersion
+  }
+
   object Jars {
     lazy val overrides: Seq[ModuleID] =
       Seq(jackson.annotations % Compile, jackson.core % Compile, jackson.databind % Compile)
@@ -85,7 +92,11 @@ object Dependencies {
       kamon.prometheus                 % Compile,
       pagopa.agreementManagementClient % Compile,
       pagopa.catalogManagementClient   % Compile,
-      scalatest.core                   % Test
+      pagopa.partyManagementClient     % Compile,
+      scalatest.core                   % Test,
+      mockito.core                     % Test,
+      scalamock.core                   % Test,
+      akka.testkit                     % Test
     )
     lazy val client: Seq[ModuleID] = Seq(
       akka.stream     % Compile,

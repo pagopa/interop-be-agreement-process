@@ -15,7 +15,9 @@ object Versions {
   lazy val jacksonVersion              = "2.11.4"
   lazy val logbackVersion              = "1.2.3"
   lazy val scalatestVersion            = "3.2.8"
+  lazy val scalaMockVersion            = "5.1.0"
   lazy val mockitoVersion              = "3.9.0"
   lazy val agreementManagementVersion  = "0.1.0-SNAPSHOT"
   lazy val catalogManagementVersion    = "0.1.0-SNAPSHOT"
+  lazy val partyManagementVersion      = "0.1.0-SNAPSHOT"
 }
