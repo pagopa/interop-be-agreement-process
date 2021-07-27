@@ -22,15 +22,19 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.{
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.Controller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl.{
   AgreementManagementServiceImpl,
-  CatalogManagementServiceImpl
+  CatalogManagementServiceImpl,
+  PartyManagementServiceImpl
 }
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementInvoker,
   AgreementManagementService,
   CatalogManagementInvoker,
-  CatalogManagementService
+  CatalogManagementService,
+  PartyManagementInvoker,
+  PartyManagementService
 }
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
+import it.pagopa.pdnd.interop.uservice.partymanagement.client.api.PartyApi
 import kamon.Kamon
 
 import scala.concurrent.Future
@@ -49,16 +53,24 @@ trait CatalogManagementAPI {
     CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)
 }
 
+trait PartyManagementAPI {
+  private final val partyManagementInvoker: PartyManagementInvoker = PartyManagementInvoker()
+  private final val partyApi: PartyApi                             = PartyApi(ApplicationConfiguration.catalogManagementURL)
+  def partyManagement(): PartyManagementService =
+    PartyManagementServiceImpl(partyManagementInvoker, partyApi)
+}
+
 @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny", "org.wartremover.warts.Nothing"))
-object Main extends App with CorsSupport with AgreementManagementAPI with CatalogManagementAPI {
+object Main extends App with CorsSupport with AgreementManagementAPI with CatalogManagementAPI with PartyManagementAPI {
 
   Kamon.init()
 
   final val agreementManagementService: AgreementManagementService = agreementManagement()
   final val catalogManagementService: CatalogManagementService     = catalogManagement()
+  final val partyManagementService: PartyManagementService         = partyManagement()
 
   val processApi: ProcessApi = new ProcessApi(
-    new ProcessApiServiceImpl(agreementManagementService, catalogManagementService),
+    new ProcessApiServiceImpl(agreementManagementService, catalogManagementService, partyManagementService),
     new ProcessApiMarshallerImpl(),
     SecurityDirectives.authenticateOAuth2("SecurityRealm", Authenticator)
   )
