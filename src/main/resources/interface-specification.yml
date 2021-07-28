@@ -27,6 +27,22 @@ tags:
       description: Find out more
       url: 'http://swagger.io'
 paths:
+  /status:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - health
+      summary: Health status endpoint
+      description: Return ok
+      operationId: getStatus
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   '/audience/{agreementId}':
     get:
       security:
@@ -56,22 +72,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-  /status:
-    get:
-      security:
-        - bearerAuth: []
-      tags:
-        - health
-      summary: Health status endpoint
-      description: Return ok
-      operationId: getStatus
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
   '/agreement/{agreementId}/activate':
     parameters:
       - schema:
@@ -90,14 +90,97 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
       tags:
         - process
       description: Activates the pending agreement if all the pre-requisites are met.
+  /agreement:
+    post:
+      summary: Agreement Creation
+      operationId: createAgreement
+      responses:
+        '201':
+          description: Agreement created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - process
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementPayload'
+        description: payload for agreement creation
+        required: true
+      description: creates the agreement between the involved parties.
+  '/agreement/{agreementId}/attribute/{attributeId}/verify':
+    parameters:
+      - schema:
+          type: string
+          format: uuid
+        name: agreementId
+        in: path
+        required: true
+        description: agreement identifier
+      - schema:
+          type: string
+          format: uuid
+        name: attributeId
+        in: path
+        description: verified attribute identifier
+        required: true
+    patch:
+      summary: Verify agreement attribute
+      operationId: verifyAgreementAttribute
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Attribute not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - process
+      description: set the agreement attribute as verified.
 components:
   schemas:
+    AgreementPayload:
+      type: object
+      description: contains the information for agreement creation.
+      properties:
+        eserviceId:
+          type: string
+          format: uuid
+        producerId:
+          type: string
+          format: uuid
+        consumerId:
+          type: string
+          format: uuid
+      required:
+        - eserviceId
+        - producerId
+        - consumerId
+    Agreement:
+      properties:
+        id:
+          type: string
+          format: uuid
+      additionalProperties: false
+      required:
+        - id
     Audience:
       properties:
         producer:
