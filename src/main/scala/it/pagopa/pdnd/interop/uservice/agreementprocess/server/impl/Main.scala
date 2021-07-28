@@ -55,7 +55,7 @@ trait CatalogManagementAPI {
 
 trait PartyManagementAPI {
   private final val partyManagementInvoker: PartyManagementInvoker = PartyManagementInvoker()
-  private final val partyApi: PartyApi                             = PartyApi(ApplicationConfiguration.catalogManagementURL)
+  private final val partyApi: PartyApi                             = PartyApi(ApplicationConfiguration.partyManagementURL)
   def partyManagement(): PartyManagementService =
     PartyManagementServiceImpl(partyManagementInvoker, partyApi)
 }

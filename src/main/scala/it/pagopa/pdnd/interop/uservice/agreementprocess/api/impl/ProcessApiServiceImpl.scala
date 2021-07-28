@@ -57,11 +57,11 @@ class ProcessApiServiceImpl(
     }
   }
 
-  def activateAgreement(
+  override def activateAgreement(
     agreementId: String
   )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
     val bearerToken = contexts.map(_._2)(0)
-    logger.info(s"Verify if the agreement is activable $agreementId")
+    logger.info(s"Activating agreement $agreementId")
     val result = for {
       agreement        <- agreementManagementService.getAgreementById(bearerToken, agreementId)
       pendingAgreement <- agreementManagementService.isPending(agreement)
@@ -80,11 +80,11 @@ class ProcessApiServiceImpl(
     } yield ()
 
     onComplete(result) {
-      case Success(_) => ???
+      case Success(_) => activateAgreement204
       case Failure(ex) =>
         val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"error while retrieving audience for agreement $agreementId")
-        getAudienceByAgreementId400(errorResponse)
+          Problem(Option(ex.getMessage), 400, s"Error while activating agreement $agreementId")
+        activateAgreement400(errorResponse)
     }
   }
 }
