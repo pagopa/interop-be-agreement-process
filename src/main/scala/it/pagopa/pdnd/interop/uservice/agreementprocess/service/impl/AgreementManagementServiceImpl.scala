@@ -2,11 +2,13 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.api.AgreementApi
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiRequest, BearerToken}
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{Agreement, AgreementEnums, VerifiedAttribute}
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._
+import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, Attributes}
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 @SuppressWarnings(
@@ -22,6 +24,27 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 ) extends AgreementManagementService {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
+  override def markAttributeAsVerified(
+    bearerToken: String,
+    agreementId: String,
+    attributeId: UUID
+  ): Future[Agreement] = {
+
+    val verifiedAttributeSeed = VerifiedAttributeSeed(id = attributeId, verified = true)
+    val request: ApiRequest[Agreement] =
+      api.updateAgreementVerifiedAttribute(agreementId, verifiedAttributeSeed)(BearerToken(bearerToken))
+    invoker
+      .execute[Agreement](request)
+      .map { x =>
+        logger.info(s"Attribute verified! agreement ${x.code} > ${x.content}")
+        x.content
+      }
+      .recoverWith { case ex =>
+        logger.error(s"Attribute verification FAILED: ${ex.getMessage}")
+        Future.failed[Agreement](ex)
+      }
+  }
 
   override def activateById(bearerToken: String, agreementId: String): Future[Agreement] = {
     val request: ApiRequest[Agreement] = api.activateAgreement(agreementId)(BearerToken(bearerToken))
@@ -106,5 +129,33 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       attribute.group.fold(true)(orAttributes => consumerAttributes.intersect(orAttributes).nonEmpty)
 
     hasSimpleAttribute() && hasGroupAttributes()
+  }
+
+  override def createAgreement(
+    bearerToken: String,
+    agreementPayload: AgreementPayload,
+    flattenedVerifiedAttributes: Seq[UUID]
+  ): Future[Agreement] = {
+
+    val seed: AgreementSeed = AgreementSeed(
+      eserviceId = agreementPayload.eserviceId,
+      producerId = agreementPayload.producerId,
+      consumerId = agreementPayload.consumerId,
+      verifiedAttributes =
+        flattenedVerifiedAttributes.map(attributeId => VerifiedAttributeSeed(id = attributeId, verified = false))
+    )
+
+    val request: ApiRequest[Agreement] = api.addAgreement(seed)(BearerToken(bearerToken))
+    invoker
+      .execute[Agreement](request)
+      .map { x =>
+        logger.info(s"Retrieving agreement ${x.code}")
+        logger.info(s"Retrieving agreement ${x.content}")
+        x.content
+      }
+      .recoverWith { case ex =>
+        logger.error(s"Retrieving agreement ${ex.getMessage}")
+        Future.failed[Agreement](ex)
+      }
   }
 }

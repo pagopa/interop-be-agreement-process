@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ProcessApiService
-import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Audience, Problem}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Agreement, AgreementPayload, Audience, Problem}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
   CatalogManagementService,
@@ -12,13 +12,15 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
 }
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import java.util.UUID
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @SuppressWarnings(
   Array(
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Any",
+    "org.wartremover.warts.StringPlusAny",
     "org.wartremover.warts.Nothing",
     "org.wartremover.warts.Recursion"
   )
@@ -85,6 +87,60 @@ class ProcessApiServiceImpl(
         val errorResponse: Problem =
           Problem(Option(ex.getMessage), 400, s"Error while activating agreement $agreementId")
         activateAgreement400(errorResponse)
+    }
+  }
+
+  /** Code: 201, Message: Agreement created., DataType: Agreement
+    * Code: 400, Message: Bad Request, DataType: Problem
+    */
+  override def createAgreement(agreementPayload: AgreementPayload)(implicit
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement],
+    contexts: Seq[(String, String)]
+  ): Route = {
+    val bearerToken = contexts.map(_._2)(0)
+    logger.info(s"Creating agreement ${agreementPayload}")
+    val result = for {
+      eService                    <- catalogManagementService.getEServiceById(bearerToken, agreementPayload.eserviceId.toString)
+      _                           <- catalogManagementService.verifyProducerMatch(eService.producerId, agreementPayload.producerId)
+      _                           <- catalogManagementService.checkEServiceActivation(eService)
+      flattenedVerifiedAttributes <- catalogManagementService.flattenAttributes(eService.attributes.verified)
+      agreement <- agreementManagementService.createAgreement(
+        bearerToken,
+        agreementPayload,
+        flattenedVerifiedAttributes
+      )
+    } yield Agreement(agreement.id)
+
+    onComplete(result) {
+      case Success(agreement) => createAgreement201(agreement)
+      case Failure(ex) =>
+        val errorResponse: Problem =
+          Problem(Option(ex.getMessage), 400, s"Error while creating agreement ${agreementPayload}")
+        createAgreement400(errorResponse)
+    }
+  }
+
+  /** Code: 204, Message: No Content
+    * Code: 404, Message: Attribute not found, DataType: Problem
+    */
+  override def verifyAgreementAttribute(agreementId: String, attributeId: String)(implicit
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    contexts: Seq[(String, String)]
+  ): Route = {
+    val bearerToken = contexts.map(_._2)(0)
+    logger.info(s"Marking agreement $agreementId verified attribute $attributeId as verified.")
+    val result = for {
+      attributeUUID <- Future.fromTry(Try { UUID.fromString(attributeId) })
+      _             <- agreementManagementService.markAttributeAsVerified(bearerToken, agreementId, attributeUUID)
+    } yield ()
+
+    onComplete(result) {
+      case Success(_) => verifyAgreementAttribute204
+      case Failure(ex) =>
+        val errorResponse: Problem =
+          Problem(Option(ex.getMessage), 400, s"Error while verifying agreement $agreementId attribute $attributeId")
+        verifyAgreementAttribute404(errorResponse)
     }
   }
 }
