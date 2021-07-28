@@ -1,10 +1,9 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.api.AgreementApi
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.ApiRequest
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiRequest, BearerToken}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{Agreement, AgreementEnums, VerifiedAttribute}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.BearerToken
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, Attributes}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -25,7 +24,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def activateById(bearerToken: String, agreementId: String): Future[Agreement] = {
-    val request: ApiRequest[Agreement] = api.activateAgreement(agreementId)
+    val request: ApiRequest[Agreement] = api.activateAgreement(agreementId)(BearerToken(bearerToken))
     invoker
       .execute[Agreement](request)
       .map { x =>

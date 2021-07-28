@@ -20,4 +20,11 @@ object ApplicationConfiguration {
     s"$catalogMgmtURL/pdnd-interop-uservice-catalog-management/0.0.1"
     //    s"https://gateway.interop.pdnd.dev/pdnd-interop-uservice-catalog-management/0.0.1"
   }
+
+  def partyManagementURL: String = {
+    val partyMgmtURL: String = config.getString("services.party-management")
+    s"$partyMgmtURL/pdnd-interop-uservice-party-management/0.0.1"
+    //    s"https://gateway.interop.pdnd.dev/pdnd-interop-uservice-catalog-management/0.0.1"
+  }
+
 }
