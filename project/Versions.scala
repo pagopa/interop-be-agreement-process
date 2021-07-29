@@ -8,7 +8,7 @@ object Versions {
   lazy val slickVersion                = "3.3.3"
   lazy val s3Persistence               = "1.0.27"
   lazy val akkaManagementVersion       = "1.0.10"
-  lazy val json4sVersion               = "4.0.0"
+  lazy val json4sVersion               = "4.0.3"
   lazy val kamonVersion                = "2.2.0"
   lazy val openapi4jVersion            = "1.0.7"
   lazy val scalapbVersion              = "0.11.1"

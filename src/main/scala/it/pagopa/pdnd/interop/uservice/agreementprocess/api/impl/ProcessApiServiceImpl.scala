@@ -101,6 +101,12 @@ class ProcessApiServiceImpl(
     val bearerToken = contexts.map(_._2)(0)
     logger.info(s"Creating agreement ${agreementPayload}")
     val result = for {
+      _ <- agreementManagementService.isAgreementCreatable(
+        bearerToken,
+        producerId = agreementPayload.producerId,
+        consumerId = agreementPayload.consumerId,
+        eserviceId = agreementPayload.eserviceId
+      )
       eService                    <- catalogManagementService.getEServiceById(bearerToken, agreementPayload.eserviceId.toString)
       _                           <- catalogManagementService.verifyProducerMatch(eService.producerId, agreementPayload.producerId)
       _                           <- catalogManagementService.checkEServiceActivation(eService)

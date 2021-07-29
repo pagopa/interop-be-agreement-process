@@ -8,6 +8,7 @@ import java.util.UUID
 import scala.concurrent.Future
 
 trait AgreementManagementService {
+  def isAgreementCreatable(bearerToken: String, producerId: UUID, consumerId: UUID, eserviceId: UUID): Future[Boolean]
   def createAgreement(
     bearerToken: String,
     agreementPayload: AgreementPayload,
