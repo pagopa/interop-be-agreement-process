@@ -158,4 +158,36 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         Future.failed[Agreement](ex)
       }
   }
+
+  override def isAgreementCreatable(
+    bearerToken: String,
+    producerId: UUID,
+    consumerId: UUID,
+    eserviceId: UUID
+  ): Future[Boolean] = {
+    val request: ApiRequest[Seq[Agreement]] =
+      api.getAgreements(
+        producerId = Some(producerId.toString),
+        consumerId = Some(consumerId.toString),
+        eserviceId = Some(eserviceId.toString),
+        status = Some("active")
+      )(BearerToken(bearerToken))
+    invoker
+      .execute[Seq[Agreement]](request)
+      .flatMap(agreements =>
+        Future.fromTry(
+          Either
+            .cond(
+              agreements.content.isEmpty,
+              true,
+              new RuntimeException(s"Producer ${producerId} already has an active agreement for ${consumerId}")
+            )
+            .toTry
+        )
+      )
+      .recoverWith { case ex =>
+        logger.error(s"Check active agreements failed ${ex.getMessage}")
+        Future.failed[Boolean](ex)
+      }
+  }
 }
