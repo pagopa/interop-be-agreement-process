@@ -18,7 +18,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.util.UUID
 
 /** Tests the integration with Catalog Management service, creating a corresponding pact interaction file */
-class CatalogProviderClientSpec
+class CatalogProviderContractSpec
     extends ScalaTestWithActorTestKit
     with AnyWordSpecLike
     with Matchers

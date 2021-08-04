@@ -1,3 +1,4 @@
+import ProjectSettings._
 ThisBuild / scalaVersion := "2.13.6"
 ThisBuild / organization := "it.pagopa"
 ThisBuild / organizationName := "Pagopa S.p.A."
@@ -84,7 +85,6 @@ lazy val client = project
 lazy val root = (project in file("."))
   .settings(
     name := "pdnd-interop-uservice-agreement-process",
-    Test / parallelExecution := false,
     dockerBuildOptions ++= Seq("--network=host"),
     dockerRepository := Some(System.getenv("DOCKER_REPO")),
     dockerBaseImage := "adoptopenjdk:11-jdk-hotspot",
@@ -99,6 +99,9 @@ lazy val root = (project in file("."))
   )
   .aggregate(client)
   .dependsOn(generated)
+  .enableContractTest
   .enablePlugins(JavaAppPackaging, JavaAgent)
+
+ProjectSettings.addContractTestCommandAlias
 
 javaAgents += "io.kamon" % "kanela-agent" % "1.0.11"
