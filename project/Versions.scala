@@ -17,6 +17,7 @@ object Versions {
   lazy val scalatestVersion            = "3.2.8"
   lazy val scalaMockVersion            = "5.1.0"
   lazy val mockitoVersion              = "3.9.0"
+  lazy val scalaPactVersion            = "3.3.2-RC2"
   lazy val agreementManagementVersion  = "0.1.0-SNAPSHOT"
   lazy val catalogManagementVersion    = "0.1.0-SNAPSHOT"
   lazy val partyManagementVersion      = "0.1.0-SNAPSHOT"

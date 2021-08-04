@@ -71,6 +71,11 @@ object Dependencies {
     lazy val core      = namespace %% "scalamock" % scalaMockVersion
   }
 
+  private[this] object scalapact {
+    lazy val namespace = "com.itv"
+    lazy val core      = namespace %% "scalapact-scalatest-suite" % scalaPactVersion
+  }
+
   object Jars {
     lazy val overrides: Seq[ModuleID] =
       Seq(jackson.annotations % Compile, jackson.core % Compile, jackson.databind % Compile)
@@ -96,7 +101,8 @@ object Dependencies {
       scalatest.core                   % Test,
       mockito.core                     % Test,
       scalamock.core                   % Test,
-      akka.testkit                     % Test
+      akka.testkit                     % Test,
+      scalapact.core                   % Test
     )
     lazy val client: Seq[ModuleID] = Seq(
       akka.stream     % Compile,

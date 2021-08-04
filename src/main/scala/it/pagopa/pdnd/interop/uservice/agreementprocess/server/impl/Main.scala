@@ -46,10 +46,13 @@ trait AgreementManagementAPI {
     AgreementManagementServiceImpl(agreementManagementInvoker, agreementApi)
 }
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 trait CatalogManagementAPI {
   private final val catalogManagementInvoker: CatalogManagementInvoker = CatalogManagementInvoker()
   private final val catalogApi: EServiceApi                            = EServiceApi(ApplicationConfiguration.catalogManagementURL)
   def catalogManagement(): CatalogManagementService =
+    CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)
+  def catalogManagement(catalogApi: EServiceApi): CatalogManagementService =
     CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)
 }
 
