@@ -4,7 +4,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.VerifiedAttribute
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementAPI
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, Attributes}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -56,9 +56,17 @@ class AgreementManagementServiceImplSpec
       val eserviceAttributes: Attributes =
         Attributes(
           certified = Seq(
-            Attribute(simple = Some(attribute1.toString)),
-            Attribute(simple = Some(attribute2.toString)),
-            Attribute(group = Some(Seq(attribute5, attribute6, attribute7).map(_.toString)))
+            Attribute(single = Some(AttributeValue(attribute1.toString, false))),
+            Attribute(single = Some(AttributeValue(attribute2.toString, false))),
+            Attribute(group =
+              Some(
+                Seq(
+                  AttributeValue(attribute5.toString, false),
+                  AttributeValue(attribute6.toString, false),
+                  AttributeValue(attribute7.toString, false)
+                )
+              )
+            )
           ),
           declared = Seq.empty,
           verified = Seq.empty
@@ -78,7 +86,7 @@ class AgreementManagementServiceImplSpec
 
       val eserviceAttributes: Attributes =
         Attributes(
-          certified = Seq(Attribute(simple = Some(attribute5.toString))),
+          certified = Seq(Attribute(single = Some(AttributeValue(attribute5.toString, false)))),
           declared = Seq.empty,
           verified = Seq.empty
         )
@@ -101,7 +109,7 @@ class AgreementManagementServiceImplSpec
 
       val eserviceAttributes: Attributes =
         Attributes(
-          certified = Seq(Attribute(simple = Some(attribute5.toString))),
+          certified = Seq(Attribute(single = Some(AttributeValue(attribute5.toString, false)))),
           declared = Seq.empty,
           verified = Seq.empty
         )
@@ -124,7 +132,17 @@ class AgreementManagementServiceImplSpec
 
       val eserviceAttributes: Attributes =
         Attributes(
-          certified = Seq(Attribute(group = Some(Seq(attribute5, attribute6, attribute7).map(_.toString)))),
+          certified = Seq(
+            Attribute(group =
+              Some(
+                Seq(
+                  AttributeValue(attribute5.toString, false),
+                  AttributeValue(attribute6.toString, false),
+                  AttributeValue(attribute7.toString, false)
+                )
+              )
+            )
+          ),
           declared = Seq.empty,
           verified = Seq.empty
         )
@@ -149,9 +167,17 @@ class AgreementManagementServiceImplSpec
       val eserviceAttributes: Attributes =
         Attributes(
           certified = Seq(
-            Attribute(simple = Some(attribute1.toString)),
-            Attribute(simple = Some(attribute2.toString)),
-            Attribute(group = Some(Seq(attribute5, attribute6, attribute7).map(_.toString)))
+            Attribute(single = Some(AttributeValue(attribute1.toString, false))),
+            Attribute(single = Some(AttributeValue(attribute2.toString, false))),
+            Attribute(group =
+              Some(
+                Seq(
+                  AttributeValue(attribute5.toString, false),
+                  AttributeValue(attribute6.toString, false),
+                  AttributeValue(attribute7.toString, false)
+                )
+              )
+            )
           ),
           declared = Seq.empty,
           verified = Seq.empty

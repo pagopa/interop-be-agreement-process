@@ -4,6 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, deserializationError}
 
 import java.util.UUID
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
@@ -23,4 +24,8 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
           deserializationError(s"expected a String but got a ${notAJsString.compactPrint}")
       }
     }
+
+  def extractBearer(contexts: Seq[(String, String)]): Future[String] = Future.fromTry {
+    contexts.toMap.get("bearer").toRight(new RuntimeException("Bearer token has not been passed")).toTry
+  }
 }

@@ -63,9 +63,9 @@ class CatalogProviderContractSpec
     technology = "REST",
     voucherLifespan = 124,
     attributes = Attributes(
-      declared = Seq(Attribute(simple = Some("1234"))),
-      certified = Seq(Attribute(simple = Some("1234"))),
-      verified = Seq(Attribute(group = Some(Seq("1234", "5555"))))
+      declared = Seq(Attribute(single = Some(AttributeValue("1234", false)))),
+      certified = Seq(Attribute(single = Some(AttributeValue("1234", false)))),
+      verified = Seq(Attribute(group = Some(Seq(AttributeValue("1234", false), AttributeValue("5555", false)))))
     ),
     descriptors = Seq(mockDescriptor)
   )
@@ -117,7 +117,7 @@ class CatalogProviderContractSpec
     "be able to get the eservice by id" in {
       val results =
         catalogManagement(EServiceApi(config.baseUrl + "/pdnd-interop-uservice-catalog-management/0.0.1"))
-          .getEServiceById("1234", eserviceId)
+          .getEServiceById("1234", UUID.fromString(eserviceId))
       val value = results.futureValue
       value.producerId.toString shouldBe "24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"
       value.audience(0) shouldBe "pippo"
