@@ -5,15 +5,17 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiRe
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, Attributes}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @SuppressWarnings(
   Array(
     "org.wartremover.warts.StringPlusAny",
+    "org.wartremover.warts.DefaultArguments",
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Equals",
     "org.wartremover.warts.ToString"
@@ -106,43 +108,42 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     agreementVerifiedAttributes: Seq[VerifiedAttribute]
   ): Future[Boolean] = {
 
-    def checkAttributesFn(attributes: Seq[Attribute]) = checkAttributes(consumerAttributesIds)(attributes)
-    def hasCertified()                                = checkAttributesFn(eserviceAttributes.certified)
-    def hasVerified()                                 = agreementVerifiedAttributes.foldLeft(true)((acc, attr) => attr.verified && acc)
+    def checkAttributesFn(attributes: Seq[Attribute]): Boolean = checkAttributes(consumerAttributesIds)(attributes)
 
-    if (hasCertified() && hasVerified())
+    def hasCertified: Boolean = checkAttributesFn(eserviceAttributes.certified)
+
+    def hasVerified: Boolean = agreementVerifiedAttributes.foldLeft(true)((acc, attr) => attr.verified && acc)
+
+    if (hasCertified && hasVerified)
       Future.successful(true)
     else
       Future.failed[Boolean](new RuntimeException("This agreement does not have all the expected attributes"))
   }
 
   private def checkAttributes(consumerAttributes: Seq[String])(attributes: Seq[Attribute]): Boolean = {
-    attributes.map(hasAttribute(consumerAttributes)).fold(true)(_ && _)
+    attributes.map(hasAttribute(consumerAttributes)).forall(identity)
   }
 
   private def hasAttribute(consumerAttributes: Seq[String])(attribute: Attribute): Boolean = {
-    val hasSimpleAttribute = () =>
-      attribute.simple
-        .fold(true)(simple => consumerAttributes.contains(simple))
+    val hasSingleAttribute = () => attribute.single.forall(single => consumerAttributes.contains(single.id))
 
     val hasGroupAttributes = () =>
-      attribute.group.fold(true)(orAttributes => consumerAttributes.intersect(orAttributes).nonEmpty)
+      attribute.group.forall(orAttributes => consumerAttributes.intersect(orAttributes.map(_.id)).nonEmpty)
 
-    hasSimpleAttribute() && hasGroupAttributes()
+    hasSingleAttribute() && hasGroupAttributes()
   }
 
   override def createAgreement(
     bearerToken: String,
     agreementPayload: AgreementPayload,
-    flattenedVerifiedAttributes: Seq[UUID]
+    verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
   ): Future[Agreement] = {
 
     val seed: AgreementSeed = AgreementSeed(
       eserviceId = agreementPayload.eserviceId,
       producerId = agreementPayload.producerId,
       consumerId = agreementPayload.consumerId,
-      verifiedAttributes =
-        flattenedVerifiedAttributes.map(attributeId => VerifiedAttributeSeed(id = attributeId, verified = false))
+      verifiedAttributes = verifiedAttributeSeeds
     )
 
     val request: ApiRequest[Agreement] = api.addAgreement(seed)(BearerToken(bearerToken))
@@ -159,17 +160,12 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def isAgreementCreatable(
-    bearerToken: String,
-    producerId: UUID,
-    consumerId: UUID,
-    eserviceId: UUID
-  ): Future[Boolean] = {
+  override def validatePayload(bearerToken: String, payload: AgreementPayload): Future[AgreementPayload] = {
     val request: ApiRequest[Seq[Agreement]] =
       api.getAgreements(
-        producerId = Some(producerId.toString),
-        consumerId = Some(consumerId.toString),
-        eserviceId = Some(eserviceId.toString),
+        producerId = Some(payload.producerId.toString),
+        consumerId = Some(payload.consumerId.toString),
+        eserviceId = Some(payload.eserviceId.toString),
         status = Some("active")
       )(BearerToken(bearerToken))
     invoker
@@ -179,15 +175,82 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
           Either
             .cond(
               agreements.content.isEmpty,
-              true,
-              new RuntimeException(s"Producer ${producerId} already has an active agreement for ${consumerId}")
+              payload,
+              new RuntimeException(
+                s"Producer ${payload.producerId} already has an active agreement for ${payload.consumerId}"
+              )
             )
             .toTry
         )
       )
       .recoverWith { case ex =>
         logger.error(s"Check active agreements failed ${ex.getMessage}")
-        Future.failed[Boolean](ex)
+        Future.failed[AgreementPayload](ex)
       }
   }
+
+  override def getAgreements(
+    bearerToken: String,
+    producerId: Option[String] = None,
+    consumerId: Option[String] = None,
+    eserviceId: Option[String] = None,
+    status: Option[String] = None
+  ): Future[Seq[Agreement]] = {
+
+    val request: ApiRequest[Seq[Agreement]] =
+      api.getAgreements(producerId = producerId, consumerId = consumerId, eserviceId = eserviceId, status = status)(
+        BearerToken(bearerToken)
+      )
+
+    invoker
+      .execute[Seq[Agreement]](request)
+      .map { x =>
+        logger.info(s"Retrieving agreements ${x.code}")
+        logger.info(s"Retrieving agreements ${x.content}")
+        x.content
+      }
+      .recoverWith { case ex =>
+        logger.error(s"Retrieving agreements ${ex.getMessage}")
+        Future.failed[Seq[Agreement]](ex)
+      }
+  }
+
+  //TODO this function must be improve with
+  // - check attribute validityTimespan
+  // - a specific behaviour when the same attribute has a different verified value (e.g. send notification)
+  def extractVerifiedAttribute(agreements: Seq[Agreement]): Future[Set[UUID]] = Future.successful {
+    val allVerifiedAttribute: Seq[VerifiedAttribute] = agreements.flatMap(agreement => agreement.verifiedAttributes)
+
+    // We are excluding for now cases where we can find opposite verification for the same attribute
+    // Need to verify the right behaviour
+    allVerifiedAttribute
+      .groupBy(_.id)
+      .filter { case (_, attrs) => attrs.nonEmpty && attrs.forall(_.verified) }
+      .keys
+      .toSet
+
+  }
+
+  override def applyImplicitVerification(
+    verifiedAttributes: Seq[AttributeValue],
+    consumerVerifiedAttributes: Set[UUID]
+  ): Future[Seq[VerifiedAttributeSeed]] = {
+    Future.traverse(verifiedAttributes)(verifiedAttribute =>
+      createVerifiedAttributeSeeds(verifiedAttribute, consumerVerifiedAttributes)
+    )
+  }
+
+  private def createVerifiedAttributeSeeds(
+    attribute: AttributeValue,
+    consumerVerifiedAttributes: Set[UUID]
+  ): Future[VerifiedAttributeSeed] =
+    Future.fromTry {
+      val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
+      Try(UUID.fromString(attribute.id)).map { uuid =>
+        if (consumerVerifiedAttributes.contains(uuid)) VerifiedAttributeSeed(uuid, isImplicitVerifications)
+        else VerifiedAttributeSeed(uuid, false)
+      }
+
+    }
+
 }

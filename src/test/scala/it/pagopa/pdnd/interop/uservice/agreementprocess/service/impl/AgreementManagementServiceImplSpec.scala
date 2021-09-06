@@ -1,10 +1,11 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.VerifiedAttribute
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementAPI
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, Attributes}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -16,6 +17,7 @@ class AgreementManagementServiceImplSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
+    with SpecHelper
     with AgreementManagementAPI {
 
   implicit val testSystem = system.classicSystem
@@ -56,9 +58,17 @@ class AgreementManagementServiceImplSpec
       val eserviceAttributes: Attributes =
         Attributes(
           certified = Seq(
-            Attribute(simple = Some(attribute1.toString)),
-            Attribute(simple = Some(attribute2.toString)),
-            Attribute(group = Some(Seq(attribute5, attribute6, attribute7).map(_.toString)))
+            Attribute(single = Some(AttributeValue(attribute1.toString, false))),
+            Attribute(single = Some(AttributeValue(attribute2.toString, false))),
+            Attribute(group =
+              Some(
+                Seq(
+                  AttributeValue(attribute5.toString, false),
+                  AttributeValue(attribute6.toString, false),
+                  AttributeValue(attribute7.toString, false)
+                )
+              )
+            )
           ),
           declared = Seq.empty,
           verified = Seq.empty
@@ -78,7 +88,7 @@ class AgreementManagementServiceImplSpec
 
       val eserviceAttributes: Attributes =
         Attributes(
-          certified = Seq(Attribute(simple = Some(attribute5.toString))),
+          certified = Seq(Attribute(single = Some(AttributeValue(attribute5.toString, false)))),
           declared = Seq.empty,
           verified = Seq.empty
         )
@@ -101,7 +111,7 @@ class AgreementManagementServiceImplSpec
 
       val eserviceAttributes: Attributes =
         Attributes(
-          certified = Seq(Attribute(simple = Some(attribute5.toString))),
+          certified = Seq(Attribute(single = Some(AttributeValue(attribute5.toString, false)))),
           declared = Seq.empty,
           verified = Seq.empty
         )
@@ -124,7 +134,17 @@ class AgreementManagementServiceImplSpec
 
       val eserviceAttributes: Attributes =
         Attributes(
-          certified = Seq(Attribute(group = Some(Seq(attribute5, attribute6, attribute7).map(_.toString)))),
+          certified = Seq(
+            Attribute(group =
+              Some(
+                Seq(
+                  AttributeValue(attribute5.toString, false),
+                  AttributeValue(attribute6.toString, false),
+                  AttributeValue(attribute7.toString, false)
+                )
+              )
+            )
+          ),
           declared = Seq.empty,
           verified = Seq.empty
         )
@@ -149,9 +169,17 @@ class AgreementManagementServiceImplSpec
       val eserviceAttributes: Attributes =
         Attributes(
           certified = Seq(
-            Attribute(simple = Some(attribute1.toString)),
-            Attribute(simple = Some(attribute2.toString)),
-            Attribute(group = Some(Seq(attribute5, attribute6, attribute7).map(_.toString)))
+            Attribute(single = Some(AttributeValue(attribute1.toString, false))),
+            Attribute(single = Some(AttributeValue(attribute2.toString, false))),
+            Attribute(group =
+              Some(
+                Seq(
+                  AttributeValue(attribute5.toString, false),
+                  AttributeValue(attribute6.toString, false),
+                  AttributeValue(attribute7.toString, false)
+                )
+              )
+            )
           ),
           declared = Seq.empty,
           verified = Seq.empty
@@ -165,6 +193,89 @@ class AgreementManagementServiceImplSpec
 
       f.failed.futureValue shouldBe a[RuntimeException]
     }
+
+    "retrieve all verified attributes owned by a consumer if all attributes are verified as true" in {
+
+      val expected = Set(Common.attributiId1, Common.attributiId2, Common.attributiId3)
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllTrue)
+
+      f.futureValue shouldBe expected
+    }
+
+    "retrieve no attributes if the attributes are verified as false" in {
+
+      val expected = Set.empty
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllFalse)
+
+      f.futureValue shouldBe expected
+    }
+
+    "retrieve no attributes if each attribute is true/false at the same time" in {
+
+      val expected = Set.empty
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsSameTrueFalse)
+
+      f.futureValue shouldBe expected
+    }
+
+    "retrieve all verified attributes owned by a consumer, excluding attributes set true/false at the same time" in {
+
+      val expected = Set(Common.attributiId1, Common.attributiId3)
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsExcludingFalse)
+
+      f.futureValue shouldBe expected
+    }
+
+    "not apply implicit verification" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId2, verified = false, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+      )
+
+      val f = agreementManagementServiceImpl.applyImplicitVerification(
+        verifiedAttributesAllSetTrue,
+        customerVerifiedAttributes
+      )
+
+      f.futureValue shouldBe expected
+    }
+
+    "apply implicit verification" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(id = Common.attributiId1, verified = true, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+      )
+
+      val f = agreementManagementServiceImpl.applyImplicitVerification(
+        verifiedAttributesAllSetFalse,
+        customerVerifiedAttributes
+      )
+
+      f.futureValue shouldBe expected
+    }
+
+    "apply implicit verification only where the explicit verification is not required" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+      )
+
+      val f =
+        agreementManagementServiceImpl.applyImplicitVerification(verifiedAttributesMixed, customerVerifiedAttributes)
+
+      f.futureValue shouldBe expected
+    }
+
   }
 
 }

@@ -49,7 +49,7 @@ generateCode := {
 
 }
 
-(compile in Compile) := ((compile in Compile) dependsOn generateCode).value
+( Compile /compile) := ((Compile /compile) dependsOn generateCode).value
 
 cleanFiles += baseDirectory.value / "generated" / "src"
 

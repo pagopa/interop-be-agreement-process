@@ -13,3 +13,4 @@ client/src/
 openapitools.json
 .DS_Store
 client/project/build.properties
+.env

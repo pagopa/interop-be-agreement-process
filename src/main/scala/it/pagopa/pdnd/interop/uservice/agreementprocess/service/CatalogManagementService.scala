@@ -1,13 +1,13 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, EService}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, EService}
 
 import java.util.UUID
 import scala.concurrent.Future
 
 trait CatalogManagementService {
-  def flattenAttributes(verified: Seq[Attribute]): Future[Seq[UUID]]
+  def flattenAttributes(verified: Seq[Attribute]): Future[Seq[AttributeValue]]
   def verifyProducerMatch(eserviceProducerId: UUID, seedProducerId: UUID): Future[Boolean]
-  def getEServiceById(bearerToken: String, eServiceId: String): Future[EService]
+  def getEServiceById(bearerToken: String, eServiceId: UUID): Future[EService]
   def checkEServiceActivation(eservice: EService): Future[EService]
 }
