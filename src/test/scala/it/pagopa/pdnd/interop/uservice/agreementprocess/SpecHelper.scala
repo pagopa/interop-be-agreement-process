@@ -5,6 +5,7 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   VerifiedAttribute,
   Agreement => ClientAgreement
 }
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.AttributeValue
 
 import java.util.UUID
 
@@ -96,4 +97,25 @@ trait SpecHelper {
   val agreementsAllFalse: Seq[ClientAgreement]       = Seq(AgreementThree.agreement)
   val agreementsSameTrueFalse: Seq[ClientAgreement]  = Seq(AgreementOne.agreement, AgreementThree.agreement)
   val agreementsExcludingFalse: Seq[ClientAgreement] = Seq(AgreementOne.agreement, AgreementFour.agreement)
+
+  val verifiedAttributesAllSetFalse = Seq(
+    AttributeValue(id = Common.attributiId1.toString, explicitAttributeVerification = false),
+    AttributeValue(id = Common.attributiId2.toString, explicitAttributeVerification = false),
+    AttributeValue(id = Common.attributiId3.toString, explicitAttributeVerification = false)
+  )
+
+  val verifiedAttributesAllSetTrue = Seq(
+    AttributeValue(id = Common.attributiId1.toString, explicitAttributeVerification = true),
+    AttributeValue(id = Common.attributiId2.toString, explicitAttributeVerification = true),
+    AttributeValue(id = Common.attributiId3.toString, explicitAttributeVerification = true)
+  )
+
+  val verifiedAttributesMixed = Seq(
+    AttributeValue(id = Common.attributiId1.toString, explicitAttributeVerification = true),
+    AttributeValue(id = Common.attributiId2.toString, explicitAttributeVerification = false),
+    AttributeValue(id = Common.attributiId3.toString, explicitAttributeVerification = true)
+  )
+
+  val customerVerifiedAttributes = Set(Common.attributiId1, Common.attributiId2)
+
 }

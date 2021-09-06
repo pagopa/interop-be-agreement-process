@@ -1,7 +1,7 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.VerifiedAttribute
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementAPI
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
@@ -226,6 +226,52 @@ class AgreementManagementServiceImplSpec
       val expected = Set(Common.attributiId1, Common.attributiId3)
 
       val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsExcludingFalse)
+
+      f.futureValue shouldBe expected
+    }
+
+    "not apply implicit verification" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId2, verified = false, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+      )
+
+      val f = agreementManagementServiceImpl.applyImplicitVerification(
+        verifiedAttributesAllSetTrue,
+        customerVerifiedAttributes
+      )
+
+      f.futureValue shouldBe expected
+    }
+
+    "apply implicit verification" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(id = Common.attributiId1, verified = true, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+      )
+
+      val f = agreementManagementServiceImpl.applyImplicitVerification(
+        verifiedAttributesAllSetFalse,
+        customerVerifiedAttributes
+      )
+
+      f.futureValue shouldBe expected
+    }
+
+    "apply implicit verification only where the explicit verification is not required" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
+        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+      )
+
+      val f =
+        agreementManagementServiceImpl.applyImplicitVerification(verifiedAttributesMixed, customerVerifiedAttributes)
 
       f.futureValue shouldBe expected
     }

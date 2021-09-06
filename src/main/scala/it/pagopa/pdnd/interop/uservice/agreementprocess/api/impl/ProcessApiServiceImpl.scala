@@ -103,7 +103,7 @@ class ProcessApiServiceImpl(
     // TODO the request to get a set of agreements, is performed twice. Verify if is possible to reduce to one,
     //  maintaining the right semantic
     val result = for {
-      bearerToken      <- extractBearer(contexts)
+      bearerToken <- extractBearer(contexts)
       // TODO inside of validatePayload is performed a get agreements request
       validatedPayload <- agreementManagementService.validatePayload(bearerToken, agreementPayload)
       eservice         <- catalogManagementService.getEServiceById(bearerToken, validatedPayload.eserviceId)
