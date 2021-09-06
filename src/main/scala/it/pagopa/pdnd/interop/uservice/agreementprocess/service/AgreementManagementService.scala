@@ -11,6 +11,7 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute
 import java.util.UUID
 import scala.concurrent.Future
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 trait AgreementManagementService {
   def validatePayload(bearerToken: String, payload: AgreementPayload): Future[AgreementPayload]
   def createAgreement(
@@ -24,11 +25,18 @@ trait AgreementManagementService {
     verifiedAttributes: Seq[VerifiedAttribute]
   ): Future[Boolean]
   def getAgreementById(bearerToken: String, agreementId: String): Future[Agreement]
+  def getAgreements(
+    bearerToken: String,
+    producerId: Option[String] = None,
+    consumerId: Option[String] = None,
+    eserviceId: Option[String] = None,
+    status: Option[String] = None
+  ): Future[Seq[Agreement]]
   def activateById(bearerToken: String, agreementId: String): Future[Agreement]
   def checkAgreementActivation(agreement: Agreement): Future[Agreement]
   def isPending(agreement: Agreement): Future[Agreement]
   def markAttributeAsVerified(bearerToken: String, agreementId: String, attributeId: UUID): Future[Agreement]
-  def getVerifiedAttributes(bearerToken: String, consumerId: UUID): Future[Set[UUID]]
+  def extractVerifiedAttribute(agreements: Seq[Agreement]): Future[Set[UUID]]
   def applyImplicitVerification(
     verifiedAttributes: Seq[AttributeValue],
     consumerVerifiedAttributes: Set[UUID]

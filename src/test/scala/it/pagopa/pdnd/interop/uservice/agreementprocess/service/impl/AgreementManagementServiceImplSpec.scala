@@ -2,6 +2,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.VerifiedAttribute
+import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementAPI
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
@@ -16,6 +17,7 @@ class AgreementManagementServiceImplSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
+    with SpecHelper
     with AgreementManagementAPI {
 
   implicit val testSystem = system.classicSystem
@@ -191,6 +193,43 @@ class AgreementManagementServiceImplSpec
 
       f.failed.futureValue shouldBe a[RuntimeException]
     }
+
+    "retrieve all verified attributes owned by a consumer if all attributes are verified as true" in {
+
+      val expected = Set(Common.attributiId1, Common.attributiId2, Common.attributiId3)
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllTrue)
+
+      f.futureValue shouldBe expected
+    }
+
+    "retrieve no attributes if the attributes are verified as false" in {
+
+      val expected = Set.empty
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllFalse)
+
+      f.futureValue shouldBe expected
+    }
+
+    "retrieve no attributes if each attribute is true/false at the same time" in {
+
+      val expected = Set.empty
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsSameTrueFalse)
+
+      f.futureValue shouldBe expected
+    }
+
+    "retrieve all verified attributes owned by a consumer, excluding attributes set true/false at the same time" in {
+
+      val expected = Set(Common.attributiId1, Common.attributiId3)
+
+      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsExcludingFalse)
+
+      f.futureValue shouldBe expected
+    }
+
   }
 
 }

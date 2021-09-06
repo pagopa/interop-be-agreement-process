@@ -15,6 +15,7 @@ import scala.util.Try
 @SuppressWarnings(
   Array(
     "org.wartremover.warts.StringPlusAny",
+    "org.wartremover.warts.DefaultArguments",
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Equals",
     "org.wartremover.warts.ToString"
@@ -188,26 +189,40 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def getVerifiedAttributes(bearerToken: String, consumerId: UUID): Future[Set[UUID]] = {
+  override def getAgreements(
+    bearerToken: String,
+    producerId: Option[String] = None,
+    consumerId: Option[String] = None,
+    eserviceId: Option[String] = None,
+    status: Option[String] = None
+  ): Future[Seq[Agreement]] = {
+
     val request: ApiRequest[Seq[Agreement]] =
-      api.getAgreements(consumerId = Some(consumerId.toString), status = Some("active"))(BearerToken(bearerToken))
+      api.getAgreements(producerId = producerId, consumerId = consumerId, eserviceId = eserviceId, status = status)(
+        BearerToken(bearerToken)
+      )
+
     invoker
       .execute[Seq[Agreement]](request)
-      .map(agreement => extractVerifiedAttribute(agreement.content))
+      .map { x =>
+        logger.info(s"Retrieving agreements ${x.code}")
+        logger.info(s"Retrieving agreements ${x.content}")
+        x.content
+      }
       .recoverWith { case ex =>
-        logger.error(s"Error trying to retrieve verified attributes for consumer $consumerId: ${ex.getMessage}")
-        Future.failed[Set[UUID]](ex)
+        logger.error(s"Retrieving agreements ${ex.getMessage}")
+        Future.failed[Seq[Agreement]](ex)
       }
   }
 
   //TODO this function must be improve with
   // - check attribute validityTimespan
   // - a specific behaviour when the same attribute has a different verified value (e.g. send notification)
-  private def extractVerifiedAttribute(agreements: Seq[Agreement]): Set[UUID] = {
-    val allVerifiedAttribute: Seq[VerifiedAttribute] =
-      agreements.flatMap(agreement => agreement.verifiedAttributes.filter(_.verified))
+  def extractVerifiedAttribute(agreements: Seq[Agreement]): Future[Set[UUID]] = Future.successful {
+    val allVerifiedAttribute: Seq[VerifiedAttribute] = agreements.flatMap(agreement => agreement.verifiedAttributes)
 
     // We are excluding for now cases where we can find opposite verification for the same attribute
+    // Need to verify the right behaviour
     allVerifiedAttribute
       .groupBy(_.id)
       .filter { case (_, attrs) => attrs.nonEmpty && attrs.forall(_.verified) }
@@ -230,9 +245,9 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     consumerVerifiedAttributes: Set[UUID]
   ): Future[VerifiedAttributeSeed] =
     Future.fromTry {
+      val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
       Try(UUID.fromString(attribute.id)).map { uuid =>
-        if (consumerVerifiedAttributes.contains(uuid))
-          VerifiedAttributeSeed(uuid, !attribute.explicitAttributeVerification)
+        if (consumerVerifiedAttributes.contains(uuid)) VerifiedAttributeSeed(uuid, isImplicitVerifications)
         else VerifiedAttributeSeed(uuid, false)
       }
 

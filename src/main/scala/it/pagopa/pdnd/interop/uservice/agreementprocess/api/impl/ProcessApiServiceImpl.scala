@@ -100,18 +100,22 @@ class ProcessApiServiceImpl(
   ): Route = {
 
     logger.info(s"Creating agreement $agreementPayload")
-
+    // TODO the request to get a set of agreements, is performed twice. Verify if is possible to reduce to one,
+    //  maintaining the right semantic
     val result = for {
       bearerToken      <- extractBearer(contexts)
+      // TODO inside of validatePayload is performed a get agreements request
       validatedPayload <- agreementManagementService.validatePayload(bearerToken, agreementPayload)
       eservice         <- catalogManagementService.getEServiceById(bearerToken, validatedPayload.eserviceId)
       activeEservice   <- catalogManagementService.checkEServiceActivation(eservice)
       _                <- catalogManagementService.verifyProducerMatch(activeEservice.producerId, validatedPayload.producerId)
-      consumerVerifiedAttributes <- agreementManagementService.getVerifiedAttributes(
-        bearerToken,
-        validatedPayload.consumerId
+      // TODO here another get agreements request
+      consumerAgreements <- agreementManagementService.getAgreements(
+        bearerToken = bearerToken,
+        consumerId = Some(validatedPayload.consumerId.toString)
       )
-      verifiedAttributes <- catalogManagementService.flattenAttributes(activeEservice.attributes.verified)
+      consumerVerifiedAttributes <- agreementManagementService.extractVerifiedAttribute(consumerAgreements)
+      verifiedAttributes         <- catalogManagementService.flattenAttributes(activeEservice.attributes.verified)
       verifiedAttributeSeeds <- agreementManagementService.applyImplicitVerification(
         verifiedAttributes,
         consumerVerifiedAttributes
