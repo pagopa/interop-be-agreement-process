@@ -3,7 +3,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{CatalogManagementInvoker, CatalogManagementService}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.{ApiRequest, BearerToken}
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, EService}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, EService}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums.Status.Published
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -16,6 +16,7 @@ import scala.util.Try
     "org.wartremover.warts.StringPlusAny",
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Equals",
+    "org.wartremover.warts.Option2Iterable",
     "org.wartremover.warts.ToString"
   )
 )
@@ -25,8 +26,8 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def getEServiceById(bearerToken: String, eserviceId: String): Future[EService] = {
-    val request: ApiRequest[EService] = api.getEService(eserviceId)(BearerToken(bearerToken))
+  override def getEServiceById(bearerToken: String, eserviceId: UUID): Future[EService] = {
+    val request: ApiRequest[EService] = api.getEService(eserviceId.toString)(BearerToken(bearerToken))
     invoker
       .execute[EService](request)
       .map { x =>
@@ -45,7 +46,7 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
     Future.fromTry(
       Either
         .cond(
-          eservice.descriptors.find(_.status == Published).nonEmpty,
+          eservice.descriptors.exists(_.status == Published),
           eservice,
           new RuntimeException(s"Eservice ${eservice.id} does not contain published versions")
         )
@@ -53,12 +54,11 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
     )
   }
 
-  override def flattenAttributes(verified: Seq[Attribute]): Future[Seq[UUID]] = {
+  override def flattenAttributes(verified: Seq[Attribute]): Future[Seq[AttributeValue]] = {
     Future.fromTry {
       Try {
         verified
-          .flatMap(attribute => attribute.group.toList.flatten ++ attribute.simple.toList)
-          .map(UUID.fromString)
+          .flatMap(attribute => attribute.group.toSeq.flatten ++ attribute.single.toSeq)
       }
     }
   }
