@@ -42,7 +42,7 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
-  def checkEServiceActivation(eservice: EService): Future[EService] = {
+  override def checkEServiceActivation(eservice: EService): Future[EService] = {
     Future.fromTry(
       Either
         .cond(

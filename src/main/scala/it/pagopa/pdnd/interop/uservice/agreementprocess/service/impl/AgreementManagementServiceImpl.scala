@@ -108,9 +108,9 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     agreementVerifiedAttributes: Seq[VerifiedAttribute]
   ): Future[Boolean] = {
 
-    def checkAttributesFn(attributes: Seq[Attribute]): Boolean = checkAttributes(consumerAttributesIds)(attributes)
+    def hasAllAttributesFn(attributes: Seq[Attribute]): Boolean = hasAllAttributes(consumerAttributesIds)(attributes)
 
-    def hasCertified: Boolean = checkAttributesFn(eserviceAttributes.certified)
+    def hasCertified: Boolean = hasAllAttributesFn(eserviceAttributes.certified)
 
     def hasVerified: Boolean = agreementVerifiedAttributes.foldLeft(true)((acc, attr) => attr.verified && acc)
 
@@ -120,7 +120,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       Future.failed[Boolean](new RuntimeException("This agreement does not have all the expected attributes"))
   }
 
-  private def checkAttributes(consumerAttributes: Seq[String])(attributes: Seq[Attribute]): Boolean = {
+  private def hasAllAttributes(consumerAttributes: Seq[String])(attributes: Seq[Attribute]): Boolean = {
     attributes.map(hasAttribute(consumerAttributes)).forall(identity)
   }
 
@@ -166,7 +166,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         producerId = Some(payload.producerId.toString),
         consumerId = Some(payload.consumerId.toString),
         eserviceId = Some(payload.eserviceId.toString),
-        status = Some("active")
+        status = Some(AgreementEnums.Status.Active.toString)
       )(BearerToken(bearerToken))
     invoker
       .execute[Seq[Agreement]](request)
