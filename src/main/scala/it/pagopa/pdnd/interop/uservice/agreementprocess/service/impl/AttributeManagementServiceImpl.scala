@@ -3,10 +3,10 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attributes}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AttributeManagementService,
-  AttributeRegistryManagementInvoker
+  AttributeRegistryManagementInvoker,
+  ClientAttribute
 }
 import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.api.AttributeApi
-import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.model.{Attribute => ClientAttribute}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
@@ -26,17 +26,17 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
+  override def getAttribute(attributeId: String): Future[ClientAttribute] = for {
+    uuid      <- Future.fromTry(Try(UUID.fromString(attributeId)))
+    attribute <- attributeByUUID(uuid)
+  } yield attribute
+
   override def getAttributes(certified: Seq[String], declared: Seq[String], verified: Seq[String]): Future[Attributes] =
     for {
       c <- Future.traverse(certified)(getAttribute)
       d <- Future.traverse(declared)(getAttribute)
       v <- Future.traverse(verified)(getAttribute)
     } yield Attributes(certified = c.flatMap(toApi), declared = d.flatMap(toApi), verified = v.flatMap(toApi))
-
-  private def getAttribute(attributeId: String): Future[ClientAttribute] = for {
-    uuid      <- Future.fromTry(Try(UUID.fromString(attributeId)))
-    attribute <- attributeByUUID(uuid)
-  } yield attribute
 
   private def attributeByUUID(attributeId: UUID): Future[ClientAttribute] = {
     val request = api.getAttributeById(attributeId) // TODO maybe a batch request is better

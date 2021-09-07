@@ -196,7 +196,11 @@ class AgreementManagementServiceImplSpec
 
     "retrieve all verified attributes owned by a consumer if all attributes are verified as true" in {
 
-      val expected = Set(Common.attributiId1, Common.attributiId2, Common.attributiId3)
+      val expected: Set[UUID] = Set(
+        UUID.fromString(Common.verifiedAttributeId1),
+        UUID.fromString(Common.verifiedAttributeId2),
+        UUID.fromString(Common.verifiedAttributeId3)
+      )
 
       val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllTrue)
 
@@ -205,7 +209,7 @@ class AgreementManagementServiceImplSpec
 
     "retrieve no attributes if the attributes are verified as false" in {
 
-      val expected = Set.empty
+      val expected: Set[UUID] = Set.empty
 
       val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllFalse)
 
@@ -214,7 +218,7 @@ class AgreementManagementServiceImplSpec
 
     "retrieve no attributes if each attribute is true/false at the same time" in {
 
-      val expected = Set.empty
+      val expected: Set[UUID] = Set.empty
 
       val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsSameTrueFalse)
 
@@ -223,7 +227,8 @@ class AgreementManagementServiceImplSpec
 
     "retrieve all verified attributes owned by a consumer, excluding attributes set true/false at the same time" in {
 
-      val expected = Set(Common.attributiId1, Common.attributiId3)
+      val expected: Set[UUID] =
+        Set(UUID.fromString(Common.verifiedAttributeId1), UUID.fromString(Common.verifiedAttributeId3))
 
       val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsExcludingFalse)
 
@@ -233,9 +238,21 @@ class AgreementManagementServiceImplSpec
     "not apply implicit verification" in {
 
       val expected = Seq(
-        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId2, verified = false, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = false,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = false,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = false,
+          validityTimespan = None
+        )
       )
 
       val f = agreementManagementServiceImpl.applyImplicitVerification(
@@ -249,9 +266,21 @@ class AgreementManagementServiceImplSpec
     "apply implicit verification" in {
 
       val expected = Seq(
-        VerifiedAttributeSeed(id = Common.attributiId1, verified = true, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = true,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = true,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = false,
+          validityTimespan = None
+        )
       )
 
       val f = agreementManagementServiceImpl.applyImplicitVerification(
@@ -265,9 +294,21 @@ class AgreementManagementServiceImplSpec
     "apply implicit verification only where the explicit verification is not required" in {
 
       val expected = Seq(
-        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = false,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = true,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = false,
+          validityTimespan = None
+        )
       )
 
       val f =

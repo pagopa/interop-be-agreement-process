@@ -11,6 +11,8 @@ package object service {
 
   type AgreementManagementApi = agreementmanagement.client.api.AgreementApi
 
+  type ClientAttribute = attributeregistrymanagement.client.model.Attribute
+
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   object PartyManagementInvoker {
     def apply()(implicit actorSystem: ActorSystem): PartyManagementInvoker =
