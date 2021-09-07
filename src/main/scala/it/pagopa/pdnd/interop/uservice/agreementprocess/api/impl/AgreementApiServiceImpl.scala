@@ -3,7 +3,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ProcessApiService
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Agreement, AgreementPayload, Audience, Problem}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
@@ -25,12 +25,12 @@ import scala.util.{Failure, Success, Try}
     "org.wartremover.warts.Recursion"
   )
 )
-class ProcessApiServiceImpl(
+class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
   partyManagementService: PartyManagementService
 )(implicit ec: ExecutionContext)
-    extends ProcessApiService {
+    extends AgreementApiService {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   /** Code: 200, Message: audiences found, DataType: Audience
@@ -67,7 +67,7 @@ class ProcessApiServiceImpl(
       bearerToken      <- extractBearer(contexts)
       agreement        <- agreementManagementService.getAgreementById(bearerToken, agreementId)
       pendingAgreement <- agreementManagementService.isPending(agreement)
-      consumerAttributesIds <- partyManagementService.getConsumerAttributes(
+      consumerAttributesIds <- partyManagementService.getPartyAttributes(
         bearerToken,
         pendingAgreement.consumerId.toString
       )

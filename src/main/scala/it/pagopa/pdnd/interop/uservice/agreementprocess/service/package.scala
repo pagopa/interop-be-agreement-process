@@ -4,9 +4,12 @@ import akka.actor.ActorSystem
 import it.pagopa.pdnd.interop.uservice._
 
 package object service {
-  type AgreementManagementInvoker = agreementmanagement.client.invoker.ApiInvoker
-  type PartyManagementInvoker     = partymanagement.client.invoker.ApiInvoker
-  type CatalogManagementInvoker   = catalogmanagement.client.invoker.ApiInvoker
+  type AgreementManagementInvoker         = agreementmanagement.client.invoker.ApiInvoker
+  type PartyManagementInvoker             = partymanagement.client.invoker.ApiInvoker
+  type CatalogManagementInvoker           = catalogmanagement.client.invoker.ApiInvoker
+  type AttributeRegistryManagementInvoker = attributeregistrymanagement.client.invoker.ApiInvoker
+
+  type AgreementManagementApi = agreementmanagement.client.api.AgreementApi
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   object PartyManagementInvoker {
@@ -25,4 +28,15 @@ package object service {
     def apply()(implicit actorSystem: ActorSystem): CatalogManagementInvoker =
       catalogmanagement.client.invoker.ApiInvoker(catalogmanagement.client.api.EnumsSerializers.all)
   }
+
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+  object AttributeRegistryManagementInvoker {
+    def apply()(implicit actorSystem: ActorSystem): AttributeRegistryManagementInvoker =
+      attributeregistrymanagement.client.invoker.ApiInvoker(attributeregistrymanagement.client.api.EnumsSerializers.all)
+  }
+
+  object AgreementManagementApi {
+    def apply(): AgreementManagementApi = agreementmanagement.client.api.AgreementApi()
+  }
+
 }

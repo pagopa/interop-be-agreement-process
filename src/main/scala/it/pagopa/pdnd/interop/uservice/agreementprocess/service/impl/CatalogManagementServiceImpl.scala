@@ -54,10 +54,10 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
     )
   }
 
-  override def flattenAttributes(verified: Seq[Attribute]): Future[Seq[AttributeValue]] = {
+  override def flattenAttributes(attributes: Seq[Attribute]): Future[Seq[AttributeValue]] = {
     Future.fromTry {
       Try {
-        verified
+        attributes
           .flatMap(attribute => attribute.group.toSeq.flatten ++ attribute.single.toSeq)
       }
     }
