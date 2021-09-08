@@ -77,7 +77,7 @@ object AgreementManagementService {
       agreement.status == AgreementEnums.Status.Active
   }
 
-  def checkAgreementActivation(agreement: Agreement): Future[Agreement] = {
+  def isActive(agreement: Agreement): Future[Agreement] = {
     Future.fromTry(
       Either
         .cond(

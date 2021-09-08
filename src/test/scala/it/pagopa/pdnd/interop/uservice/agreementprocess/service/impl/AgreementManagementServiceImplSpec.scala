@@ -3,6 +3,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
+import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementAPI
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
@@ -314,6 +315,62 @@ class AgreementManagementServiceImplSpec
         AgreementManagementService.applyImplicitVerification(verifiedAttributesMixed, customerVerifiedAttributes)
 
       f.futureValue shouldBe expected
+    }
+  }
+
+  "validate payload" should {
+    "work if are no agreements related to payload information" in {
+      val eserviceId = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val consumerId = UUID.randomUUID()
+      val payload    = AgreementPayload(eserviceId = eserviceId, producerId = producerId, consumerId = consumerId)
+      val agreements = Seq(TestDataOne.agreement, TestDataTwo.agreement)
+
+      val result = AgreementManagementService.validatePayload(payload, agreements)
+      result.futureValue shouldBe payload
+    }
+
+    "not work if are agreements related to payload information" in {
+
+      val payload = AgreementPayload(
+        eserviceId = TestDataOne.eserviceId,
+        producerId = TestDataOne.producerId,
+        consumerId = UUID.fromString(Common.consumerId)
+      )
+      val agreements = Seq(TestDataOne.agreement, TestDataTwo.agreement)
+
+      val result = AgreementManagementService.validatePayload(payload, agreements)
+      result.failed.futureValue shouldBe a[RuntimeException]
+    }
+
+  }
+
+  "agreement status active check" should {
+    "work if agreement is in active status" in {
+
+      val result = AgreementManagementService.isActive(TestDataOne.agreement)
+      result.futureValue shouldBe TestDataOne.agreement
+    }
+
+    "not work if agreement is not in active status" in {
+
+      val result = AgreementManagementService.isActive(TestDataFive.agreement)
+      result.failed.futureValue shouldBe a[RuntimeException]
+    }
+
+  }
+
+  "agreement status pending check" should {
+    "work if agreement is in pending status" in {
+
+      val result = AgreementManagementService.isPending(TestDataFive.agreement)
+      result.futureValue shouldBe TestDataFive.agreement
+    }
+
+    "not work if agreement is not in pending status" in {
+
+      val result = AgreementManagementService.isPending(TestDataOne.agreement)
+      result.failed.futureValue shouldBe a[RuntimeException]
     }
 
   }

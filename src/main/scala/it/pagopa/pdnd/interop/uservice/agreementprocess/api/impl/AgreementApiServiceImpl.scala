@@ -46,7 +46,7 @@ class AgreementApiServiceImpl(
     val result = for {
       bearerToken     <- extractBearer(contexts)
       agreement       <- agreementManagementService.getAgreementById(bearerToken, agreementId)
-      activeAgreement <- AgreementManagementService.checkAgreementActivation(agreement)
+      activeAgreement <- AgreementManagementService.isActive(agreement)
       eservice        <- catalogManagementService.getEServiceById(bearerToken, activeAgreement.eserviceId)
       activeEservice  <- CatalogManagementService.checkEServiceActivation(eservice)
     } yield Audience(activeEservice.name, activeEservice.audience)
@@ -101,21 +101,16 @@ class AgreementApiServiceImpl(
   ): Route = {
 
     logger.info(s"Creating agreement $agreementPayload")
-    // TODO the request to get a set of agreements, is performed twice. Verify if is possible to reduce to one,
-    //  maintaining the right semantic
     val result = for {
       bearerToken <- extractBearer(contexts)
-      // TODO inside of validatePayload is performed a get agreements request
       consumerAgreements <- agreementManagementService.getAgreements(
         bearerToken = bearerToken,
         consumerId = Some(agreementPayload.consumerId.toString)
       )
-      validPayload   <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
-      eservice       <- catalogManagementService.getEServiceById(bearerToken, validPayload.eserviceId)
-      activeEservice <- CatalogManagementService.checkEServiceActivation(eservice)
-      _              <- CatalogManagementService.verifyProducerMatch(activeEservice.producerId, validPayload.producerId)
-      // TODO here another get agreements request
-
+      validPayload               <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
+      eservice                   <- catalogManagementService.getEServiceById(bearerToken, validPayload.eserviceId)
+      activeEservice             <- CatalogManagementService.checkEServiceActivation(eservice)
+      _                          <- CatalogManagementService.verifyProducerMatch(activeEservice.producerId, validPayload.producerId)
       consumerVerifiedAttributes <- AgreementManagementService.extractVerifiedAttribute(consumerAgreements)
       verifiedAttributes         <- CatalogManagementService.flattenAttributes(activeEservice.attributes.verified)
       verifiedAttributeSeeds <- AgreementManagementService.applyImplicitVerification(

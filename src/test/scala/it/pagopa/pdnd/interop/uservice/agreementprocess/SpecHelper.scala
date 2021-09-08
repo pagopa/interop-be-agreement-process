@@ -138,10 +138,6 @@ trait SpecHelper {
       )
     )
 
-    val declaredAttributes: Seq[Attribute] = Seq(
-      Attribute(single = Some(AttributeValue(Common.declaredAttributeId4, false)))
-    )
-
     val eService: EService = EService(
       id = eserviceId,
       producerId = producerId,
@@ -150,7 +146,7 @@ trait SpecHelper {
       audience = Seq.empty[String],
       technology = "",
       voucherLifespan = 1,
-      attributes = Attributes(certified = Seq.empty, declared = declaredAttributes, verified = Seq.empty),
+      attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
 
@@ -188,6 +184,18 @@ trait SpecHelper {
         )
       )
     )
+
+    val eService: EService = EService(
+      id = eserviceId,
+      producerId = producerId,
+      name = "",
+      description = "",
+      audience = Seq.empty[String],
+      technology = "",
+      voucherLifespan = 1,
+      attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
+      descriptors = Seq.empty
+    )
   }
 
   object TestDataFour {
@@ -201,6 +209,52 @@ trait SpecHelper {
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
       status = AgreementEnums.Status.Active,
+      verifiedAttributes = Seq(
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = true,
+          verificationDate = None,
+          validityTimespan = None
+        ),
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = false,
+          verificationDate = None,
+          validityTimespan = None
+        ),
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = true,
+          verificationDate = None,
+          validityTimespan = None
+        )
+      )
+    )
+
+    val eService: EService = EService(
+      id = eserviceId,
+      producerId = producerId,
+      name = "",
+      description = "",
+      audience = Seq.empty[String],
+      technology = "",
+      voucherLifespan = 1,
+      attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
+      descriptors = Seq.empty
+    )
+  }
+
+  object TestDataFive {
+    val id: UUID         = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID = UUID.fromString("5f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+
+    val agreement: ClientAgreement = ClientAgreement(
+      id = id,
+      eserviceId = eserviceId,
+      producerId = producerId,
+      consumerId = UUID.fromString(Common.consumerId),
+      status = AgreementEnums.Status.Pending,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),

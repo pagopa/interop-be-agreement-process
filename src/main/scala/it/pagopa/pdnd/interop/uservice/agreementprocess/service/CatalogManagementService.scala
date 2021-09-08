@@ -8,6 +8,7 @@ import scala.concurrent.Future
 import scala.util.Try
 
 trait CatalogManagementService {
+
   def getEServiceById(bearerToken: String, eServiceId: UUID): Future[EService]
 
 }

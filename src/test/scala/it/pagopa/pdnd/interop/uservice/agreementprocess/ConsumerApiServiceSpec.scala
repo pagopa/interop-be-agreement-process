@@ -82,7 +82,7 @@ class ConsumerApiServiceSpec
 
   "Processing a consumer request" should {
 
-    "retrieve all attributes owned by a customer" in {
+    "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
 
       (agreementManagementService.getAgreements _)
         .expects(Common.bearerToken, None, Some(Common.consumerId), None, Some(AgreementEnums.Status.Active.toString))
@@ -130,9 +130,67 @@ class ConsumerApiServiceSpec
         .expects(Common.declaredAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
 
+      val response =
+        request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
+
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat4(Attribute)
+
+      implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
+        sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))
+
+      val body = Await.result(Unmarshal(response.entity).to[Attributes], Duration.Inf)
+
+      body.certified.toSet shouldBe AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).toSet
+
+      body.declared.toSet shouldBe Set(
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId1),
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId2),
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3)
+      ).flatten
+
+      body.verified.toSet shouldBe Set(
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId1),
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId2),
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId3)
+      ).flatten
+
+    }
+
+    "retrieve all attributes owned by a customer (customer without verified attributes)" in {
+
+      (agreementManagementService.getAgreements _)
+        .expects(Common.bearerToken, None, Some(Common.consumerId), None, Some(AgreementEnums.Status.Active.toString))
+        .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
+
+      (catalogManagementService.getEServiceById _)
+        .expects(Common.bearerToken, TestDataOne.eserviceId)
+        .returns(Future.successful(TestDataOne.eService))
+        .once()
+
+      (catalogManagementService.getEServiceById _)
+        .expects(Common.bearerToken, TestDataThree.eserviceId)
+        .returns(Future.successful(TestDataThree.eService))
+        .once()
+
+      (partyManagementService.getPartyAttributes _)
+        .expects(Common.bearerToken, Common.consumerId)
+        .returns(Future.successful(Seq(Common.certifiedAttribute)))
+
       (attributeManagementService.getAttribute _)
-        .expects(Common.declaredAttributeId4)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId4))
+        .expects(Common.certifiedAttribute)
+        .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
+
+      (attributeManagementService.getAttribute _)
+        .expects(Common.declaredAttributeId1)
+        .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId1))
+
+      (attributeManagementService.getAttribute _)
+        .expects(Common.declaredAttributeId2)
+        .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId2))
+
+      (attributeManagementService.getAttribute _)
+        .expects(Common.declaredAttributeId3)
+        .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
 
       val response =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
@@ -149,13 +207,61 @@ class ConsumerApiServiceSpec
       body.declared.toSet shouldBe Set(
         AttributeManagementService.toApi(ClientAttributes.declaredAttributeId1),
         AttributeManagementService.toApi(ClientAttributes.declaredAttributeId2),
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3),
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId4)
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3)
       ).flatten
+
+      body.verified.toSet shouldBe Set.empty
+
+    }
+
+    "retrieve all attributes owned by a customer (customer without declared attributes)" in {
+
+      (agreementManagementService.getAgreements _)
+        .expects(Common.bearerToken, None, Some(Common.consumerId), None, Some(AgreementEnums.Status.Active.toString))
+        .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
+
+      (catalogManagementService.getEServiceById _)
+        .expects(Common.bearerToken, TestDataTwo.eserviceId)
+        .returns(Future.successful(TestDataTwo.eService))
+        .once()
+
+      (catalogManagementService.getEServiceById _)
+        .expects(Common.bearerToken, TestDataFour.eserviceId)
+        .returns(Future.successful(TestDataFour.eService))
+        .once()
+
+      (partyManagementService.getPartyAttributes _)
+        .expects(Common.bearerToken, Common.consumerId)
+        .returns(Future.successful(Seq(Common.certifiedAttribute)))
+
+      (attributeManagementService.getAttribute _)
+        .expects(Common.certifiedAttribute)
+        .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
+
+      (attributeManagementService.getAttribute _)
+        .expects(Common.verifiedAttributeId1)
+        .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId1))
+
+      (attributeManagementService.getAttribute _)
+        .expects(Common.verifiedAttributeId3)
+        .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
+
+      val response =
+        request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
+
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat4(Attribute)
+
+      implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
+        sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))
+
+      val body = Await.result(Unmarshal(response.entity).to[Attributes], Duration.Inf)
+
+      body.certified.toSet shouldBe AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).toSet
+
+      body.declared.toSet shouldBe Set.empty
 
       body.verified.toSet shouldBe Set(
         AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId1),
-        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId2),
         AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId3)
       ).flatten
 

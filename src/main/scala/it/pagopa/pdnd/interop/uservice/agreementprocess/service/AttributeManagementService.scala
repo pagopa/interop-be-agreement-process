@@ -5,7 +5,9 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attrib
 import scala.concurrent.Future
 
 trait AttributeManagementService {
+
   def getAttribute(attributeId: String): Future[ClientAttribute]
+
 }
 
 object AttributeManagementService {
