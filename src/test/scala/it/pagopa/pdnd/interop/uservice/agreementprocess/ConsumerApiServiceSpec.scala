@@ -80,9 +80,9 @@ class ConsumerApiServiceSpec
     bindServer.foreach(_.foreach(_.unbind()))
   }
 
-  "Processing a request payload" must {
+  "Processing a consumer request" should {
 
-    "retrieve a onboarding info" in {
+    "retrieve all attributes owned by a customer" in {
 
       (agreementManagementService.getAgreements _)
         .expects(Common.bearerToken, None, Some(Common.consumerId), None, Some(AgreementEnums.Status.Active.toString))
@@ -144,7 +144,21 @@ class ConsumerApiServiceSpec
 
       val body = Await.result(Unmarshal(response.entity).to[Attributes], Duration.Inf)
 
-      body shouldBe Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty)
+      body.certified.toSet shouldBe AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).toSet
+
+      body.declared.toSet shouldBe Set(
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId1),
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId2),
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3),
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId4)
+      ).flatten
+
+      body.verified.toSet shouldBe Set(
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId1),
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId2),
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId3)
+      ).flatten
+
     }
 
   }

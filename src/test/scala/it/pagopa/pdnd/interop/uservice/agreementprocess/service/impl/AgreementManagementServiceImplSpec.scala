@@ -20,7 +20,8 @@ class AgreementManagementServiceImplSpec
     with SpecHelper
     with AgreementManagementAPI {
 
-  implicit val testSystem = system.classicSystem
+  implicit val testSystem       = system.classicSystem
+  implicit val executionContext = system.executionContext
 
   val attribute1 = UUID.randomUUID()
   val attribute2 = UUID.randomUUID()
@@ -29,8 +30,6 @@ class AgreementManagementServiceImplSpec
   val attribute5 = UUID.randomUUID()
   val attribute6 = UUID.randomUUID()
   val attribute7 = UUID.randomUUID()
-
-  val agreementManagementServiceImpl: AgreementManagementService = agreementManagement()
 
   "attribute verification" should {
 
@@ -44,7 +43,7 @@ class AgreementManagementServiceImplSpec
       val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
 
       val f =
-        agreementManagementServiceImpl
+        AgreementManagementService
           .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
 
       f.futureValue shouldBe true
@@ -77,7 +76,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl
+        AgreementManagementService
           .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
 
       f.futureValue shouldBe true
@@ -96,7 +95,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl.verifyAttributes(
+        AgreementManagementService.verifyAttributes(
           consumerAttributesIds,
           eserviceAttributes,
           agreementVerifiedAttributes
@@ -119,7 +118,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl.verifyAttributes(
+        AgreementManagementService.verifyAttributes(
           consumerAttributesIds,
           eserviceAttributes,
           agreementVerifiedAttributes
@@ -152,7 +151,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl.verifyAttributes(
+        AgreementManagementService.verifyAttributes(
           consumerAttributesIds,
           eserviceAttributes,
           agreementVerifiedAttributes
@@ -188,11 +187,13 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = false), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl
+        AgreementManagementService
           .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
 
       f.failed.futureValue shouldBe a[RuntimeException]
     }
+  }
+  "attributes extraction" should {
 
     "retrieve all verified attributes owned by a consumer if all attributes are verified as true" in {
 
@@ -202,7 +203,7 @@ class AgreementManagementServiceImplSpec
         UUID.fromString(Common.verifiedAttributeId3)
       )
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllTrue)
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsAllTrue)
 
       f.futureValue shouldBe expected
     }
@@ -211,7 +212,7 @@ class AgreementManagementServiceImplSpec
 
       val expected: Set[UUID] = Set.empty
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllFalse)
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsAllFalse)
 
       f.futureValue shouldBe expected
     }
@@ -220,7 +221,7 @@ class AgreementManagementServiceImplSpec
 
       val expected: Set[UUID] = Set.empty
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsSameTrueFalse)
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsSameTrueFalse)
 
       f.futureValue shouldBe expected
     }
@@ -230,12 +231,14 @@ class AgreementManagementServiceImplSpec
       val expected: Set[UUID] =
         Set(UUID.fromString(Common.verifiedAttributeId1), UUID.fromString(Common.verifiedAttributeId3))
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsExcludingFalse)
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsExcludingFalse)
 
       f.futureValue shouldBe expected
     }
+  }
 
-    "not apply implicit verification" in {
+  "apply implicit verification" should {
+    "not work if explicitAttributeVerification is set true" in {
 
       val expected = Seq(
         VerifiedAttributeSeed(
@@ -255,15 +258,13 @@ class AgreementManagementServiceImplSpec
         )
       )
 
-      val f = agreementManagementServiceImpl.applyImplicitVerification(
-        verifiedAttributesAllSetTrue,
-        customerVerifiedAttributes
-      )
+      val f =
+        AgreementManagementService.applyImplicitVerification(verifiedAttributesAllSetTrue, customerVerifiedAttributes)
 
       f.futureValue shouldBe expected
     }
 
-    "apply implicit verification" in {
+    "works if explicitAttributeVerification is set false" in {
 
       val expected = Seq(
         VerifiedAttributeSeed(
@@ -283,15 +284,13 @@ class AgreementManagementServiceImplSpec
         )
       )
 
-      val f = agreementManagementServiceImpl.applyImplicitVerification(
-        verifiedAttributesAllSetFalse,
-        customerVerifiedAttributes
-      )
+      val f =
+        AgreementManagementService.applyImplicitVerification(verifiedAttributesAllSetFalse, customerVerifiedAttributes)
 
       f.futureValue shouldBe expected
     }
 
-    "apply implicit verification only where the explicit verification is not required" in {
+    "works only where the explicit verification is not required" in {
 
       val expected = Seq(
         VerifiedAttributeSeed(
@@ -312,7 +311,7 @@ class AgreementManagementServiceImplSpec
       )
 
       val f =
-        agreementManagementServiceImpl.applyImplicitVerification(verifiedAttributesMixed, customerVerifiedAttributes)
+        AgreementManagementService.applyImplicitVerification(verifiedAttributesMixed, customerVerifiedAttributes)
 
       f.futureValue shouldBe expected
     }

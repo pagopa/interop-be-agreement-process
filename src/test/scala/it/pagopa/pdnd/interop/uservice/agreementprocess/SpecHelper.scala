@@ -253,74 +253,74 @@ trait SpecHelper {
   object ClientAttributes {
     val verifiedAttributeId1: ClientAttribute = ClientAttribute(
       id = Common.verifiedAttributeId1,
-      code = Some("ver1"),
+      code = Some("codeVer1"),
       certified = false,
-      description = "ver1",
-      origin = Some("ver1"),
-      name = "ver1",
+      description = "descriptionVer1",
+      origin = Some("originVer1"),
+      name = "nameVer1",
       creationTime = OffsetDateTime.now()
     )
     val verifiedAttributeId2: ClientAttribute = ClientAttribute(
       id = Common.verifiedAttributeId2,
-      code = Some("ver2"),
+      code = Some("codeVer2"),
       certified = false,
-      description = "ver2",
-      origin = Some("ver2"),
-      name = "ver2",
+      description = "descriptionVer2",
+      origin = Some("originVer2"),
+      name = "nameVer2",
       creationTime = OffsetDateTime.now()
     )
     val verifiedAttributeId3: ClientAttribute = ClientAttribute(
       id = Common.verifiedAttributeId3,
-      code = Some("ver3"),
+      code = Some("codeVer3"),
       certified = false,
-      description = "ver3",
-      origin = Some("ver3"),
-      name = "ver3",
+      description = "descriptionVer3",
+      origin = Some("originVer3"),
+      name = "nameVer3",
       creationTime = OffsetDateTime.now()
     )
     val declaredAttributeId1: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId1,
-      code = Some("dec1"),
+      code = Some("codeDec1"),
       certified = false,
-      description = "dec1",
-      origin = Some("dec1"),
-      name = "dec1",
+      description = "descriptionDec1",
+      origin = Some("originDec1"),
+      name = "originDec1",
       creationTime = OffsetDateTime.now()
     )
     val declaredAttributeId2: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId2,
-      code = Some("dec2"),
+      code = Some("codeDec2"),
       certified = false,
-      description = "dec2",
-      origin = Some("dec2"),
-      name = "dec2",
+      description = "descriptionDec2",
+      origin = Some("originDec2"),
+      name = "originDec2",
       creationTime = OffsetDateTime.now()
     )
     val declaredAttributeId3: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId3,
-      code = Some("dec3"),
+      code = Some("codeDec3"),
       certified = false,
-      description = "dec3",
-      origin = Some("dec3"),
-      name = "dec3",
+      description = "descriptionDec3",
+      origin = Some("originDec3"),
+      name = "originDec3",
       creationTime = OffsetDateTime.now()
     )
     val declaredAttributeId4: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId3,
-      code = Some("dec4"),
+      code = Some("codeDec4"),
       certified = false,
-      description = "dec4",
-      origin = Some("dec4"),
-      name = "dec4",
+      description = "descriptionDec4",
+      origin = Some("originDec4"),
+      name = "originDec4",
       creationTime = OffsetDateTime.now()
     )
     val certifiedAttribute: ClientAttribute = ClientAttribute(
       id = Common.certifiedAttribute,
-      code = Some("cer"),
+      code = Some("codeCer"),
       certified = true,
-      description = "cer",
-      origin = Some("cer"),
-      name = "cer",
+      description = "descriptionCer",
+      origin = Some("originCer"),
+      name = "nameCer",
       creationTime = OffsetDateTime.now()
     )
   }

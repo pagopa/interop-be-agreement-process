@@ -1,6 +1,5 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
-import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attributes}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AttributeManagementService,
   AttributeRegistryManagementInvoker,
@@ -31,13 +30,6 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
     attribute <- attributeByUUID(uuid)
   } yield attribute
 
-  override def getAttributes(certified: Seq[String], declared: Seq[String], verified: Seq[String]): Future[Attributes] =
-    for {
-      c <- Future.traverse(certified)(getAttribute)
-      d <- Future.traverse(declared)(getAttribute)
-      v <- Future.traverse(verified)(getAttribute)
-    } yield Attributes(certified = c.flatMap(toApi), declared = d.flatMap(toApi), verified = v.flatMap(toApi))
-
   private def attributeByUUID(attributeId: UUID): Future[ClientAttribute] = {
     val request = api.getAttributeById(attributeId) // TODO maybe a batch request is better
     invoker
@@ -51,10 +43,5 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
         Future.failed[ClientAttribute](ex)
       }
   }
-
-  private def toApi(attr: ClientAttribute): Option[Attribute] = for {
-    code   <- attr.code
-    origin <- attr.origin
-  } yield Attribute(code = code, description = attr.description, origin = origin, name = attr.name)
 
 }

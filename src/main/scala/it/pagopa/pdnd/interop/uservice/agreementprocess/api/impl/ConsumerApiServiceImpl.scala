@@ -43,14 +43,17 @@ class ConsumerApiServiceImpl(
         status = Some(AgreementEnums.Status.Active.toString)
       )
       eserviceIds = agreements.map(_.eserviceId)
-      eservices <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken, _))
-      certified <- partyManagementService.getPartyAttributes(bearerToken, consumerId)
-      declared <- eservices
-        .flatTraverse(eservice => catalogManagementService.flattenAttributes(eservice.attributes.declared))
-      verified <- agreementManagementService.extractVerifiedAttribute(agreements)
-      attributes <- attributeManagementService.getAttributes(
-        verified = verified.map(_.toString).toSeq,
-        declared = declared.map(_.id),
+      eservices       <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken, _))
+      partyAttributes <- partyManagementService.getPartyAttributes(bearerToken, consumerId)
+      eserviceAttributes <- eservices
+        .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
+      agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)
+      certified           <- Future.traverse(partyAttributes)(attributeManagementService.getAttribute)
+      declared            <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute)
+      verified            <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(attributeManagementService.getAttribute)
+      attributes <- AttributeManagementService.getAttributes(
+        verified = verified,
+        declared = declared,
         certified = certified
       )
     } yield attributes
