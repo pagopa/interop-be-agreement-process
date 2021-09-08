@@ -3,6 +3,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
+import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementAPI
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
@@ -20,7 +21,8 @@ class AgreementManagementServiceImplSpec
     with SpecHelper
     with AgreementManagementAPI {
 
-  implicit val testSystem = system.classicSystem
+  implicit val testSystem       = system.classicSystem
+  implicit val executionContext = system.executionContext
 
   val attribute1 = UUID.randomUUID()
   val attribute2 = UUID.randomUUID()
@@ -29,8 +31,6 @@ class AgreementManagementServiceImplSpec
   val attribute5 = UUID.randomUUID()
   val attribute6 = UUID.randomUUID()
   val attribute7 = UUID.randomUUID()
-
-  val agreementManagementServiceImpl: AgreementManagementService = agreementManagement()
 
   "attribute verification" should {
 
@@ -44,7 +44,7 @@ class AgreementManagementServiceImplSpec
       val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
 
       val f =
-        agreementManagementServiceImpl
+        AgreementManagementService
           .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
 
       f.futureValue shouldBe true
@@ -77,7 +77,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl
+        AgreementManagementService
           .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
 
       f.futureValue shouldBe true
@@ -96,7 +96,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl.verifyAttributes(
+        AgreementManagementService.verifyAttributes(
           consumerAttributesIds,
           eserviceAttributes,
           agreementVerifiedAttributes
@@ -119,7 +119,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl.verifyAttributes(
+        AgreementManagementService.verifyAttributes(
           consumerAttributesIds,
           eserviceAttributes,
           agreementVerifiedAttributes
@@ -152,7 +152,7 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl.verifyAttributes(
+        AgreementManagementService.verifyAttributes(
           consumerAttributesIds,
           eserviceAttributes,
           agreementVerifiedAttributes
@@ -188,92 +188,189 @@ class AgreementManagementServiceImplSpec
         Seq(VerifiedAttribute(id = attribute1, verified = false), VerifiedAttribute(id = attribute2, verified = true))
 
       val f =
-        agreementManagementServiceImpl
+        AgreementManagementService
           .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
 
       f.failed.futureValue shouldBe a[RuntimeException]
     }
+  }
+  "attributes extraction" should {
 
     "retrieve all verified attributes owned by a consumer if all attributes are verified as true" in {
 
-      val expected = Set(Common.attributiId1, Common.attributiId2, Common.attributiId3)
+      val expected: Set[UUID] = Set(
+        UUID.fromString(Common.verifiedAttributeId1),
+        UUID.fromString(Common.verifiedAttributeId2),
+        UUID.fromString(Common.verifiedAttributeId3)
+      )
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllTrue)
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsAllTrue)
 
       f.futureValue shouldBe expected
     }
 
     "retrieve no attributes if the attributes are verified as false" in {
 
-      val expected = Set.empty
+      val expected: Set[UUID] = Set.empty
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsAllFalse)
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsAllFalse)
 
       f.futureValue shouldBe expected
     }
 
     "retrieve no attributes if each attribute is true/false at the same time" in {
 
-      val expected = Set.empty
+      val expected: Set[UUID] = Set.empty
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsSameTrueFalse)
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsSameTrueFalse)
 
       f.futureValue shouldBe expected
     }
 
     "retrieve all verified attributes owned by a consumer, excluding attributes set true/false at the same time" in {
 
-      val expected = Set(Common.attributiId1, Common.attributiId3)
+      val expected: Set[UUID] =
+        Set(UUID.fromString(Common.verifiedAttributeId1), UUID.fromString(Common.verifiedAttributeId3))
 
-      val f = agreementManagementServiceImpl.extractVerifiedAttribute(agreementsExcludingFalse)
-
-      f.futureValue shouldBe expected
-    }
-
-    "not apply implicit verification" in {
-
-      val expected = Seq(
-        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId2, verified = false, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
-      )
-
-      val f = agreementManagementServiceImpl.applyImplicitVerification(
-        verifiedAttributesAllSetTrue,
-        customerVerifiedAttributes
-      )
+      val f = AgreementManagementService.extractVerifiedAttribute(agreementsExcludingFalse)
 
       f.futureValue shouldBe expected
     }
+  }
 
-    "apply implicit verification" in {
-
-      val expected = Seq(
-        VerifiedAttributeSeed(id = Common.attributiId1, verified = true, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
-      )
-
-      val f = agreementManagementServiceImpl.applyImplicitVerification(
-        verifiedAttributesAllSetFalse,
-        customerVerifiedAttributes
-      )
-
-      f.futureValue shouldBe expected
-    }
-
-    "apply implicit verification only where the explicit verification is not required" in {
+  "apply implicit verification" should {
+    "not work if explicitAttributeVerification is set true" in {
 
       val expected = Seq(
-        VerifiedAttributeSeed(id = Common.attributiId1, verified = false, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId2, verified = true, validityTimespan = None),
-        VerifiedAttributeSeed(id = Common.attributiId3, verified = false, validityTimespan = None)
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = false,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = false,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = false,
+          validityTimespan = None
+        )
       )
 
       val f =
-        agreementManagementServiceImpl.applyImplicitVerification(verifiedAttributesMixed, customerVerifiedAttributes)
+        AgreementManagementService.applyImplicitVerification(verifiedAttributesAllSetTrue, customerVerifiedAttributes)
 
       f.futureValue shouldBe expected
+    }
+
+    "works if explicitAttributeVerification is set false" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = true,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = true,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = false,
+          validityTimespan = None
+        )
+      )
+
+      val f =
+        AgreementManagementService.applyImplicitVerification(verifiedAttributesAllSetFalse, customerVerifiedAttributes)
+
+      f.futureValue shouldBe expected
+    }
+
+    "works only where the explicit verification is not required" in {
+
+      val expected = Seq(
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = false,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = true,
+          validityTimespan = None
+        ),
+        VerifiedAttributeSeed(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = false,
+          validityTimespan = None
+        )
+      )
+
+      val f =
+        AgreementManagementService.applyImplicitVerification(verifiedAttributesMixed, customerVerifiedAttributes)
+
+      f.futureValue shouldBe expected
+    }
+  }
+
+  "validate payload" should {
+    "work if are no agreements related to payload information" in {
+      val eserviceId = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val consumerId = UUID.randomUUID()
+      val payload    = AgreementPayload(eserviceId = eserviceId, producerId = producerId, consumerId = consumerId)
+      val agreements = Seq(TestDataOne.agreement, TestDataTwo.agreement)
+
+      val result = AgreementManagementService.validatePayload(payload, agreements)
+      result.futureValue shouldBe payload
+    }
+
+    "not work if are agreements related to payload information" in {
+
+      val payload = AgreementPayload(
+        eserviceId = TestDataOne.eserviceId,
+        producerId = TestDataOne.producerId,
+        consumerId = UUID.fromString(Common.consumerId)
+      )
+      val agreements = Seq(TestDataOne.agreement, TestDataTwo.agreement)
+
+      val result = AgreementManagementService.validatePayload(payload, agreements)
+      result.failed.futureValue shouldBe a[RuntimeException]
+    }
+
+  }
+
+  "agreement status active check" should {
+    "work if agreement is in active status" in {
+
+      val result = AgreementManagementService.isActive(TestDataOne.agreement)
+      result.futureValue shouldBe TestDataOne.agreement
+    }
+
+    "not work if agreement is not in active status" in {
+
+      val result = AgreementManagementService.isActive(TestDataFive.agreement)
+      result.failed.futureValue shouldBe a[RuntimeException]
+    }
+
+  }
+
+  "agreement status pending check" should {
+    "work if agreement is in pending status" in {
+
+      val result = AgreementManagementService.isPending(TestDataFive.agreement)
+      result.futureValue shouldBe TestDataFive.agreement
+    }
+
+    "not work if agreement is not in pending status" in {
+
+      val result = AgreementManagementService.isPending(TestDataOne.agreement)
+      result.failed.futureValue shouldBe a[RuntimeException]
     }
 
   }

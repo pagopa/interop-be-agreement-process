@@ -3,14 +3,15 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.directives.SecurityDirectives
 import akka.management.scaladsl.AkkaManagement
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.api.AgreementApi
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
+  AgreementApiMarshallerImpl,
+  AgreementApiServiceImpl,
+  ConsumerApiMarshallerImpl,
+  ConsumerApiServiceImpl,
   HealthApiMarshallerImpl,
-  HealthServiceApiImpl,
-  ProcessApiMarshallerImpl,
-  ProcessApiServiceImpl
+  HealthServiceApiImpl
 }
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{HealthApi, ProcessApi}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{AgreementApi, ConsumerApi, HealthApi}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.{
   ApplicationConfiguration,
   Authenticator,
@@ -22,17 +23,12 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.{
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.Controller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl.{
   AgreementManagementServiceImpl,
+  AttributeManagementServiceImpl,
   CatalogManagementServiceImpl,
   PartyManagementServiceImpl
 }
-import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
-  AgreementManagementInvoker,
-  AgreementManagementService,
-  CatalogManagementInvoker,
-  CatalogManagementService,
-  PartyManagementInvoker,
-  PartyManagementService
-}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.service._
+import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.api.AttributeApi
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.api.PartyApi
 import kamon.Kamon
@@ -41,9 +37,10 @@ import scala.concurrent.Future
 
 trait AgreementManagementAPI {
   private final val agreementManagementInvoker: AgreementManagementInvoker = AgreementManagementInvoker()
-  private final val agreementApi: AgreementApi                             = AgreementApi(ApplicationConfiguration.agreementManagementURL)
+  private final val agreementManagementApi: AgreementManagementApi         = AgreementManagementApi()
+
   def agreementManagement(): AgreementManagementService =
-    AgreementManagementServiceImpl(agreementManagementInvoker, agreementApi)
+    AgreementManagementServiceImpl(agreementManagementInvoker, agreementManagementApi)
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -63,18 +60,44 @@ trait PartyManagementAPI {
     PartyManagementServiceImpl(partyManagementInvoker, partyApi)
 }
 
+trait AttributeRegistryManagementAPI {
+  private final val attributeRegistryManagementInvoker: AttributeRegistryManagementInvoker =
+    AttributeRegistryManagementInvoker()
+  private final val attributeApi: AttributeApi = AttributeApi(ApplicationConfiguration.attributeRegistryManagementURL)
+  def attributeRegistryManagement(): AttributeManagementService =
+    AttributeManagementServiceImpl(attributeRegistryManagementInvoker, attributeApi)
+}
+
 @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny", "org.wartremover.warts.Nothing"))
-object Main extends App with CorsSupport with AgreementManagementAPI with CatalogManagementAPI with PartyManagementAPI {
+object Main
+    extends App
+    with CorsSupport
+    with AgreementManagementAPI
+    with CatalogManagementAPI
+    with PartyManagementAPI
+    with AttributeRegistryManagementAPI {
 
   Kamon.init()
 
   final val agreementManagementService: AgreementManagementService = agreementManagement()
   final val catalogManagementService: CatalogManagementService     = catalogManagement()
   final val partyManagementService: PartyManagementService         = partyManagement()
+  final val attributeManagementService: AttributeManagementService = attributeRegistryManagement()
 
-  val processApi: ProcessApi = new ProcessApi(
-    new ProcessApiServiceImpl(agreementManagementService, catalogManagementService, partyManagementService),
-    new ProcessApiMarshallerImpl(),
+  val agreementApi: AgreementApi = new AgreementApi(
+    new AgreementApiServiceImpl(agreementManagementService, catalogManagementService, partyManagementService),
+    new AgreementApiMarshallerImpl(),
+    SecurityDirectives.authenticateOAuth2("SecurityRealm", Authenticator)
+  )
+
+  val consumerApi: ConsumerApi = new ConsumerApi(
+    new ConsumerApiServiceImpl(
+      agreementManagementService,
+      catalogManagementService,
+      partyManagementService,
+      attributeManagementService
+    ),
+    new ConsumerApiMarshallerImpl(),
     SecurityDirectives.authenticateOAuth2("SecurityRealm", Authenticator)
   )
 
@@ -89,7 +112,7 @@ object Main extends App with CorsSupport with AgreementManagementAPI with Catalo
 
   }
 
-  val controller: Controller = new Controller(healthApi, processApi)
+  val controller: Controller = new Controller(health = healthApi, agreement = agreementApi, consumer = consumerApi)
 
   val bindingFuture: Future[Http.ServerBinding] =
     Http().newServerAt("0.0.0.0", ApplicationConfiguration.serverPort).bind(corsHandler(controller.routes))

@@ -3,7 +3,8 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ProcessApiService
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.VerifiedAttributeSeed
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Agreement, AgreementPayload, Audience, Problem}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
@@ -25,12 +26,12 @@ import scala.util.{Failure, Success, Try}
     "org.wartremover.warts.Recursion"
   )
 )
-class ProcessApiServiceImpl(
+class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
   partyManagementService: PartyManagementService
 )(implicit ec: ExecutionContext)
-    extends ProcessApiService {
+    extends AgreementApiService {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   /** Code: 200, Message: audiences found, DataType: Audience
@@ -45,9 +46,9 @@ class ProcessApiServiceImpl(
     val result = for {
       bearerToken     <- extractBearer(contexts)
       agreement       <- agreementManagementService.getAgreementById(bearerToken, agreementId)
-      activeAgreement <- agreementManagementService.checkAgreementActivation(agreement)
+      activeAgreement <- AgreementManagementService.isActive(agreement)
       eservice        <- catalogManagementService.getEServiceById(bearerToken, activeAgreement.eserviceId)
-      activeEservice  <- catalogManagementService.checkEServiceActivation(eservice)
+      activeEservice  <- CatalogManagementService.checkEServiceActivation(eservice)
     } yield Audience(activeEservice.name, activeEservice.audience)
 
     onComplete(result) {
@@ -66,14 +67,14 @@ class ProcessApiServiceImpl(
     val result = for {
       bearerToken      <- extractBearer(contexts)
       agreement        <- agreementManagementService.getAgreementById(bearerToken, agreementId)
-      pendingAgreement <- agreementManagementService.isPending(agreement)
-      consumerAttributesIds <- partyManagementService.getConsumerAttributes(
+      pendingAgreement <- AgreementManagementService.isPending(agreement)
+      consumerAttributesIds <- partyManagementService.getPartyAttributes(
         bearerToken,
         pendingAgreement.consumerId.toString
       )
       eservice       <- catalogManagementService.getEServiceById(bearerToken, pendingAgreement.eserviceId)
-      activeEservice <- catalogManagementService.checkEServiceActivation(eservice)
-      _ <- agreementManagementService.verifyAttributes(
+      activeEservice <- CatalogManagementService.checkEServiceActivation(eservice)
+      _ <- AgreementManagementService.verifyAttributes(
         consumerAttributesIds,
         activeEservice.attributes,
         agreement.verifiedAttributes
@@ -100,27 +101,23 @@ class ProcessApiServiceImpl(
   ): Route = {
 
     logger.info(s"Creating agreement $agreementPayload")
-    // TODO the request to get a set of agreements, is performed twice. Verify if is possible to reduce to one,
-    //  maintaining the right semantic
     val result = for {
       bearerToken <- extractBearer(contexts)
-      // TODO inside of validatePayload is performed a get agreements request
-      validatedPayload <- agreementManagementService.validatePayload(bearerToken, agreementPayload)
-      eservice         <- catalogManagementService.getEServiceById(bearerToken, validatedPayload.eserviceId)
-      activeEservice   <- catalogManagementService.checkEServiceActivation(eservice)
-      _                <- catalogManagementService.verifyProducerMatch(activeEservice.producerId, validatedPayload.producerId)
-      // TODO here another get agreements request
       consumerAgreements <- agreementManagementService.getAgreements(
         bearerToken = bearerToken,
-        consumerId = Some(validatedPayload.consumerId.toString)
+        consumerId = Some(agreementPayload.consumerId.toString)
       )
-      consumerVerifiedAttributes <- agreementManagementService.extractVerifiedAttribute(consumerAgreements)
-      verifiedAttributes         <- catalogManagementService.flattenAttributes(activeEservice.attributes.verified)
-      verifiedAttributeSeeds <- agreementManagementService.applyImplicitVerification(
+      validPayload               <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
+      eservice                   <- catalogManagementService.getEServiceById(bearerToken, validPayload.eserviceId)
+      activeEservice             <- CatalogManagementService.checkEServiceActivation(eservice)
+      _                          <- CatalogManagementService.verifyProducerMatch(activeEservice.producerId, validPayload.producerId)
+      consumerVerifiedAttributes <- AgreementManagementService.extractVerifiedAttribute(consumerAgreements)
+      verifiedAttributes         <- CatalogManagementService.flattenAttributes(activeEservice.attributes.verified)
+      verifiedAttributeSeeds <- AgreementManagementService.applyImplicitVerification(
         verifiedAttributes,
         consumerVerifiedAttributes
       )
-      agreement <- agreementManagementService.createAgreement(bearerToken, agreementPayload, verifiedAttributeSeeds)
+      agreement <- agreementManagementService.createAgreement(bearerToken, validPayload, verifiedAttributeSeeds)
     } yield Agreement(agreement.id)
 
     onComplete(result) {
@@ -140,12 +137,17 @@ class ProcessApiServiceImpl(
     contexts: Seq[(String, String)]
   ): Route = {
     logger.info(s"Marking agreement $agreementId verified attribute $attributeId as verified.")
+
     val result = for {
       bearerToken <- extractBearer(contexts)
       attributeUUID <- Future.fromTry(Try {
         UUID.fromString(attributeId)
       })
-      _ <- agreementManagementService.markAttributeAsVerified(bearerToken, agreementId, attributeUUID)
+      _ <- agreementManagementService.markVerifiedAttribute(
+        bearerToken,
+        agreementId,
+        VerifiedAttributeSeed(attributeUUID, true)
+      )
     } yield ()
 
     onComplete(result) {
