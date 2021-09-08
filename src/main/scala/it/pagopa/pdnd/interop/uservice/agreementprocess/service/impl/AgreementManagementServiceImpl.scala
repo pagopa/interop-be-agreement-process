@@ -101,35 +101,6 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-//  override def validatePayload(bearerToken: String, payload: AgreementPayload): Future[AgreementPayload] = {
-//    val request: ApiRequest[Seq[Agreement]] =
-//      api.getAgreements(
-//        producerId = Some(payload.producerId.toString),
-//        consumerId = Some(payload.consumerId.toString),
-//        eserviceId = Some(payload.eserviceId.toString),
-//        status = Some(AgreementEnums.Status.Active.toString)
-//      )(BearerToken(bearerToken))
-//    invoker
-//      .execute[Seq[Agreement]](request)
-//      .flatMap(agreements =>
-//        Future.fromTry(
-//          Either
-//            .cond(
-//              agreements.content.isEmpty,
-//              payload,
-//              new RuntimeException(
-//                s"Producer ${payload.producerId} already has an active agreement for ${payload.consumerId}"
-//              )
-//            )
-//            .toTry
-//        )
-//      )
-//      .recoverWith { case ex =>
-//        logger.error(s"Check active agreements failed ${ex.getMessage}")
-//        Future.failed[AgreementPayload](ex)
-//      }
-//  }
-
   override def getAgreements(
     bearerToken: String,
     producerId: Option[String] = None,
