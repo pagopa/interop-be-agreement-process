@@ -163,7 +163,7 @@ object AgreementManagementService {
     Future.fromTry {
       val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
       Try(UUID.fromString(attribute.id)).map { uuid =>
-        if (consumerVerifiedAttributes.contains(uuid)) VerifiedAttributeSeed(uuid, isImplicitVerifications)
+        if (isImplicitVerifications) VerifiedAttributeSeed(uuid, consumerVerifiedAttributes.contains(uuid))
         else VerifiedAttributeSeed(uuid, false)
       }
 
