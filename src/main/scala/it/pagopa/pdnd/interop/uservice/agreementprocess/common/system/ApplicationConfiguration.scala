@@ -28,7 +28,7 @@ object ApplicationConfiguration {
   }
 
   def attributeRegistryManagementURL: String = {
-    val partyMgmtURL: String = config.getString("attribute-registry-management")
+    val partyMgmtURL: String = config.getString("services.attribute-registry-management")
     s"$partyMgmtURL/attribute-registry-management/0.0.1"
     //    s"https://gateway.interop.pdnd.dev/pdnd-interop-attribute-registry-management/0.0.1"
   }
