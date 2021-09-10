@@ -37,7 +37,9 @@ import scala.concurrent.Future
 
 trait AgreementManagementAPI {
   private final val agreementManagementInvoker: AgreementManagementInvoker = AgreementManagementInvoker()
-  private final val agreementManagementApi: AgreementManagementApi         = AgreementManagementApi()
+  private final val agreementManagementApi: AgreementManagementApi = AgreementManagementApi(
+    ApplicationConfiguration.agreementManagementURL
+  )
 
   def agreementManagement(): AgreementManagementService =
     AgreementManagementServiceImpl(agreementManagementInvoker, agreementManagementApi)
