@@ -38,7 +38,7 @@ package object service {
   }
 
   object AgreementManagementApi {
-    def apply(): AgreementManagementApi = agreementmanagement.client.api.AgreementApi()
+    def apply(baseUrl: String): AgreementManagementApi = agreementmanagement.client.api.AgreementApi(baseUrl)
   }
 
 }
