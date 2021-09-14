@@ -320,10 +320,16 @@ class AgreementManagementServiceImplSpec
 
   "validate payload" should {
     "work if are no agreements related to payload information" in {
-      val eserviceId = UUID.randomUUID()
-      val producerId = UUID.randomUUID()
-      val consumerId = UUID.randomUUID()
-      val payload    = AgreementPayload(eserviceId = eserviceId, producerId = producerId, consumerId = consumerId)
+      val eserviceId   = UUID.randomUUID()
+      val descriptorId = UUID.randomUUID()
+      val producerId   = UUID.randomUUID()
+      val consumerId   = UUID.randomUUID()
+      val payload = AgreementPayload(
+        eserviceId = eserviceId,
+        descriptorId = descriptorId,
+        producerId = producerId,
+        consumerId = consumerId
+      )
       val agreements = Seq(TestDataOne.agreement, TestDataTwo.agreement)
 
       val result = AgreementManagementService.validatePayload(payload, agreements)
@@ -334,6 +340,7 @@ class AgreementManagementServiceImplSpec
 
       val payload = AgreementPayload(
         eserviceId = TestDataOne.eserviceId,
+        descriptorId = TestDataOne.descriptorId,
         producerId = TestDataOne.producerId,
         consumerId = UUID.fromString(Common.consumerId)
       )

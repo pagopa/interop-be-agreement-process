@@ -56,13 +56,15 @@ trait SpecHelper {
   }
 
   object TestDataOne {
-    val id: UUID         = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val id: UUID           = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9213")
 
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
+      descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
       status = AgreementEnums.Status.Active,
@@ -112,13 +114,15 @@ trait SpecHelper {
   }
 
   object TestDataTwo {
-    val id: UUID         = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val id: UUID           = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID   = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID   = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9213")
 
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
+      descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
       status = AgreementEnums.Status.Active,
@@ -153,13 +157,15 @@ trait SpecHelper {
   }
 
   object TestDataThree {
-    val id: UUID         = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val id: UUID           = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID   = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID   = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9213")
 
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
+      descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
       status = AgreementEnums.Status.Active,
@@ -199,13 +205,15 @@ trait SpecHelper {
   }
 
   object TestDataFour {
-    val id: UUID         = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID = UUID.fromString("4f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val id: UUID           = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID   = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID   = UUID.fromString("4f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9213")
 
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
+      descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
       status = AgreementEnums.Status.Active,
@@ -245,13 +253,15 @@ trait SpecHelper {
   }
 
   object TestDataFive {
-    val id: UUID         = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID = UUID.fromString("5f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val id: UUID           = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID   = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID   = UUID.fromString("5f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9213")
 
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
+      descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
       status = AgreementEnums.Status.Pending,

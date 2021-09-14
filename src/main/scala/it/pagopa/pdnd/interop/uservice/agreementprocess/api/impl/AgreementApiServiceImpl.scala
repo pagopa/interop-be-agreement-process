@@ -146,7 +146,7 @@ class AgreementApiServiceImpl(
       _ <- agreementManagementService.markVerifiedAttribute(
         bearerToken,
         agreementId,
-        VerifiedAttributeSeed(attributeUUID, true)
+        VerifiedAttributeSeed(attributeUUID, verified = true)
       )
     } yield ()
 

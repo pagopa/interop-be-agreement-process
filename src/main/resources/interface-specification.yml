@@ -193,6 +193,9 @@ components:
         eserviceId:
           type: string
           format: uuid
+        descriptorId:
+          type: string
+          format: uuid
         producerId:
           type: string
           format: uuid
@@ -201,6 +204,7 @@ components:
           format: uuid
       required:
         - eserviceId
+        - descriptorId
         - producerId
         - consumerId
     Agreement:
