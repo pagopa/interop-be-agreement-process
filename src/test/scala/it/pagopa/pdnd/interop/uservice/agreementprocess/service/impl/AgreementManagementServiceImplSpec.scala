@@ -319,7 +319,7 @@ class AgreementManagementServiceImplSpec
   }
 
   "validate payload" should {
-    "work if are no agreements related to payload information" in {
+    "work if there are no agreements related to payload information" in {
       val eserviceId   = UUID.randomUUID()
       val descriptorId = UUID.randomUUID()
       val producerId   = UUID.randomUUID()
@@ -336,7 +336,7 @@ class AgreementManagementServiceImplSpec
       result.futureValue shouldBe payload
     }
 
-    "not work if are agreements related to payload information" in {
+    "not work if there are agreements related to payload information" in {
 
       val payload = AgreementPayload(
         eserviceId = TestDataOne.eserviceId,
