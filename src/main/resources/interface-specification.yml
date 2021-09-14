@@ -14,7 +14,7 @@ servers:
   - url: 'https://gateway.interop.pdnd.dev/pdnd-interop-uservice-agreement-process/0.0.1'
     description: This service is the agreement process
 security:
-  - bearerAuth: []
+  - bearerAuth: [ ]
 tags:
   - name: process
     description: Implements agreement process
@@ -30,7 +30,7 @@ paths:
   /status:
     get:
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       tags:
         - health
       summary: Health status endpoint
@@ -46,7 +46,7 @@ paths:
   '/audience/{agreementId}':
     get:
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       tags:
         - agreement
       summary: retrieves agreement audiences
@@ -72,7 +72,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-  '/agreement/{agreementId}/activate':
+  '/agreements/{agreementId}/activate':
     parameters:
       - schema:
           type: string
@@ -96,7 +96,7 @@ paths:
       tags:
         - agreement
       description: Activates the pending agreement if all the pre-requisites are met.
-  /agreement:
+  /agreements:
     post:
       summary: Agreement Creation
       operationId: createAgreement
@@ -123,7 +123,81 @@ paths:
         description: payload for agreement creation
         required: true
       description: creates the agreement between the involved parties.
-  '/agreement/{agreementId}/attribute/{attributeId}/verify':
+    get:
+      summary: Retrieve a list of agreements
+      operationId: getAgreements
+      responses:
+        '200':
+          description: Agreement created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreements'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - agreement
+      parameters:
+        - in: query
+          name: producerId
+          schema:
+            type: string
+        - in: query
+          name: consumerId
+          schema:
+            type: string
+        - in: query
+          name: eserviceId
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum:
+              - pending
+              - active
+              - suspended
+  '/agreements/{agreementId}':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - agreement
+      summary: retrieves an agreement
+      description: returns an agreement for a given agreementId
+      operationId: getAgreementById
+      parameters:
+        - name: agreementId
+          in: path
+          description: The identifier of the agreement
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: agreement found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Invalid ID supplied
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/agreements/{agreementId}/attribute/{attributeId}/verify':
     parameters:
       - schema:
           type: string
@@ -157,7 +231,7 @@ paths:
   '/consumers/{consumerId}/attributes':
     get:
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       tags:
         - consumer
       summary: retrieves consumer attributes
@@ -203,14 +277,53 @@ components:
         - eserviceId
         - producerId
         - consumerId
+    Organization:
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      additionalProperties: false
+      required:
+        - id
+        - name
+    EService:
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      additionalProperties: false
+      required:
+        - id
+        - name
     Agreement:
       properties:
         id:
           type: string
           format: uuid
+        producer:
+          $ref: '#/components/schemas/Organization'
+        consumer:
+          $ref: '#/components/schemas/Organization'
+        eservice:
+          $ref: '#/components/schemas/EService'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attribute'
       additionalProperties: false
       required:
         - id
+        - producer
+        - consumer
+        - eservice
+        - verifiedAttributes
+    Agreements:
+      type: array
+      items:
+        $ref: '#/components/schemas/Agreement'
     Audience:
       properties:
         producer:
@@ -247,6 +360,9 @@ components:
       type: object
       description: Models the attribute registry entry as payload response
       properties:
+        id:
+          type: string
+          format: uuid
         code:
           type: string
           description: identifies the unique code of this attribute on the origin registry
@@ -257,11 +373,18 @@ components:
           description: 'represents the origin of this attribute (e.g.: IPA, Normattiva, etc.)'
         name:
           type: string
+        verified:
+          type: boolean
+        verificationDate:
+          type: string
+          format: date-time
+        validityTimespan:
+          type: integer
+          format: int64
       required:
-        - code
+        - id
         - description
         - name
-        - origin
     Problem:
       properties:
         detail:

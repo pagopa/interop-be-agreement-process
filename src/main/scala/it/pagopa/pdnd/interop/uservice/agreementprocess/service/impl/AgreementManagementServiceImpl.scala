@@ -1,8 +1,9 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.api.AgreementApi
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiRequest, BearerToken}
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiError, ApiRequest, BearerToken}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.AgreementNotFound
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import org.slf4j.{Logger, LoggerFactory}
@@ -68,9 +69,13 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.info(s"Retrieving agreement ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error(s"Retrieving agreement ${ex.getMessage}")
-        Future.failed[Agreement](ex)
+      .recoverWith {
+        case ex: ApiError[_] if (ex.code == 404) =>
+          logger.error(s"Retrieving agreement ${ex.getMessage}")
+          Future.failed[Agreement](AgreementNotFound(agreementId))
+        case ex: ApiError[_] =>
+          logger.error(s"Retrieving agreement ${ex.getMessage}")
+          Future.failed[Agreement](ex)
       }
   }
 
