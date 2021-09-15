@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
-import it.pagopa.pdnd.interop.uservice.agreementprocess.error.AgreementNotFound
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{AgreementNotFound, DescriptorNotFound}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
@@ -193,7 +193,10 @@ class AgreementApiServiceImpl(
 
   private def getApiAgreement(bearerToken: String, agreement: ManagementAgreement): Future[Agreement] = {
     for {
-      eservice  <- catalogManagementService.getEServiceById(bearerToken, agreement.eserviceId)
+      eservice <- catalogManagementService.getEServiceById(bearerToken, agreement.eserviceId)
+      descriptor <- eservice.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
       producer  <- partyManagementService.getOrganization(bearerToken, agreement.producerId)
       consumer  <- partyManagementService.getOrganization(bearerToken, agreement.consumerId)
       attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute)
@@ -201,7 +204,7 @@ class AgreementApiServiceImpl(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
       consumer = Organization(id = consumer.institutionId, name = producer.description),
-      eservice = EService(id = eservice.id, name = eservice.name),
+      eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
       attributes = Option(attribute)
     )
   }

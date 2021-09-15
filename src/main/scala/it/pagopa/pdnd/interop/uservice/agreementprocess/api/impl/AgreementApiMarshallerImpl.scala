@@ -10,7 +10,7 @@ import spray.json._
 class AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
 
   implicit def organizationJsonFormat: RootJsonFormat[Organization] = jsonFormat2(Organization)
-  implicit def eServiceJsonFormat: RootJsonFormat[EService]         = jsonFormat2(EService)
+  implicit def eServiceJsonFormat: RootJsonFormat[EService]         = jsonFormat3(EService)
   implicit def attributeJsonFormat: RootJsonFormat[Attribute]       = jsonFormat8(Attribute)
   implicit def agreementJsonFormat: RootJsonFormat[Agreement]       = jsonFormat5(Agreement)
 

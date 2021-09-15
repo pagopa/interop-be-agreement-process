@@ -53,4 +53,8 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   def extractBearer(contexts: Seq[(String, String)]): Future[String] = Future.fromTry {
     contexts.toMap.get("bearer").toRight(new RuntimeException("Bearer token has not been passed")).toTry
   }
+
+  implicit class OptionOps[A](val option: Option[A]) extends AnyVal {
+    def toFuture(error: Throwable): Future[A] = option.map(Future.successful).getOrElse(Future.failed[A](error))
+  }
 }
