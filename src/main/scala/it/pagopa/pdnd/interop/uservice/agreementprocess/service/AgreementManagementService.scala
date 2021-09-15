@@ -29,6 +29,7 @@ trait AgreementManagementService {
     producerId: Option[String] = None,
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
+    descriptorId: Option[String] = None,
     status: Option[String] = None
   ): Future[Seq[Agreement]]
 
@@ -74,6 +75,7 @@ object AgreementManagementService {
     agreement.producerId == payload.producerId &&
       agreement.consumerId == payload.consumerId &&
       agreement.eserviceId == payload.eserviceId &&
+      agreement.descriptorId == payload.descriptorId &&
       agreement.status == AgreementEnums.Status.Active
   }
 
