@@ -21,7 +21,7 @@ class AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSu
     sprayJsonMarshaller[Problem](jsonFormat3(Problem))
 
   override implicit def fromEntityUnmarshallerAgreementPayload: FromEntityUnmarshaller[AgreementPayload] =
-    sprayJsonUnmarshaller[AgreementPayload](jsonFormat3(AgreementPayload))
+    sprayJsonUnmarshaller[AgreementPayload](jsonFormat4(AgreementPayload))
 
   override implicit def toEntityMarshallerAgreement: ToEntityMarshaller[Agreement] =
     sprayJsonMarshaller[Agreement]

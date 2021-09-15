@@ -87,6 +87,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 
     val seed: AgreementSeed = AgreementSeed(
       eserviceId = agreementPayload.eserviceId,
+      descriptorId = agreementPayload.descriptorId,
       producerId = agreementPayload.producerId,
       consumerId = agreementPayload.consumerId,
       verifiedAttributes = verifiedAttributeSeeds
@@ -111,13 +112,18 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     producerId: Option[String] = None,
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
+    descriptorId: Option[String] = None,
     status: Option[String] = None
   ): Future[Seq[Agreement]] = {
 
     val request: ApiRequest[Seq[Agreement]] =
-      api.getAgreements(producerId = producerId, consumerId = consumerId, eserviceId = eserviceId, status = status)(
-        BearerToken(bearerToken)
-      )
+      api.getAgreements(
+        producerId = producerId,
+        consumerId = consumerId,
+        eserviceId = eserviceId,
+        descriptorId = descriptorId,
+        status = status
+      )(BearerToken(bearerToken))
 
     invoker
       .execute[Seq[Agreement]](request)

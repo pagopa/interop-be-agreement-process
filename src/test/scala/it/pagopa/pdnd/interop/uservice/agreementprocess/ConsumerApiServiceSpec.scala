@@ -87,7 +87,14 @@ class ConsumerApiServiceSpec
     "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
 
       (agreementManagementService.getAgreements _)
-        .expects(Common.bearerToken, None, Some(Common.consumerId), None, Some(AgreementEnums.Status.Active.toString))
+        .expects(
+          Common.bearerToken,
+          None,
+          Some(Common.consumerId),
+          None,
+          None,
+          Some(AgreementEnums.Status.Active.toString)
+        )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
 
       (catalogManagementService.getEServiceById _)
@@ -163,7 +170,14 @@ class ConsumerApiServiceSpec
     "retrieve all attributes owned by a customer (customer without verified attributes)" in {
 
       (agreementManagementService.getAgreements _)
-        .expects(Common.bearerToken, None, Some(Common.consumerId), None, Some(AgreementEnums.Status.Active.toString))
+        .expects(
+          Common.bearerToken,
+          None,
+          Some(Common.consumerId),
+          None,
+          None,
+          Some(AgreementEnums.Status.Active.toString)
+        )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
 
       (catalogManagementService.getEServiceById _)
@@ -222,7 +236,14 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer without declared attributes)" in {
       (agreementManagementService.getAgreements _)
-        .expects(Common.bearerToken, None, Some(Common.consumerId), None, Some(AgreementEnums.Status.Active.toString))
+        .expects(
+          Common.bearerToken,
+          None,
+          Some(Common.consumerId),
+          None,
+          None,
+          Some(AgreementEnums.Status.Active.toString)
+        )
         .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
 
       (catalogManagementService.getEServiceById _)

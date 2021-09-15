@@ -267,6 +267,9 @@ components:
         eserviceId:
           type: string
           format: uuid
+        descriptorId:
+          type: string
+          format: uuid
         producerId:
           type: string
           format: uuid
@@ -275,6 +278,7 @@ components:
           format: uuid
       required:
         - eserviceId
+        - descriptorId
         - producerId
         - consumerId
     Organization:
@@ -414,6 +418,6 @@ components:
   securitySchemes:
     bearerAuth:
       type: http
-      description: 'A bearer token in the format of a JWS and comformed to the specifications included in [RFC8725](https://tools.ietf.org/html/RFC8725).'
+      description: 'A bearer token in the format of a JWS and conformed to the specifications included in [RFC8725](https://tools.ietf.org/html/RFC8725).'
       scheme: bearer
       bearerFormat: JWT

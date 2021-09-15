@@ -51,7 +51,7 @@ class AgreementApiServiceImpl(
       agreement       <- agreementManagementService.getAgreementById(bearerToken, agreementId)
       activeAgreement <- AgreementManagementService.isActive(agreement)
       eservice        <- catalogManagementService.getEServiceById(bearerToken, activeAgreement.eserviceId)
-      activeEservice  <- CatalogManagementService.checkEServiceActivation(eservice)
+      activeEservice  <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreement.descriptorId)
     } yield Audience(activeEservice.name, activeEservice.audience)
 
     onComplete(result) {
@@ -76,7 +76,7 @@ class AgreementApiServiceImpl(
         pendingAgreement.consumerId.toString
       )
       eservice       <- catalogManagementService.getEServiceById(bearerToken, pendingAgreement.eserviceId)
-      activeEservice <- CatalogManagementService.checkEServiceActivation(eservice)
+      activeEservice <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
       _ <- AgreementManagementService.verifyAttributes(
         consumerAttributesIds,
         activeEservice.attributes,
@@ -112,7 +112,7 @@ class AgreementApiServiceImpl(
       )
       validPayload               <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
       eservice                   <- catalogManagementService.getEServiceById(bearerToken, validPayload.eserviceId)
-      activeEservice             <- CatalogManagementService.checkEServiceActivation(eservice)
+      activeEservice             <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
       _                          <- CatalogManagementService.verifyProducerMatch(activeEservice.producerId, validPayload.producerId)
       consumerVerifiedAttributes <- AgreementManagementService.extractVerifiedAttribute(consumerAgreements)
       verifiedAttributes         <- CatalogManagementService.flattenAttributes(activeEservice.attributes.verified)
