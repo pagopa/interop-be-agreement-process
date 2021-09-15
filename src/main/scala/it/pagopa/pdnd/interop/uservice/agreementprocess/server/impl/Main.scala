@@ -87,7 +87,12 @@ object Main
   final val attributeManagementService: AttributeManagementService = attributeRegistryManagement()
 
   val agreementApi: AgreementApi = new AgreementApi(
-    new AgreementApiServiceImpl(agreementManagementService, catalogManagementService, partyManagementService),
+    new AgreementApiServiceImpl(
+      agreementManagementService,
+      catalogManagementService,
+      partyManagementService,
+      attributeManagementService
+    ),
     new AgreementApiMarshallerImpl(),
     SecurityDirectives.authenticateOAuth2("SecurityRealm", Authenticator)
   )

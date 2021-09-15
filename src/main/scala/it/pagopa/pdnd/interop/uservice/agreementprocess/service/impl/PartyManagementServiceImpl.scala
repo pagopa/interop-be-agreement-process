@@ -1,9 +1,9 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
-import it.pagopa.pdnd.interop.uservice.partymanagement.client.invoker.ApiRequest
-
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{PartyManagementInvoker, PartyManagementService}
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.api.PartyApi
+import it.pagopa.pdnd.interop.uservice.partymanagement.client.invoker.ApiRequest
+import it.pagopa.pdnd.interop.uservice.partymanagement.client.model.Organization
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
@@ -44,4 +44,19 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
         Future.failed[Seq[String]](ex)
       }
   }
+
+  override def getOrganization(bearerToken: String, partyId: UUID): Future[Organization] = {
+    val request: ApiRequest[Organization] = partyApi.getPartyOrganizationByUUID(partyId)
+    invoker
+      .execute[Organization](request)
+      .map { x =>
+        logger.info(s"Retrieving Organization $partyId ${x.code} > ${x.content}")
+        x.content
+      }
+      .recoverWith { case ex =>
+        logger.error(s"Retrieving Organization $partyId FAILED: ${ex.getMessage}")
+        Future.failed[Organization](ex)
+      }
+  }
+
 }

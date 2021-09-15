@@ -7,7 +7,7 @@ import spray.json.RootJsonFormat
 
 class ConsumerApiMarshallerImpl extends ConsumerApiMarshaller {
 
-  implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat4(Attribute)
+  implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat8(Attribute)
 
   override implicit def toEntityMarshallerAttributes: ToEntityMarshaller[Attributes] =
     sprayJsonMarshaller[Attributes](jsonFormat3(Attributes))

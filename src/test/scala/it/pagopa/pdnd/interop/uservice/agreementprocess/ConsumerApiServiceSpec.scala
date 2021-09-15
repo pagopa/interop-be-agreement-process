@@ -7,6 +7,8 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.uuidFormat
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.localTimeFormat
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.AgreementEnums
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{ConsumerApiMarshallerImpl, ConsumerApiServiceImpl}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
@@ -140,26 +142,28 @@ class ConsumerApiServiceSpec
       val response =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
 
-      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat4(Attribute)
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat8(Attribute)
 
       implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
         sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))
 
       val body = Await.result(Unmarshal(response.entity).to[Attributes], Duration.Inf)
 
-      body.certified.toSet shouldBe AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).toSet
+      body.certified.count(
+        _ == AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).futureValue
+      ) shouldBe 1
 
       body.declared.toSet shouldBe Set(
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId1),
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId2),
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3)
-      ).flatten
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId1).futureValue,
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId2).futureValue,
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3).futureValue
+      )
 
       body.verified.toSet shouldBe Set(
-        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId1),
-        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId2),
-        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId3)
-      ).flatten
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId1).futureValue,
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId2).futureValue,
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId3).futureValue
+      )
 
     }
 
@@ -209,27 +213,28 @@ class ConsumerApiServiceSpec
       val response =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
 
-      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat4(Attribute)
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat8(Attribute)
 
       implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
         sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))
 
       val body = Await.result(Unmarshal(response.entity).to[Attributes], Duration.Inf)
 
-      body.certified.toSet shouldBe AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).toSet
+      body.certified.count(
+        _ == AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).futureValue
+      ) shouldBe 1
 
       body.declared.toSet shouldBe Set(
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId1),
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId2),
-        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3)
-      ).flatten
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId1).futureValue,
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId2).futureValue,
+        AttributeManagementService.toApi(ClientAttributes.declaredAttributeId3).futureValue
+      )
 
       body.verified.toSet shouldBe Set.empty
 
     }
 
     "retrieve all attributes owned by a customer (customer without declared attributes)" in {
-
       (agreementManagementService.getAgreements _)
         .expects(
           Common.bearerToken,
@@ -269,22 +274,23 @@ class ConsumerApiServiceSpec
 
       val response =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
-
-      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat4(Attribute)
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat8(Attribute)
 
       implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
         sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))
 
       val body = Await.result(Unmarshal(response.entity).to[Attributes], Duration.Inf)
 
-      body.certified.toSet shouldBe AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).toSet
+      body.certified.count(
+        _ == AttributeManagementService.toApi(ClientAttributes.certifiedAttribute).futureValue
+      ) shouldBe 1
 
       body.declared.toSet shouldBe Set.empty
 
       body.verified.toSet shouldBe Set(
-        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId1),
-        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId3)
-      ).flatten
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId1).futureValue,
+        AttributeManagementService.toApi(ClientAttributes.verifiedAttributeId3).futureValue
+      )
 
     }
 

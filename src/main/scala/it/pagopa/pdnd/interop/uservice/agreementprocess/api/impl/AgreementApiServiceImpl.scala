@@ -3,11 +3,13 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.VerifiedAttributeSeed
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
-import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Agreement, AgreementPayload, Audience, Problem}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{AgreementNotFound, DescriptorNotFound}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
+  AttributeManagementService,
   CatalogManagementService,
   PartyManagementService
 }
@@ -29,7 +31,8 @@ import scala.util.{Failure, Success, Try}
 class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
-  partyManagementService: PartyManagementService
+  partyManagementService: PartyManagementService,
+  attributeManagementService: AttributeManagementService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
@@ -117,8 +120,9 @@ class AgreementApiServiceImpl(
         verifiedAttributes,
         consumerVerifiedAttributes
       )
-      agreement <- agreementManagementService.createAgreement(bearerToken, validPayload, verifiedAttributeSeeds)
-    } yield Agreement(agreement.id)
+      agreement    <- agreementManagementService.createAgreement(bearerToken, validPayload, verifiedAttributeSeeds)
+      apiAgreement <- getApiAgreement(bearerToken, agreement)
+    } yield apiAgreement
 
     onComplete(result) {
       case Success(agreement) => createAgreement201(agreement)
@@ -127,6 +131,99 @@ class AgreementApiServiceImpl(
           Problem(Option(ex.getMessage), 400, s"Error while creating agreement $agreementPayload")
         createAgreement400(errorResponse)
     }
+  }
+
+  /** Code: 200, Message: Agreement created., DataType: Seq[Agreement]
+    * Code: 400, Message: Bad Request, DataType: Problem
+    */
+  override def getAgreements(
+    producerId: Option[String],
+    consumerId: Option[String],
+    eserviceId: Option[String],
+    status: Option[String]
+  )(implicit
+    toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    contexts: Seq[(String, String)]
+  ): Route = {
+    val result = for {
+      bearerToken   <- extractBearer(contexts)
+      agreements    <- agreementManagementService.getAgreements(bearerToken, producerId, consumerId, eserviceId, status)
+      apiAgreements <- Future.traverse(agreements)(agreement => getApiAgreement(bearerToken, agreement))
+    } yield apiAgreements
+
+    onComplete(result) {
+      case Success(agreement) => getAgreements200(agreement)
+      case Failure(ex) =>
+        val errorResponse: Problem =
+          Problem(Option(ex.getMessage), 400, s"Error while retrieving agreements with filters")
+        getAgreements400(errorResponse)
+    }
+  }
+
+  /** Code: 200, Message: agreement found, DataType: Agreement
+    * Code: 400, Message: Invalid ID supplied, DataType: Problem
+    */
+  override def getAgreementById(agreementId: String)(implicit
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement],
+    contexts: Seq[(String, String)]
+  ): Route = {
+    val result: Future[Agreement] = for {
+      bearerToken  <- extractBearer(contexts)
+      agreement    <- agreementManagementService.getAgreementById(bearerToken, agreementId)
+      apiAgreement <- getApiAgreement(bearerToken, agreement)
+    } yield apiAgreement
+
+    onComplete(result) {
+      case Success(agreement) => getAgreementById200(agreement)
+      case Failure(exception) =>
+        exception match {
+          case ex: AgreementNotFound =>
+            val errorResponse: Problem =
+              Problem(Option(ex.getMessage), 404, s"Agreement $agreementId not found")
+            getAgreementById404(errorResponse)
+          case ex =>
+            val errorResponse: Problem =
+              Problem(Option(ex.getMessage), 400, s"Error while retrieving agreement $agreementId")
+            getAgreementById400(errorResponse)
+        }
+    }
+  }
+
+  private def getApiAgreement(bearerToken: String, agreement: ManagementAgreement): Future[Agreement] = {
+    for {
+      eservice <- catalogManagementService.getEServiceById(bearerToken, agreement.eserviceId)
+      descriptor <- eservice.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
+      producer  <- partyManagementService.getOrganization(bearerToken, agreement.producerId)
+      consumer  <- partyManagementService.getOrganization(bearerToken, agreement.consumerId)
+      attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute)
+    } yield Agreement(
+      id = agreement.id,
+      producer = Organization(id = producer.institutionId, name = producer.description),
+      consumer = Organization(id = consumer.institutionId, name = producer.description),
+      eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
+      attributes = attribute
+    )
+  }
+
+  private def getApiAttribute(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
+    for {
+      att     <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
+      idUuuid <- Future.fromTry(Try(UUID.fromString(att.id)))
+    } yield Attribute(
+      id = idUuuid,
+      code = att.code,
+      description = att.description,
+      origin = att.origin,
+      name = att.name,
+      verified = Some(verifiedAttribute.verified),
+      verificationDate = verifiedAttribute.verificationDate,
+      validityTimespan = verifiedAttribute.validityTimespan
+    )
+
   }
 
   /** Code: 204, Message: No Content
