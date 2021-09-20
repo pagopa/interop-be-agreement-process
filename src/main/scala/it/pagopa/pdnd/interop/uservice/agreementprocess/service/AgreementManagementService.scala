@@ -60,7 +60,7 @@ object AgreementManagementService {
           isValidPayload,
           payload,
           new RuntimeException(
-            s"Consumer ${payload.consumerId} already has an active agreement for ${payload.consumerId}"
+            s"Consumer ${payload.consumerId} already has an active agreement for eservice/descriptor ${payload.eserviceId}/${payload.descriptorId}"
           )
         )
         .toTry
