@@ -8,6 +8,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 @SuppressWarnings(
@@ -81,6 +82,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 
   override def createAgreement(
     bearerToken: String,
+    producerId: UUID,
     agreementPayload: AgreementPayload,
     verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
   ): Future[Agreement] = {
@@ -88,7 +90,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     val seed: AgreementSeed = AgreementSeed(
       eserviceId = agreementPayload.eserviceId,
       descriptorId = agreementPayload.descriptorId,
-      producerId = agreementPayload.producerId,
+      producerId = producerId,
       consumerId = agreementPayload.consumerId,
       verifiedAttributes = verifiedAttributeSeeds
     )

@@ -270,16 +270,12 @@ components:
         descriptorId:
           type: string
           format: uuid
-        producerId:
-          type: string
-          format: uuid
         consumerId:
           type: string
           format: uuid
       required:
         - eserviceId
         - descriptorId
-        - producerId
         - consumerId
     Organization:
       properties:

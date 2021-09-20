@@ -72,17 +72,4 @@ object CatalogManagementService {
     }
   }
 
-  def verifyProducerMatch(eserviceProducerId: UUID, seedProducerId: UUID): Future[Boolean] = {
-    Future.fromTry(
-      Either
-        .cond(
-          eserviceProducerId.toString == seedProducerId.toString,
-          true,
-          new RuntimeException(
-            s"Actual e-service producer is different from the producer passed in the request, i.e.: ${seedProducerId.toString}"
-          )
-        )
-        .toTry
-    )
-  }
 }

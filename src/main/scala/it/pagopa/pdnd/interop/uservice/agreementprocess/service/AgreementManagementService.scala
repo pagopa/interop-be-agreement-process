@@ -1,11 +1,6 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
-  Agreement,
-  AgreementEnums,
-  VerifiedAttribute,
-  VerifiedAttributeSeed
-}
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
 
@@ -18,8 +13,9 @@ trait AgreementManagementService {
 
   def createAgreement(
     bearerToken: String,
+    producerId: UUID,
     agreementPayload: AgreementPayload,
-    flattenedVerifiedAttributes: Seq[VerifiedAttributeSeed]
+    verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
   ): Future[Agreement]
 
   def getAgreementById(bearerToken: String, agreementId: String): Future[Agreement]
@@ -64,7 +60,7 @@ object AgreementManagementService {
           isValidPayload,
           payload,
           new RuntimeException(
-            s"Producer ${payload.producerId} already has an active agreement for ${payload.consumerId}"
+            s"Consumer ${payload.consumerId} already has an active agreement for ${payload.consumerId}"
           )
         )
         .toTry
@@ -72,8 +68,7 @@ object AgreementManagementService {
   }
 
   private def existsAgreement(payload: AgreementPayload): Agreement => Boolean = agreement => {
-    agreement.producerId == payload.producerId &&
-      agreement.consumerId == payload.consumerId &&
+    agreement.consumerId == payload.consumerId &&
       agreement.eserviceId == payload.eserviceId &&
       agreement.descriptorId == payload.descriptorId &&
       agreement.status == AgreementEnums.Status.Active
@@ -166,7 +161,7 @@ object AgreementManagementService {
       val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
       Try(UUID.fromString(attribute.id)).map { uuid =>
         if (isImplicitVerifications) VerifiedAttributeSeed(uuid, consumerVerifiedAttributes.contains(uuid))
-        else VerifiedAttributeSeed(uuid, false)
+        else VerifiedAttributeSeed(uuid, verified = false)
       }
 
     }
