@@ -52,7 +52,8 @@ class AgreementApiServiceImpl(
       activeAgreement <- AgreementManagementService.isActive(agreement)
       eservice        <- catalogManagementService.getEServiceById(bearerToken, activeAgreement.eserviceId)
       activeEservice  <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreement.descriptorId)
-    } yield Audience(activeEservice.name, activeEservice.audience)
+      audience        <- CatalogManagementService.getDescriptorAudience(eservice, agreement.descriptorId)
+    } yield Audience(activeEservice.name, audience)
 
     onComplete(result) {
       case Success(res) => getAudienceByAgreementId200(res)

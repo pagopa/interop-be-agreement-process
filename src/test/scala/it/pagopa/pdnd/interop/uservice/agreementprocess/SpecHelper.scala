@@ -2,8 +2,8 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess
 
 import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
@@ -104,9 +104,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      audience = Seq.empty[String],
       technology = "",
-      voucherLifespan = 1,
       attributes = Attributes(certified = Seq.empty, declared = declaredAttributes, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -147,9 +145,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      audience = Seq.empty[String],
       technology = "",
-      voucherLifespan = 1,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -196,9 +192,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      audience = Seq.empty[String],
       technology = "",
-      voucherLifespan = 1,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -244,9 +238,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      audience = Seq.empty[String],
       technology = "",
-      voucherLifespan = 1,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )

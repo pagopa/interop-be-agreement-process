@@ -1,5 +1,6 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.DescriptorNotFound
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums.Status.{
   Deprecated,
   Published
@@ -61,6 +62,16 @@ object CatalogManagementService {
         )
         .toTry
     )
+  }
+
+  def getDescriptorAudience(eservice: EService, descriptorId: UUID): Future[Seq[String]] = {
+    val audience = eservice.descriptors.find(_.id == descriptorId).map(_.audience)
+
+    audience match {
+      case Some(aud) => Future.successful[Seq[String]](aud)
+      case None =>
+        Future.failed[Seq[String]](DescriptorNotFound(eservice.id.toString, descriptorId.toString))
+    }
   }
 
   def flattenAttributes(attributes: Seq[Attribute]): Future[Seq[AttributeValue]] = {

@@ -51,6 +51,8 @@ class CatalogProviderContractSpec
     description = None,
     interface = None,
     docs = Seq.empty,
+    audience = Seq("pippo"),
+    voucherLifespan = 124,
     status = EServiceDescriptorEnums.Status.Draft
   )
 
@@ -59,9 +61,7 @@ class CatalogProviderContractSpec
     producerId = UUID.fromString("24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"),
     name = "string",
     description = "string",
-    audience = Seq("pippo"),
     technology = "REST",
-    voucherLifespan = 124,
     attributes = Attributes(
       declared = Seq(Attribute(single = Some(AttributeValue("1234", false)))),
       certified = Seq(Attribute(single = Some(AttributeValue("1234", false)))),
@@ -120,7 +120,7 @@ class CatalogProviderContractSpec
           .getEServiceById("1234", UUID.fromString(eserviceId))
       val value = results.futureValue
       value.producerId.toString shouldBe "24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"
-      value.audience(0) shouldBe "pippo"
+      value.descriptors(0).audience(0) shouldBe "pippo"
     }
   }
 }
