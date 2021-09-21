@@ -1,5 +1,6 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.DescriptorNotFound
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums.Status.{
   Deprecated,
   Published
@@ -69,9 +70,7 @@ object CatalogManagementService {
     audience match {
       case Some(aud) => Future.successful[Seq[String]](aud)
       case None =>
-        Future.failed[Seq[String]](
-          new RuntimeException(s"Audience for descriptor ${descriptorId.toString} of Eservice ${eservice.id} not found")
-        )
+        Future.failed[Seq[String]](DescriptorNotFound(eservice.id.toString, descriptorId.toString))
     }
   }
 
