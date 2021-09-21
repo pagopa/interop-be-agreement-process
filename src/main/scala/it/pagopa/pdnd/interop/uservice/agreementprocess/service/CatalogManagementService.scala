@@ -63,6 +63,18 @@ object CatalogManagementService {
     )
   }
 
+  def getDescriptorAudience(eservice: EService, descriptorId: UUID): Future[Seq[String]] = {
+    val audience = eservice.descriptors.find(_.id == descriptorId).map(_.audience)
+
+    audience match {
+      case Some(aud) => Future.successful[Seq[String]](aud)
+      case None =>
+        Future.failed[Seq[String]](
+          new RuntimeException(s"Audience for descriptor ${descriptorId.toString} of Eservice ${eservice.id} not found")
+        )
+    }
+  }
+
   def flattenAttributes(attributes: Seq[Attribute]): Future[Seq[AttributeValue]] = {
     Future.fromTry {
       Try {
