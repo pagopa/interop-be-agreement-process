@@ -14,9 +14,6 @@ class AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSu
   implicit def attributeJsonFormat: RootJsonFormat[Attribute]       = jsonFormat8(Attribute)
   implicit def agreementJsonFormat: RootJsonFormat[Agreement]       = jsonFormat5(Agreement)
 
-  override implicit def toEntityMarshallerAudience: ToEntityMarshaller[Audience] =
-    sprayJsonMarshaller[Audience](jsonFormat2(Audience))
-
   override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] =
     sprayJsonMarshaller[Problem](jsonFormat3(Problem))
 
