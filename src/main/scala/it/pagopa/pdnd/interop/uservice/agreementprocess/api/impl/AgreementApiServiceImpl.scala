@@ -37,33 +37,6 @@ class AgreementApiServiceImpl(
     extends AgreementApiService {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  /** Code: 200, Message: audiences found, DataType: Audience
-    * Code: 400, Message: Invalid ID supplied, DataType: Problem
-    */
-  override def getAudienceByAgreementId(agreementId: String)(implicit
-    toEntityMarshallerAudience: ToEntityMarshaller[Audience],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    contexts: Seq[(String, String)]
-  ): Route = {
-    logger.info(s"Getting audience for agreement $agreementId")
-    val result = for {
-      bearerToken     <- extractBearer(contexts)
-      agreement       <- agreementManagementService.getAgreementById(bearerToken, agreementId)
-      activeAgreement <- AgreementManagementService.isActive(agreement)
-      eservice        <- catalogManagementService.getEServiceById(bearerToken, activeAgreement.eserviceId)
-      activeEservice  <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreement.descriptorId)
-      audience        <- CatalogManagementService.getDescriptorAudience(eservice, agreement.descriptorId)
-    } yield Audience(activeEservice.name, audience)
-
-    onComplete(result) {
-      case Success(res) => getAudienceByAgreementId200(res)
-      case Failure(ex) =>
-        val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"error while retrieving audience for agreement $agreementId")
-        getAudienceByAgreementId400(errorResponse)
-    }
-  }
-
   override def activateAgreement(
     agreementId: String
   )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
