@@ -11,17 +11,15 @@ import scala.util.Try
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 trait AgreementManagementService {
 
-  def createAgreement(
-    bearerToken: String,
+  def createAgreement(bearerToken: String)(
     producerId: UUID,
     agreementPayload: AgreementPayload,
     verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
   ): Future[Agreement]
 
-  def getAgreementById(bearerToken: String, agreementId: String): Future[Agreement]
+  def getAgreementById(bearerToken: String)(agreementId: String): Future[Agreement]
 
-  def getAgreements(
-    bearerToken: String,
+  def getAgreements(bearerToken: String)(
     producerId: Option[String] = None,
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
@@ -29,13 +27,11 @@ trait AgreementManagementService {
     status: Option[String] = None
   ): Future[Seq[Agreement]]
 
-  def activateById(bearerToken: String, agreementId: String): Future[Agreement]
+  def activateById(bearerToken: String)(agreementId: String): Future[Agreement]
 
   def markVerifiedAttribute(
-    bearerToken: String,
-    agreementId: String,
-    verifiedAttributeSeed: VerifiedAttributeSeed
-  ): Future[Agreement]
+    bearerToken: String
+  )(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed): Future[Agreement]
 
 }
 

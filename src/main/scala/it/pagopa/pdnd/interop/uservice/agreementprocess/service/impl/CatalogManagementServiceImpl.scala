@@ -22,7 +22,7 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def getEServiceById(bearerToken: String, eserviceId: UUID): Future[EService] = {
+  override def getEServiceById(bearerToken: String)(eserviceId: UUID): Future[EService] = {
     val request: ApiRequest[EService] = api.getEService(eserviceId.toString)(BearerToken(bearerToken))
     invoker
       .execute[EService](request)

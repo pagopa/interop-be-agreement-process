@@ -18,7 +18,7 @@ import scala.util.Try
 
 trait CatalogManagementService {
 
-  def getEServiceById(bearerToken: String, eServiceId: UUID): Future[EService]
+  def getEServiceById(bearerToken: String)(eServiceId: UUID): Future[EService]
 
 }
 

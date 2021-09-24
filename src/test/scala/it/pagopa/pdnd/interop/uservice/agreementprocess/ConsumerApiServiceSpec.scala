@@ -25,6 +25,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
+import java.util.UUID
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, Future}
 
@@ -86,7 +87,14 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
 
-      (agreementManagementService.getAgreements _)
+      (agreementManagementService
+        .getAgreements(_: String)(
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String]
+        ))
         .expects(
           Common.bearerToken,
           None,
@@ -97,17 +105,20 @@ class ConsumerApiServiceSpec
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
 
-      (catalogManagementService.getEServiceById _)
+      (catalogManagementService
+        .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataOne.eserviceId)
         .returns(Future.successful(TestDataOne.eService))
         .once()
 
-      (catalogManagementService.getEServiceById _)
+      (catalogManagementService
+        .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataTwo.eserviceId)
         .returns(Future.successful(TestDataTwo.eService))
         .once()
 
-      (partyManagementService.getPartyAttributes _)
+      (partyManagementService
+        .getPartyAttributes(_: String)(_: String))
         .expects(Common.bearerToken, Common.consumerId)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
@@ -169,7 +180,14 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer without verified attributes)" in {
 
-      (agreementManagementService.getAgreements _)
+      (agreementManagementService
+        .getAgreements(_: String)(
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String]
+        ))
         .expects(
           Common.bearerToken,
           None,
@@ -180,17 +198,20 @@ class ConsumerApiServiceSpec
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
 
-      (catalogManagementService.getEServiceById _)
+      (catalogManagementService
+        .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataOne.eserviceId)
         .returns(Future.successful(TestDataOne.eService))
         .once()
 
-      (catalogManagementService.getEServiceById _)
+      (catalogManagementService
+        .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataThree.eserviceId)
         .returns(Future.successful(TestDataThree.eService))
         .once()
 
-      (partyManagementService.getPartyAttributes _)
+      (partyManagementService
+        .getPartyAttributes(_: String)(_: String))
         .expects(Common.bearerToken, Common.consumerId)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
@@ -235,7 +256,14 @@ class ConsumerApiServiceSpec
     }
 
     "retrieve all attributes owned by a customer (customer without declared attributes)" in {
-      (agreementManagementService.getAgreements _)
+      (agreementManagementService
+        .getAgreements(_: String)(
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String]
+        ))
         .expects(
           Common.bearerToken,
           None,
@@ -246,17 +274,20 @@ class ConsumerApiServiceSpec
         )
         .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
 
-      (catalogManagementService.getEServiceById _)
+      (catalogManagementService
+        .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataTwo.eserviceId)
         .returns(Future.successful(TestDataTwo.eService))
         .once()
 
-      (catalogManagementService.getEServiceById _)
+      (catalogManagementService
+        .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataFour.eserviceId)
         .returns(Future.successful(TestDataFour.eService))
         .once()
 
-      (partyManagementService.getPartyAttributes _)
+      (partyManagementService
+        .getPartyAttributes(_: String)(_: String))
         .expects(Common.bearerToken, Common.consumerId)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
