@@ -116,7 +116,7 @@ class CatalogProviderContractSpec
   "Connecting to Catalog Management service" should {
     "be able to get the eservice by id" in {
       val results =
-        catalogManagement(EServiceApi(config.baseUrl + "/pdnd-interop-uservice-catalog-management/0.0.1"))
+        catalogManagement(EServiceApi(s"${config.baseUrl}/pdnd-interop-uservice-catalog-management/0.0.1"))
           .getEServiceById("1234")(UUID.fromString(eserviceId))
       val value = results.futureValue
       value.producerId.toString shouldBe "24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"
