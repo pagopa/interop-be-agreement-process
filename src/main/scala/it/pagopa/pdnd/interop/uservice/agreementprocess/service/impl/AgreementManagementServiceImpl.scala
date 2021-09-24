@@ -27,10 +27,8 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def markVerifiedAttribute(
-    bearerToken: String,
-    agreementId: String,
-    verifiedAttributeSeed: VerifiedAttributeSeed
-  ): Future[Agreement] = {
+    bearerToken: String
+  )(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed): Future[Agreement] = {
 
     val request: ApiRequest[Agreement] =
       api.updateAgreementVerifiedAttribute(agreementId, verifiedAttributeSeed)(BearerToken(bearerToken))
@@ -46,7 +44,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def activateById(bearerToken: String, agreementId: String): Future[Agreement] = {
+  override def activateById(bearerToken: String)(agreementId: String): Future[Agreement] = {
     val request: ApiRequest[Agreement] = api.activateAgreement(agreementId)(BearerToken(bearerToken))
     invoker
       .execute[Agreement](request)
@@ -61,7 +59,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def getAgreementById(bearerToken: String, agreementId: String): Future[Agreement] = {
+  override def getAgreementById(bearerToken: String)(agreementId: String): Future[Agreement] = {
     val request: ApiRequest[Agreement] = api.getAgreement(agreementId)(BearerToken(bearerToken))
     invoker
       .execute[Agreement](request)
@@ -80,8 +78,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def createAgreement(
-    bearerToken: String,
+  override def createAgreement(bearerToken: String)(
     producerId: UUID,
     agreementPayload: AgreementPayload,
     verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
@@ -109,8 +106,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def getAgreements(
-    bearerToken: String,
+  override def getAgreements(bearerToken: String)(
     producerId: Option[String] = None,
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,

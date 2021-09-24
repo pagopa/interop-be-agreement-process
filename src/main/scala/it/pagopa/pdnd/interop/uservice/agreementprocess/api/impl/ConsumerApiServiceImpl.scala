@@ -37,14 +37,13 @@ class ConsumerApiServiceImpl(
   ): Route = {
     val result: Future[Attributes] = for {
       bearerToken <- extractBearer(contexts)
-      agreements <- agreementManagementService.getAgreements(
-        bearerToken,
+      agreements <- agreementManagementService.getAgreements(bearerToken)(
         consumerId = Some(consumerId),
         status = Some(AgreementEnums.Status.Active.toString)
       )
       eserviceIds = agreements.map(_.eserviceId)
-      eservices       <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken, _))
-      partyAttributes <- partyManagementService.getPartyAttributes(bearerToken, consumerId)
+      eservices       <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken))
+      partyAttributes <- partyManagementService.getPartyAttributes(bearerToken)(consumerId)
       eserviceAttributes <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)

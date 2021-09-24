@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 trait PartyManagementService {
 
-  def getPartyAttributes(bearerToken: String, partyId: String): Future[Seq[String]]
-  def getOrganization(bearerToken: String, partyId: UUID): Future[Organization]
+  def getPartyAttributes(bearerToken: String)(partyId: String): Future[Seq[String]]
+  def getOrganization(bearerToken: String)(partyId: UUID): Future[Organization]
 
 }

@@ -23,14 +23,14 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def getPartyAttributes(bearerToken: String, partyId: String): Future[Seq[String]] = {
+  override def getPartyAttributes(bearerToken: String)(partyId: String): Future[Seq[String]] = {
     for {
       uuid       <- Future.fromTry(Try(UUID.fromString(partyId)))
-      attributes <- attributesByUUID(bearerToken, uuid)
+      attributes <- attributesByUUID(bearerToken)(uuid)
     } yield attributes
   }
 
-  private def attributesByUUID(bearerToken: String, partyId: UUID): Future[Seq[String]] = {
+  private def attributesByUUID(bearerToken: String)(partyId: UUID): Future[Seq[String]] = {
     logger.info(s"TODO > Bearer Token should be used $bearerToken") //TODO pass bearer token
     val request: ApiRequest[Seq[String]] = partyApi.getPartyAttributes(partyId)
     invoker
@@ -45,7 +45,7 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
       }
   }
 
-  override def getOrganization(bearerToken: String, partyId: UUID): Future[Organization] = {
+  override def getOrganization(bearerToken: String)(partyId: UUID): Future[Organization] = {
     val request: ApiRequest[Organization] = partyApi.getPartyOrganizationByUUID(partyId)
     invoker
       .execute[Organization](request)
