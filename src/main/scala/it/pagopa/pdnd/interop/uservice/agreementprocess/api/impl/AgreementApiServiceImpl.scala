@@ -24,6 +24,7 @@ import scala.util.{Failure, Success, Try}
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Any",
     "org.wartremover.warts.StringPlusAny",
+    "org.wartremover.warts.ToString",
     "org.wartremover.warts.Nothing",
     "org.wartremover.warts.Recursion"
   )
@@ -185,8 +186,9 @@ class AgreementApiServiceImpl(
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
-      consumer = Organization(id = consumer.institutionId, name = producer.description),
+      consumer = Organization(id = consumer.institutionId, name = consumer.description),
       eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
+      status = agreement.status.toString,
       attributes = attribute
     )
   }
