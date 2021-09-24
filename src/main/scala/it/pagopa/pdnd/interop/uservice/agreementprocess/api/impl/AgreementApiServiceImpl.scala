@@ -181,7 +181,7 @@ class AgreementApiServiceImpl(
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
       producer  <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
       consumer  <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
-      attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute)
+      attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute(eservice.attributes))
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
@@ -191,7 +191,11 @@ class AgreementApiServiceImpl(
     )
   }
 
-  private def getApiAttribute(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
+  private def getApiAttribute(
+    attributes: ManagementAttributes
+  )(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
+    val x = attributes.verified.flatMap(att => att.group.flatMap(_.find(_.id == verifiedAttribute.id.toString)))
+    attributes.verified.map(att => att.single.map(_.id == verifiedAttribute.id.toString))
     for {
       att     <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
       idUuuid <- Future.fromTry(Try(UUID.fromString(att.id)))
@@ -201,6 +205,7 @@ class AgreementApiServiceImpl(
       description = att.description,
       origin = att.origin,
       name = att.name,
+      explicitAttributeVerification = att.v,
       verified = Some(verifiedAttribute.verified),
       verificationDate = verifiedAttribute.verificationDate,
       validityTimespan = verifiedAttribute.validityTimespan

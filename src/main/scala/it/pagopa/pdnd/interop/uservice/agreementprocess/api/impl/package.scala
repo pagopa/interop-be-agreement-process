@@ -15,6 +15,7 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   type ManagementEService     = catalogmanagement.client.model.EService
   type ManagementOrganization = partymanagement.client.model.Organization
   type ManagementAgreement    = agreementmanagement.client.model.Agreement
+  type ManagementAttributes    = catalogmanagement.client.model.Attributes
 
   implicit val uuidFormat: JsonFormat[UUID] =
     new JsonFormat[UUID] {
