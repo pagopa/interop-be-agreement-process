@@ -2,7 +2,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes, EService}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -92,6 +92,15 @@ object AgreementManagementService {
         )
         .toTry
     )
+  }
+
+  def verifyCertifiedAttributes(consumerAttributesIds: Seq[String], eservice: EService): Future[EService] = {
+    def hasAllAttributesFn(attributes: Seq[Attribute]): Boolean = hasAllAttributes(consumerAttributesIds)(attributes)
+
+    val isActivatable: Boolean = hasAllAttributesFn(eservice.attributes.certified)
+
+    if (isActivatable) Future.successful(eservice)
+    else Future.failed[EService](new RuntimeException("This consumer does not have certified attributes"))
   }
 
   def verifyAttributes(
