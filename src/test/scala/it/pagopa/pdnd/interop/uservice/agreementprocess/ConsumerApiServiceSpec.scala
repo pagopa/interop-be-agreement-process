@@ -153,7 +153,7 @@ class ConsumerApiServiceSpec
       val response =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
 
-      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat8(Attribute)
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat9(Attribute)
 
       implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
         sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))
@@ -234,7 +234,7 @@ class ConsumerApiServiceSpec
       val response =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
 
-      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat8(Attribute)
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat9(Attribute)
 
       implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
         sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))
@@ -305,7 +305,7 @@ class ConsumerApiServiceSpec
 
       val response =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
-      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat8(Attribute)
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat9(Attribute)
 
       implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Attributes] =
         sprayJsonUnmarshaller[Attributes](jsonFormat3(Attributes))

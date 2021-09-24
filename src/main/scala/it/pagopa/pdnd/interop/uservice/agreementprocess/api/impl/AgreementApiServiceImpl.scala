@@ -13,6 +13,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.AttributeValue
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
@@ -25,6 +26,7 @@ import scala.util.{Failure, Success, Try}
     "org.wartremover.warts.Any",
     "org.wartremover.warts.StringPlusAny",
     "org.wartremover.warts.Nothing",
+    "org.wartremover.warts.Equals",
     "org.wartremover.warts.Recursion"
   )
 )
@@ -194,18 +196,25 @@ class AgreementApiServiceImpl(
   private def getApiAttribute(
     attributes: ManagementAttributes
   )(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
-    val x = attributes.verified.flatMap(att => att.group.flatMap(_.find(_.id == verifiedAttribute.id.toString)))
-    attributes.verified.map(att => att.single.map(_.id == verifiedAttribute.id.toString))
+    val fromSingle: Seq[AttributeValue] =
+      attributes.verified.flatMap(attribute => attribute.single.toList.find(_.id == verifiedAttribute.id.toString))
+
+    val fromGroup: Seq[AttributeValue] =
+      attributes.verified.flatMap(attribute => attribute.group.flatMap(_.find(_.id == verifiedAttribute.id.toString)))
+
+    val allVerifiedAttributes: Map[String, Boolean] =
+      (fromSingle ++ fromGroup).map(attribute => attribute.id -> attribute.explicitAttributeVerification).toMap
+
     for {
-      att     <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
-      idUuuid <- Future.fromTry(Try(UUID.fromString(att.id)))
+      attribute <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
+      id        <- Future.fromTry(Try(UUID.fromString(attribute.id)))
     } yield Attribute(
-      id = idUuuid,
-      code = att.code,
-      description = att.description,
-      origin = att.origin,
-      name = att.name,
-      explicitAttributeVerification = att.v,
+      id = id,
+      code = attribute.code,
+      description = attribute.description,
+      origin = attribute.origin,
+      name = attribute.name,
+      explicitAttributeVerification = allVerifiedAttributes.get(attribute.id),
       verified = Some(verifiedAttribute.verified),
       verificationDate = verifiedAttribute.verificationDate,
       validityTimespan = verifiedAttribute.validityTimespan
