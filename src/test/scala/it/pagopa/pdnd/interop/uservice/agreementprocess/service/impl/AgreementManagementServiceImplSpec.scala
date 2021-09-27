@@ -470,4 +470,19 @@ class AgreementManagementServiceImplSpec
 
   }
 
+  "agreement status suspended check" should {
+    "work if agreement is in suspended status" in {
+
+      val result = AgreementManagementService.isSuspended(TestDataSix.agreement)
+      result.futureValue shouldBe TestDataSix.agreement
+    }
+
+    "not work if agreement is not in suspended status" in {
+
+      val result = AgreementManagementService.isSuspended(TestDataOne.agreement)
+      result.failed.futureValue shouldBe a[RuntimeException]
+    }
+
+  }
+
 }

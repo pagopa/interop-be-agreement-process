@@ -7,10 +7,13 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.uuidFormat
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.localTimeFormat
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.AgreementEnums
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{ConsumerApiMarshallerImpl, ConsumerApiServiceImpl}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
+  ConsumerApiMarshallerImpl,
+  ConsumerApiServiceImpl,
+  localTimeFormat,
+  uuidFormat
+}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
   AgreementApi,
   ConsumerApi,
@@ -39,13 +42,13 @@ class ConsumerApiServiceSpec
 
   implicit val testSystem: ActorSystem = system.classicSystem
 
-  val consumerApiMarshaller: ConsumerApiMarshaller           = new ConsumerApiMarshallerImpl
-  val mockHealthApi: HealthApi                               = mock[HealthApi]
-  val mockAgreementApi: AgreementApi                         = mock[AgreementApi]
-  val partyManagementService: PartyManagementService         = mock[PartyManagementService]
-  val agreementManagementService: AgreementManagementService = mock[AgreementManagementService]
-  val catalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
-  val attributeManagementService: AttributeManagementService = mock[AttributeManagementService]
+  val consumerApiMarshaller: ConsumerApiMarshaller               = new ConsumerApiMarshallerImpl
+  val mockHealthApi: HealthApi                                   = mock[HealthApi]
+  val mockAgreementApi: AgreementApi                             = mock[AgreementApi]
+  val mockPartyManagementService: PartyManagementService         = mock[PartyManagementService]
+  val mockAgreementManagementService: AgreementManagementService = mock[AgreementManagementService]
+  val mockCatalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
+  val mockAttributeManagementService: AttributeManagementService = mock[AttributeManagementService]
 
   var controller: Option[Controller]                 = None
   var bindServer: Option[Future[Http.ServerBinding]] = None
@@ -57,10 +60,10 @@ class ConsumerApiServiceSpec
 
     val consumerApi = new ConsumerApi(
       new ConsumerApiServiceImpl(
-        agreementManagementService = agreementManagementService,
-        partyManagementService = partyManagementService,
-        catalogManagementService = catalogManagementService,
-        attributeManagementService = attributeManagementService
+        agreementManagementService = mockAgreementManagementService,
+        partyManagementService = mockPartyManagementService,
+        catalogManagementService = mockCatalogManagementService,
+        attributeManagementService = mockAttributeManagementService
       ),
       consumerApiMarshaller,
       wrappingDirective
@@ -87,7 +90,7 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
 
-      (agreementManagementService
+      (mockAgreementManagementService
         .getAgreements(_: String)(
           _: Option[String],
           _: Option[String],
@@ -105,48 +108,48 @@ class ConsumerApiServiceSpec
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
 
-      (catalogManagementService
+      (mockCatalogManagementService
         .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataOne.eserviceId)
         .returns(Future.successful(TestDataOne.eService))
         .once()
 
-      (catalogManagementService
+      (mockCatalogManagementService
         .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataTwo.eserviceId)
         .returns(Future.successful(TestDataTwo.eService))
         .once()
 
-      (partyManagementService
+      (mockPartyManagementService
         .getPartyAttributes(_: String)(_: String))
         .expects(Common.bearerToken, Common.consumerId)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.certifiedAttribute)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.verifiedAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId1))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.verifiedAttributeId2)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId2))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.verifiedAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.declaredAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId1))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.declaredAttributeId2)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId2))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.declaredAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
 
@@ -180,7 +183,7 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer without verified attributes)" in {
 
-      (agreementManagementService
+      (mockAgreementManagementService
         .getAgreements(_: String)(
           _: Option[String],
           _: Option[String],
@@ -198,36 +201,36 @@ class ConsumerApiServiceSpec
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
 
-      (catalogManagementService
+      (mockCatalogManagementService
         .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataOne.eserviceId)
         .returns(Future.successful(TestDataOne.eService))
         .once()
 
-      (catalogManagementService
+      (mockCatalogManagementService
         .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataThree.eserviceId)
         .returns(Future.successful(TestDataThree.eService))
         .once()
 
-      (partyManagementService
+      (mockPartyManagementService
         .getPartyAttributes(_: String)(_: String))
         .expects(Common.bearerToken, Common.consumerId)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.certifiedAttribute)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.declaredAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId1))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.declaredAttributeId2)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId2))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.declaredAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
 
@@ -256,7 +259,7 @@ class ConsumerApiServiceSpec
     }
 
     "retrieve all attributes owned by a customer (customer without declared attributes)" in {
-      (agreementManagementService
+      (mockAgreementManagementService
         .getAgreements(_: String)(
           _: Option[String],
           _: Option[String],
@@ -274,32 +277,32 @@ class ConsumerApiServiceSpec
         )
         .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
 
-      (catalogManagementService
+      (mockCatalogManagementService
         .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataTwo.eserviceId)
         .returns(Future.successful(TestDataTwo.eService))
         .once()
 
-      (catalogManagementService
+      (mockCatalogManagementService
         .getEServiceById(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataFour.eserviceId)
         .returns(Future.successful(TestDataFour.eService))
         .once()
 
-      (partyManagementService
+      (mockPartyManagementService
         .getPartyAttributes(_: String)(_: String))
         .expects(Common.bearerToken, Common.consumerId)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.certifiedAttribute)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.verifiedAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId1))
 
-      (attributeManagementService.getAttribute _)
+      (mockAttributeManagementService.getAttribute _)
         .expects(Common.verifiedAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
 
