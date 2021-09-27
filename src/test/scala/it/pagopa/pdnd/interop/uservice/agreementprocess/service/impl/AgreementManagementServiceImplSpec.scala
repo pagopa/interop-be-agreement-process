@@ -287,6 +287,7 @@ class AgreementManagementServiceImplSpec
       val f = AgreementManagementService.verifyCertifiedAttributes(consumerAttributes, eservice)
 
       f.futureValue shouldBe expected
+
     }
 
     "not pass if attributes do not match" in {
@@ -328,6 +329,7 @@ class AgreementManagementServiceImplSpec
       val f = AgreementManagementService.verifyCertifiedAttributes(consumerAttributes, eservice)
 
       f.failed.futureValue shouldBe a[RuntimeException]
+
     }
   }
 
