@@ -16,7 +16,6 @@ object Dependencies {
     lazy val slf4j         = namespace                       %% "akka-slf4j"               % akkaVersion
     lazy val testkit       = namespace                       %% "akka-actor-testkit-typed" % akkaVersion
     lazy val httpTestkit   = namespace                       %% "akka-http-testkit"        % akkaHttpVersion
-    lazy val streamTestkit = namespace                       %% "akka-stream-testkit"      % akkaVersion
     lazy val legacyTestkit = namespace                       %% "akka-testkit"             % akkaVersion
 
   }
@@ -117,7 +116,6 @@ object Dependencies {
       scalamock.core                           % Test,
       akka.testkit                             % Test,
       akka.httpTestkit                         % Test,
-      akka.streamTestkit                       % Test,
       akka.legacyTestkit                       % Test,
       scalapact.core                           % Test
     )
