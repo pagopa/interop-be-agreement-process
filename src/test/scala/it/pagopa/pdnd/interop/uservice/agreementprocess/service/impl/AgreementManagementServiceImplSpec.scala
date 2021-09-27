@@ -6,7 +6,13 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementAPI
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
+  Attribute,
+  AttributeValue,
+  Attributes,
+  EService,
+  EServiceDescriptor
+}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -235,6 +241,95 @@ class AgreementManagementServiceImplSpec
       val f = AgreementManagementService.extractVerifiedAttribute(agreementsExcludingFalse)
 
       f.futureValue shouldBe expected
+    }
+  }
+
+  "certified attributes check" should {
+
+    "pass if attributes match" in {
+
+      val attributeId1 = UUID.randomUUID().toString
+      val attributeId2 = UUID.randomUUID().toString
+      val attributeId3 = UUID.randomUUID().toString
+
+      val consumerAttributes = Seq(attributeId1, attributeId2, attributeId3)
+
+      val eservice: EService = EService(
+        id = UUID.randomUUID(),
+        producerId = UUID.randomUUID(),
+        name = "name",
+        description = "description",
+        technology = "REST",
+        attributes = Attributes(
+          certified = Seq(
+            Attribute(
+              single = Some(AttributeValue(id = attributeId1, explicitAttributeVerification = false)),
+              group = None
+            ),
+            Attribute(
+              single = None,
+              group = Some(
+                Seq(
+                  AttributeValue(id = attributeId2, explicitAttributeVerification = false),
+                  AttributeValue(id = attributeId3, explicitAttributeVerification = false)
+                )
+              )
+            )
+          ),
+          declared = Seq.empty[Attribute],
+          verified = Seq.empty[Attribute]
+        ),
+        descriptors = Seq.empty[EServiceDescriptor]
+      )
+
+      val expected: EService = eservice
+
+      val f = AgreementManagementService.verifyCertifiedAttributes(consumerAttributes, eservice)
+
+      f.futureValue shouldBe expected
+
+    }
+
+    "not pass if attributes do not match" in {
+
+      val attributeId1 = UUID.randomUUID().toString
+      val attributeId2 = UUID.randomUUID().toString
+      val attributeId3 = UUID.randomUUID().toString
+
+      val consumerAttributes = Seq(attributeId1, attributeId2, attributeId3)
+
+      val eservice: EService = EService(
+        id = UUID.randomUUID(),
+        producerId = UUID.randomUUID(),
+        name = "name",
+        description = "description",
+        technology = "REST",
+        attributes = Attributes(
+          certified = Seq(
+            Attribute(
+              single = Some(AttributeValue(id = UUID.randomUUID().toString, explicitAttributeVerification = false)),
+              group = None
+            ),
+            Attribute(
+              single = None,
+              group = Some(
+                Seq(
+                  AttributeValue(id = UUID.randomUUID().toString, explicitAttributeVerification = false),
+                  AttributeValue(id = UUID.randomUUID().toString, explicitAttributeVerification = false)
+                )
+              )
+            )
+          ),
+          declared = Seq.empty[Attribute],
+          verified = Seq.empty[Attribute]
+        ),
+        descriptors = Seq.empty[EServiceDescriptor]
+      )
+
+      val f = AgreementManagementService.verifyCertifiedAttributes(consumerAttributes, eservice)
+
+      f.failed.futureValue shouldBe a[RuntimeException]
+
     }
   }
 

@@ -86,14 +86,16 @@ class AgreementApiServiceImpl(
       validPayload               <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
       eservice                   <- catalogManagementService.getEServiceById(bearerToken)(validPayload.eserviceId)
       activeEservice             <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
+      consumer                   <- partyManagementService.getOrganization(bearerToken)(agreementPayload.consumerId)
+      activatableEservice        <- AgreementManagementService.verifyCertifiedAttributes(consumer.attributes, activeEservice)
       consumerVerifiedAttributes <- AgreementManagementService.extractVerifiedAttribute(consumerAgreements)
-      verifiedAttributes         <- CatalogManagementService.flattenAttributes(activeEservice.attributes.verified)
+      verifiedAttributes         <- CatalogManagementService.flattenAttributes(activatableEservice.attributes.verified)
       verifiedAttributeSeeds <- AgreementManagementService.applyImplicitVerification(
         verifiedAttributes,
         consumerVerifiedAttributes
       )
       agreement <- agreementManagementService.createAgreement(bearerToken)(
-        activeEservice.producerId,
+        activatableEservice.producerId,
         validPayload,
         verifiedAttributeSeeds
       )
