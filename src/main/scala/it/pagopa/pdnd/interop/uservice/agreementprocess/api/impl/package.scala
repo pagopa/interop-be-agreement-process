@@ -57,4 +57,9 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit class OptionOps[A](val option: Option[A]) extends AnyVal {
     def toFuture(error: Throwable): Future[A] = option.map(Future.successful).getOrElse(Future.failed[A](error))
   }
+
+  @SuppressWarnings(Array("org.wartremover.warts.Nothing"))
+  implicit class EitherOps[E <: Throwable, B](val either: Either[E, B]) extends AnyVal {
+    def toFuture: Future[B] = either.fold(Future.failed, Future.successful)
+  }
 }
