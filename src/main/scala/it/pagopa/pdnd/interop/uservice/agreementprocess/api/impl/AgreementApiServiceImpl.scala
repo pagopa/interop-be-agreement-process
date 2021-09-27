@@ -25,6 +25,7 @@ import scala.util.{Failure, Success, Try}
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Any",
     "org.wartremover.warts.StringPlusAny",
+    "org.wartremover.warts.ToString",
     "org.wartremover.warts.Nothing",
     "org.wartremover.warts.Equals",
     "org.wartremover.warts.Recursion"
@@ -87,14 +88,16 @@ class AgreementApiServiceImpl(
       validPayload               <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
       eservice                   <- catalogManagementService.getEServiceById(bearerToken)(validPayload.eserviceId)
       activeEservice             <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
+      consumer                   <- partyManagementService.getOrganization(bearerToken)(agreementPayload.consumerId)
+      activatableEservice        <- AgreementManagementService.verifyCertifiedAttributes(consumer.attributes, activeEservice)
       consumerVerifiedAttributes <- AgreementManagementService.extractVerifiedAttribute(consumerAgreements)
-      verifiedAttributes         <- CatalogManagementService.flattenAttributes(activeEservice.attributes.verified)
+      verifiedAttributes         <- CatalogManagementService.flattenAttributes(activatableEservice.attributes.verified)
       verifiedAttributeSeeds <- AgreementManagementService.applyImplicitVerification(
         verifiedAttributes,
         consumerVerifiedAttributes
       )
       agreement <- agreementManagementService.createAgreement(bearerToken)(
-        activeEservice.producerId,
+        activatableEservice.producerId,
         validPayload,
         verifiedAttributeSeeds
       )
@@ -187,8 +190,9 @@ class AgreementApiServiceImpl(
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
-      consumer = Organization(id = consumer.institutionId, name = producer.description),
+      consumer = Organization(id = consumer.institutionId, name = consumer.description),
       eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
+      status = agreement.status.toString,
       attributes = attribute
     )
   }

@@ -280,6 +280,41 @@ trait SpecHelper {
     )
   }
 
+  object TestDataSix {
+    val eserviceId: UUID   = UUID.randomUUID()
+    val descriptorId: UUID = UUID.randomUUID()
+    val consumerId: UUID   = UUID.randomUUID()
+
+    val agreement: ClientAgreement = ClientAgreement(
+      id = id,
+      eserviceId = eserviceId,
+      descriptorId = descriptorId,
+      producerId = producerId,
+      consumerId = UUID.fromString(Common.consumerId),
+      status = AgreementEnums.Status.Pending,
+      verifiedAttributes = Seq(
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = true,
+          verificationDate = None,
+          validityTimespan = None
+        ),
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = false,
+          verificationDate = None,
+          validityTimespan = None
+        ),
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId3),
+          verified = true,
+          verificationDate = None,
+          validityTimespan = None
+        )
+      )
+    )
+  }
+
   val agreementsAllTrue: Seq[ClientAgreement]        = Seq(TestDataOne.agreement, TestDataTwo.agreement)
   val agreementsAllFalse: Seq[ClientAgreement]       = Seq(TestDataThree.agreement)
   val agreementsSameTrueFalse: Seq[ClientAgreement]  = Seq(TestDataOne.agreement, TestDataThree.agreement)

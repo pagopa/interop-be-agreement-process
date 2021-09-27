@@ -287,6 +287,12 @@ components:
           $ref: '#/components/schemas/Organization'
         eservice:
           $ref: '#/components/schemas/EService'
+        status:
+          type: string
+          enum:
+            - active
+            - pending
+            - suspended
         attributes:
           type: array
           items:
@@ -298,6 +304,7 @@ components:
         - consumer
         - eservice
         - attributes
+        - status
     Agreements:
       type: array
       items:
