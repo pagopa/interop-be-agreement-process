@@ -94,6 +94,18 @@ object AgreementManagementService {
     )
   }
 
+  def isSuspended(agreement: Agreement): Future[Agreement] = {
+    Future.fromTry(
+      Either
+        .cond(
+          agreement.status == AgreementEnums.Status.Suspended,
+          agreement,
+          new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}")
+        )
+        .toTry
+    )
+  }
+
   def verifyCertifiedAttributes(consumerAttributesIds: Seq[String], eservice: EService): Future[EService] = {
     def hasAllAttributesFn(attributes: Seq[Attribute]): Boolean = hasAllAttributes(consumerAttributesIds)(attributes)
 

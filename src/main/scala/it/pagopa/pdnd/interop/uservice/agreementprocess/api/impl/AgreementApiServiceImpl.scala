@@ -3,9 +3,17 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
+  AgreementEnums,
+  VerifiedAttribute,
+  VerifiedAttributeSeed
+}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
-import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{AgreementNotFound, DescriptorNotFound}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{
+  ActiveAgreementAlreadyExists,
+  AgreementNotFound,
+  DescriptorNotFound
+}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
@@ -43,14 +51,12 @@ class AgreementApiServiceImpl(
   )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
     logger.info(s"Activating agreement $agreementId")
     val result = for {
-      bearerToken      <- extractBearer(contexts)
-      agreement        <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      pendingAgreement <- AgreementManagementService.isPending(agreement)
-      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(
-        pendingAgreement.consumerId.toString
-      )
-      eservice       <- catalogManagementService.getEServiceById(bearerToken)(pendingAgreement.eserviceId)
-      activeEservice <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
+      bearerToken           <- extractBearer(contexts)
+      agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      _                     <- verifyAgreementActivationEligibility(bearerToken)(agreement)
+      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId.toString)
+      eservice              <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
+      activeEservice        <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
       _ <- AgreementManagementService.verifyAttributes(
         consumerAttributesIds,
         activeEservice.attributes,
@@ -239,5 +245,31 @@ class AgreementApiServiceImpl(
           Problem(Option(ex.getMessage), 400, s"Error while verifying agreement $agreementId attribute $attributeId")
         verifyAgreementAttribute404(errorResponse)
     }
+  }
+
+  /** Verify if an agreement can be activated.
+    * Checks performed:
+    * - no other active agreement exists for the same combination of Producer, Consumer, EService, Descriptor
+    * - the given agreement is in status Pending (first activation) or Suspended (re-activation)
+    * @param bearerToken auth token
+    * @param agreement to be activated
+    * @return
+    */
+  private def verifyAgreementActivationEligibility(
+    bearerToken: String
+  )(agreement: ManagementAgreement): Future[Unit] = {
+    for {
+      activeAgreement <- agreementManagementService.getAgreements(bearerToken)(
+        producerId = Some(agreement.producerId.toString),
+        consumerId = Some(agreement.consumerId.toString),
+        eserviceId = Some(agreement.eserviceId.toString),
+        descriptorId = Some(agreement.descriptorId.toString),
+        status = Some(AgreementEnums.Status.Active.toString)
+      )
+      _ <- Either.cond(activeAgreement.isEmpty, (), ActiveAgreementAlreadyExists(agreement)).toFuture
+      _ <- AgreementManagementService.isPending(agreement).recoverWith { case _ =>
+        AgreementManagementService.isSuspended(agreement)
+      }
+    } yield ()
   }
 }
