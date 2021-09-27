@@ -41,6 +41,7 @@ trait AgreementManagementService {
     "org.wartremover.warts.DefaultArguments",
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Equals",
+    "org.wartremover.warts.Nothing",
     "org.wartremover.warts.ToString"
   )
 )
@@ -70,41 +71,29 @@ object AgreementManagementService {
       agreement.status == AgreementEnums.Status.Active
   }
 
-  def isActive(agreement: Agreement): Future[Agreement] = {
-    Future.fromTry(
-      Either
-        .cond(
-          agreement.status == AgreementEnums.Status.Active,
-          agreement,
-          new RuntimeException(s"Agreement ${agreement.id} is not active")
-        )
-        .toTry
-    )
-  }
+  def isActive(agreement: Agreement): Future[Agreement] =
+    agreement.status match {
+      case AgreementEnums.Status.Active =>
+        Future.successful(agreement)
+      case _ =>
+        Future.failed(new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}"))
+    }
 
-  def isPending(agreement: Agreement): Future[Agreement] = {
-    Future.fromTry(
-      Either
-        .cond(
-          agreement.status == AgreementEnums.Status.Pending,
-          agreement,
-          new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}")
-        )
-        .toTry
-    )
-  }
+  def isPending(agreement: Agreement): Future[Agreement] =
+    agreement.status match {
+      case AgreementEnums.Status.Pending =>
+        Future.successful(agreement)
+      case _ =>
+        Future.failed(new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}"))
+    }
 
-  def isSuspended(agreement: Agreement): Future[Agreement] = {
-    Future.fromTry(
-      Either
-        .cond(
-          agreement.status == AgreementEnums.Status.Suspended,
-          agreement,
-          new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}")
-        )
-        .toTry
-    )
-  }
+  def isSuspended(agreement: Agreement): Future[Agreement] =
+    agreement.status match {
+      case AgreementEnums.Status.Suspended =>
+        Future.successful(agreement)
+      case _ =>
+        Future.failed(new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}"))
+    }
 
   def verifyCertifiedAttributes(consumerAttributesIds: Seq[String], eservice: EService): Future[EService] = {
     def hasAllAttributesFn(attributes: Seq[Attribute]): Boolean = hasAllAttributes(consumerAttributesIds)(attributes)
