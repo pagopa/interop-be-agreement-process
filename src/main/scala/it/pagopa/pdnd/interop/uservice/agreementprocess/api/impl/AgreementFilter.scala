@@ -30,8 +30,7 @@ object AgreementFilter {
               )
             }
             .values
-            .map(v => v.headOption)
-            .flatten
+            .flatMap(v => v.headOption)
             .toSeq
 
         Future.successful[Seq[Agreement]](currentAgreements)
