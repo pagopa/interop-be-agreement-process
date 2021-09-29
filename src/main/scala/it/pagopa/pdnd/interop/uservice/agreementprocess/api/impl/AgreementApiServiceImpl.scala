@@ -106,7 +106,7 @@ class AgreementApiServiceImpl(
         verifiedAttributeSeeds
       )
       apiAgreement <- getApiAgreement(bearerToken)(agreement)
-    } yield apiAgreement._1
+    } yield apiAgreement
 
     onComplete(result) {
       case Success(agreement) => createAgreement201(agreement)
@@ -165,7 +165,7 @@ class AgreementApiServiceImpl(
     val result: Future[Agreement] = for {
       bearerToken  <- extractBearer(contexts)
       agreement    <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      apiAgreement <- getApiAgreement(bearerToken)(agreement).map(_._1)
+      apiAgreement <- getApiAgreement(bearerToken)(agreement)
     } yield apiAgreement
 
     onComplete(result) {
@@ -184,9 +184,7 @@ class AgreementApiServiceImpl(
     }
   }
 
-  private def getApiAgreement(
-    bearerToken: String
-  )(agreement: ManagementAgreement): Future[(Agreement, DescriptorVersion)] = {
+  private def getApiAgreement(bearerToken: String)(agreement: ManagementAgreement): Future[Agreement] = {
     for {
       eservice <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       descriptor <- eservice.descriptors
@@ -195,16 +193,13 @@ class AgreementApiServiceImpl(
       producer  <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
       consumer  <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
       attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute)
-    } yield (
-      Agreement(
-        id = agreement.id,
-        producer = Organization(id = producer.institutionId, name = producer.description),
-        consumer = Organization(id = consumer.institutionId, name = consumer.description),
-        eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
-        status = agreement.status.toString,
-        attributes = attribute
-      ),
-      descriptor.version.toLongOption
+    } yield Agreement(
+      id = agreement.id,
+      producer = Organization(id = producer.institutionId, name = producer.description),
+      consumer = Organization(id = consumer.institutionId, name = consumer.description),
+      eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
+      status = agreement.status.toString,
+      attributes = attribute
     )
   }
 

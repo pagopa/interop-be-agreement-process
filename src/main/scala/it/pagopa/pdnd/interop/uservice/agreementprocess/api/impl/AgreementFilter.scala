@@ -13,24 +13,29 @@ object AgreementFilter {
     */
   def filterAgreementsByLatestVersion(
     filterLatest: Option[Boolean],
-    agreements: Seq[(Agreement, DescriptorVersion)]
+    agreements: Seq[Agreement]
   ): Future[Seq[Agreement]] = {
 
     filterLatest match {
       case Some(true) =>
         val currentAgreements =
           agreements
-            .groupBy(_._1.eservice.id)
+            .groupBy(_.eservice.id)
             .map { case (eserviceId, eserviceAgreements) =>
-              (eserviceId, eserviceAgreements.sortWith((a, b) => Ordering[Option[Long]].gt(a._2, b._2)))
+              (
+                eserviceId,
+                eserviceAgreements.sortWith((a, b) => {
+                  Ordering[Option[Long]].gt(a.eservice.version.toLongOption, b.eservice.version.toLongOption)
+                })
+              )
             }
             .values
-            .map(v => v.map(_._1).headOption)
+            .map(v => v.headOption)
             .flatten
             .toSeq
 
         Future.successful[Seq[Agreement]](currentAgreements)
-      case _ => Future.successful(agreements.map(_._1))
+      case _ => Future.successful(agreements)
     }
   }
 }

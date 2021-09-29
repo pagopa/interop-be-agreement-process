@@ -1,6 +1,6 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess
 
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{AgreementFilter, DescriptorVersion}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{AgreementFilter}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Agreement, EService, Organization}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.concurrent.ScalaFutures
@@ -10,7 +10,7 @@ import java.util.UUID
 
 class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
 
-  private def getTestData: Seq[(Agreement, DescriptorVersion)] = {
+  private def getTestData: Seq[Agreement] = {
     val uuid1 = UUID.randomUUID()
     val uuid2 = UUID.randomUUID()
     val uuid3 = UUID.randomUUID()
@@ -26,55 +26,43 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
     val consumerOrg3 = Organization("cons3", "cons3")
     val consumerOrg4 = Organization("cons4", "cons4")
 
-    val eservice1 = EService(UUID.randomUUID(), "eservice1", "eservice1")
-    val eservice2 = EService(UUID.randomUUID(), "eservice2", "eservice2")
-    val eservice3 = EService(UUID.randomUUID(), "eservice3", "eservice3")
-    val eservice4 = EService(UUID.randomUUID(), "eservice4", "eservice4")
+    val eservice1 = EService(UUID.randomUUID(), "eservice1", "1")
+    val eservice2 = EService(UUID.randomUUID(), "eservice2", "2")
+    val eservice3 = EService(UUID.randomUUID(), "eservice3", "3")
+    val eservice4 = EService(UUID.randomUUID(), "eservice4", "4")
 
     Seq(
-      (
-        Agreement(
-          id = uuid1,
-          producer = producerOrg1,
-          consumer = consumerOrg1,
-          eservice = eservice1,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(1)
+      Agreement(
+        id = uuid1,
+        producer = producerOrg1,
+        consumer = consumerOrg1,
+        eservice = eservice1,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid2,
-          producer = producerOrg2,
-          consumer = consumerOrg2,
-          eservice = eservice2,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(2)
+      Agreement(
+        id = uuid2,
+        producer = producerOrg2,
+        consumer = consumerOrg2,
+        eservice = eservice2,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid3,
-          producer = producerOrg3,
-          consumer = consumerOrg3,
-          eservice = eservice3,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(3)
+      Agreement(
+        id = uuid3,
+        producer = producerOrg3,
+        consumer = consumerOrg3,
+        eservice = eservice3,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid4,
-          producer = producerOrg4,
-          consumer = consumerOrg4,
-          eservice = eservice4,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(4)
+      Agreement(
+        id = uuid4,
+        producer = producerOrg4,
+        consumer = consumerOrg4,
+        eservice = eservice4,
+        status = "Active",
+        attributes = Seq.empty
       )
     )
   }
@@ -88,7 +76,7 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
       val filtered = AgreementFilter.filterAgreementsByLatestVersion(None, agreements)
 
       //then
-      val expectedId = agreements.map(_._1.id)
+      val expectedId = agreements.map(_.id)
       filtered.futureValue.map(_.id) should contain only (expectedId: _*)
     }
 
@@ -100,7 +88,7 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
       val filtered = AgreementFilter.filterAgreementsByLatestVersion(Some(false), agreements)
 
       //then
-      val expectedId = agreements.map(_._1.id)
+      val expectedId = agreements.map(_.id)
       filtered.futureValue.map(_.id) should contain only (expectedId: _*)
     }
   }
@@ -121,53 +109,45 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
     val consumerOrg3 = Organization("cons3", "cons3")
     val consumerOrg4 = Organization("cons4", "cons4")
 
-    val eservice1 = EService(UUID.randomUUID(), "eservice1", "eservice1")
-    val eservice2 = EService(UUID.randomUUID(), "eservice2", "eservice2")
+    val eserviceId1 = UUID.randomUUID()
+    val eserviceId2 = UUID.randomUUID()
+    val eservice1   = EService(eserviceId1, "eservice1", "100")
+    val eservice2   = EService(eserviceId1, "eservice2", "2")
+    val eservice3   = EService(eserviceId2, "eservice2", "30")
+    val eservice4   = EService(eserviceId2, "eservice2", "4")
 
     val agreementsToFilter = Seq(
-      (
-        Agreement(
-          id = uuid1,
-          producer = producerOrg1,
-          consumer = consumerOrg1,
-          eservice = eservice1,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(100L)
+      Agreement(
+        id = uuid1,
+        producer = producerOrg1,
+        consumer = consumerOrg1,
+        eservice = eservice1,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid2,
-          producer = producerOrg2,
-          consumer = consumerOrg2,
-          eservice = eservice1,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(2L)
+      Agreement(
+        id = uuid2,
+        producer = producerOrg2,
+        consumer = consumerOrg2,
+        eservice = eservice2,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid3,
-          producer = producerOrg3,
-          consumer = consumerOrg3,
-          eservice = eservice2,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(30L)
+      Agreement(
+        id = uuid3,
+        producer = producerOrg3,
+        consumer = consumerOrg3,
+        eservice = eservice3,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid4,
-          producer = producerOrg4,
-          consumer = consumerOrg4,
-          eservice = eservice2,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(4L)
+      Agreement(
+        id = uuid4,
+        producer = producerOrg4,
+        consumer = consumerOrg4,
+        eservice = eservice4,
+        status = "Active",
+        attributes = Seq.empty
       )
     )
 
@@ -194,53 +174,45 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
     val consumerOrg3 = Organization("cons3", "cons3")
     val consumerOrg4 = Organization("cons4", "cons4")
 
-    val eservice1 = EService(UUID.randomUUID(), "eservice1", "eservice1")
-    val eservice2 = EService(UUID.randomUUID(), "eservice2", "eservice2")
+    val eserviceId1 = UUID.randomUUID()
+    val eserviceId2 = UUID.randomUUID()
+    val eservice1   = EService(eserviceId1, "eservice1", "100")
+    val eservice2   = EService(eserviceId1, "eservice2", "2")
+    val eservice3   = EService(eserviceId2, "eservice2", "pippo")
+    val eservice4   = EService(eserviceId2, "eservice2", "4")
 
     val agreementsToFilter = Seq(
-      (
-        Agreement(
-          id = uuid1,
-          producer = producerOrg1,
-          consumer = consumerOrg1,
-          eservice = eservice1,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(100L)
+      Agreement(
+        id = uuid1,
+        producer = producerOrg1,
+        consumer = consumerOrg1,
+        eservice = eservice1,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid2,
-          producer = producerOrg2,
-          consumer = consumerOrg2,
-          eservice = eservice1,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(2L)
+      Agreement(
+        id = uuid2,
+        producer = producerOrg2,
+        consumer = consumerOrg2,
+        eservice = eservice2,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid3,
-          producer = producerOrg3,
-          consumer = consumerOrg3,
-          eservice = eservice2,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        None
+      Agreement(
+        id = uuid3,
+        producer = producerOrg3,
+        consumer = consumerOrg3,
+        eservice = eservice3,
+        status = "Active",
+        attributes = Seq.empty
       ),
-      (
-        Agreement(
-          id = uuid4,
-          producer = producerOrg4,
-          consumer = consumerOrg4,
-          eservice = eservice2,
-          status = "Active",
-          attributes = Seq.empty
-        ),
-        Some(4L)
+      Agreement(
+        id = uuid4,
+        producer = producerOrg4,
+        consumer = consumerOrg4,
+        eservice = eservice4,
+        status = "Active",
+        attributes = Seq.empty
       )
     )
 
