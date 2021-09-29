@@ -106,7 +106,7 @@ class AgreementApiServiceImpl(
         verifiedAttributeSeeds
       )
       apiAgreement <- getApiAgreement(bearerToken)(agreement)
-    } yield apiAgreement
+    } yield apiAgreement._1
 
     onComplete(result) {
       case Success(agreement) => createAgreement201(agreement)
@@ -125,7 +125,8 @@ class AgreementApiServiceImpl(
     consumerId: Option[String],
     eserviceId: Option[String],
     descriptorId: Option[String],
-    status: Option[String]
+    status: Option[String],
+    latest: Option[Boolean]
   )(implicit
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
@@ -140,7 +141,8 @@ class AgreementApiServiceImpl(
         descriptorId = descriptorId,
         status = status
       )
-      apiAgreements <- Future.traverse(agreements)(getApiAgreement(bearerToken))
+      apiAgreementsWithVersion <- Future.traverse(agreements)(a => getApiAgreement(bearerToken)(a))
+      apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
     } yield apiAgreements
 
     onComplete(result) {
@@ -163,7 +165,7 @@ class AgreementApiServiceImpl(
     val result: Future[Agreement] = for {
       bearerToken  <- extractBearer(contexts)
       agreement    <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      apiAgreement <- getApiAgreement(bearerToken)(agreement)
+      apiAgreement <- getApiAgreement(bearerToken)(agreement).map(_._1)
     } yield apiAgreement
 
     onComplete(result) {
@@ -182,7 +184,9 @@ class AgreementApiServiceImpl(
     }
   }
 
-  private def getApiAgreement(bearerToken: String)(agreement: ManagementAgreement): Future[Agreement] = {
+  private def getApiAgreement(
+    bearerToken: String
+  )(agreement: ManagementAgreement): Future[(Agreement, DescriptorVersion)] = {
     for {
       eservice <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       descriptor <- eservice.descriptors
@@ -191,13 +195,16 @@ class AgreementApiServiceImpl(
       producer  <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
       consumer  <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
       attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute)
-    } yield Agreement(
-      id = agreement.id,
-      producer = Organization(id = producer.institutionId, name = producer.description),
-      consumer = Organization(id = consumer.institutionId, name = consumer.description),
-      eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
-      status = agreement.status.toString,
-      attributes = attribute
+    } yield (
+      Agreement(
+        id = agreement.id,
+        producer = Organization(id = producer.institutionId, name = producer.description),
+        consumer = Organization(id = consumer.institutionId, name = consumer.description),
+        eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
+        status = agreement.status.toString,
+        attributes = attribute
+      ),
+      descriptor.version.toLongOption
     )
   }
 

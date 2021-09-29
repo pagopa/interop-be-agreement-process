@@ -137,6 +137,10 @@ paths:
               - pending
               - active
               - suspended
+        - in: query
+          name: latest
+          schema:
+            type: boolean
   '/agreements/{agreementId}':
     get:
       security:

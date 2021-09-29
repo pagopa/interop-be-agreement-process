@@ -12,6 +12,7 @@ import scala.util.{Failure, Success, Try}
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
 
+  type DescriptorVersion      = Option[Long]
   type ManagementEService     = catalogmanagement.client.model.EService
   type ManagementOrganization = partymanagement.client.model.Organization
   type ManagementAgreement    = agreementmanagement.client.model.Agreement
