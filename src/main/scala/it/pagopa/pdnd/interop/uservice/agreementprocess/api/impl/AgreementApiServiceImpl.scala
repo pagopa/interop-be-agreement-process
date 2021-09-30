@@ -290,7 +290,7 @@ class AgreementApiServiceImpl(
       agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       eservice    <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       latestActiveEserviceDescriptor <- eservice.descriptors
-        .find(d => d.status == EServiceDescriptorEnums.Status)
+        .find(d => d.status == EServiceDescriptorEnums.Status.Published)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
       latestDescriptorVersion = latestActiveEserviceDescriptor.version.toLongOption
       currentVersion          = eservice.descriptors.find(d => d.id == agreement.descriptorId).flatMap(_.version.toLongOption)
