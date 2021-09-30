@@ -125,7 +125,8 @@ class AgreementApiServiceImpl(
     consumerId: Option[String],
     eserviceId: Option[String],
     descriptorId: Option[String],
-    status: Option[String]
+    status: Option[String],
+    latest: Option[Boolean]
   )(implicit
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
@@ -140,7 +141,8 @@ class AgreementApiServiceImpl(
         descriptorId = descriptorId,
         status = status
       )
-      apiAgreements <- Future.traverse(agreements)(getApiAgreement(bearerToken))
+      apiAgreementsWithVersion <- Future.traverse(agreements)(a => getApiAgreement(bearerToken)(a))
+      apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
     } yield apiAgreements
 
     onComplete(result) {
