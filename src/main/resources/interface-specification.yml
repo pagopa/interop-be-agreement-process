@@ -26,6 +26,16 @@ tags:
     externalDocs:
       description: Find out more
       url: 'http://swagger.io'
+  - name: agreement
+    description: Implements agreement process
+    externalDocs:
+      description: Find out more
+      url: 'http://swagger.io'
+  - name: consumer
+    description: Implements consumer process
+    externalDocs:
+      description: Find out more
+      url: 'http://swagger.io'
 paths:
   /status:
     get:
@@ -137,6 +147,10 @@ paths:
               - pending
               - active
               - suspended
+        - in: query
+          name: latest
+          schema:
+            type: boolean
   '/agreements/{agreementId}':
     get:
       security:
@@ -332,7 +346,15 @@ components:
         attributes:
           type: array
           items:
-            $ref: '#/components/schemas/Attribute'
+            type: object
+            # TODO This should be oneOf, but openapi generator does not support it
+            properties:
+              single:
+                $ref: '#/components/schemas/Attribute'
+              group:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attribute'
       additionalProperties: false
       required:
         - id
