@@ -3,6 +3,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
+import cats.implicits.toTraverseOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementEnums,
   VerifiedAttribute,
@@ -11,6 +12,7 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{
   ActiveAgreementAlreadyExists,
+  AgreementAttributeNotFound,
   AgreementNotFound,
   DescriptorNotFound
 }
@@ -20,6 +22,10 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AttributeManagementService,
   CatalogManagementService,
   PartyManagementService
+}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
+  AttributeValue => CatalogAttributeValue,
+  EService => CatalogEService
 }
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -190,25 +196,49 @@ class AgreementApiServiceImpl(
       descriptor <- eservice.descriptors
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
-      producer  <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
-      consumer  <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
-      attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute)
+      producer   <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
+      consumer   <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
+      attributes <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
       consumer = Organization(id = consumer.institutionId, name = consumer.description),
       eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
       status = agreement.status.toString,
-      attributes = attribute
+      attributes = attributes
     )
   }
 
+  private def getApiAgreementAttributes(
+    verifiedAttributes: Seq[VerifiedAttribute],
+    eService: CatalogEService
+  ): Future[Seq[AgreementAttributes]] =
+    for {
+      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute)
+      eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
+      eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
+      agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
+      agreementGroupAttributes <- eServiceGroupAttributes.traverse(
+        _.traverse(eServiceToAgreementAttribute(_, attributes))
+      )
+      apiSingleAttributes = agreementSingleAttributes.map(single => AgreementAttributes(Some(single), None))
+      apiGroupAttributes  = agreementGroupAttributes.map(group => AgreementAttributes(None, Some(group)))
+    } yield apiSingleAttributes ++ apiGroupAttributes
+
+  private def eServiceToAgreementAttribute(
+    eServiceAttributeValue: CatalogAttributeValue,
+    agreementAttributes: Seq[Attribute]
+  ): Future[Attribute] =
+    agreementAttributes
+      .find(_.id.toString == eServiceAttributeValue.id)
+      .toFuture(AgreementAttributeNotFound(eServiceAttributeValue.id))
+
   private def getApiAttribute(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
     for {
-      att     <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
-      idUuuid <- Future.fromTry(Try(UUID.fromString(att.id)))
+      att  <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
+      uuid <- Future.fromTry(Try(UUID.fromString(att.id)))
     } yield Attribute(
-      id = idUuuid,
+      id = uuid,
       code = att.code,
       description = att.description,
       origin = att.origin,
