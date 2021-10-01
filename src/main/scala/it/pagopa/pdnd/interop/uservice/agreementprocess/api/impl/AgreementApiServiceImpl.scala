@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementEnums,
+  AgreementSeed,
   VerifiedAttribute,
   VerifiedAttributeSeed
 }
@@ -23,6 +24,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
   AttributeValue => CatalogAttributeValue,
   EService => CatalogEService
@@ -37,6 +39,7 @@ import scala.util.{Failure, Success, Try}
   Array(
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Any",
+    "org.wartremover.warts.Equals",
     "org.wartremover.warts.StringPlusAny",
     "org.wartremover.warts.ToString",
     "org.wartremover.warts.Nothing",
@@ -304,4 +307,46 @@ class AgreementApiServiceImpl(
       }
     } yield ()
   }
+
+  /** Code: 200, Message: Agreement updated., DataType: Agreement
+    * Code: 404, Message: Agreement not found, DataType: Problem
+    * Code: 400, Message: Invalid ID supplied, DataType: Problem
+    */
+  override def upgradeAgreementById(agreementId: String)(implicit
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement],
+    contexts: Seq[(String, String)]
+  ): Route = {
+    val result = for {
+      bearerToken <- extractBearer(contexts)
+      agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      eservice    <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
+      latestActiveEserviceDescriptor <- eservice.descriptors
+        .find(d => d.status == EServiceDescriptorEnums.Status.Published)
+        .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
+      latestDescriptorVersion = latestActiveEserviceDescriptor.version.toLongOption
+      currentVersion          = eservice.descriptors.find(d => d.id == agreement.descriptorId).flatMap(_.version.toLongOption)
+      _ <- CatalogManagementService.hasEserviceNewPublishedVersion(latestDescriptorVersion, currentVersion)
+      agreementSeed = AgreementSeed(
+        eserviceId = eservice.id,
+        descriptorId = latestActiveEserviceDescriptor.id,
+        producerId = agreement.producerId,
+        consumerId = agreement.consumerId,
+        verifiedAttributes = agreement.verifiedAttributes.map(v =>
+          VerifiedAttributeSeed(id = v.id, verified = v.verified, validityTimespan = v.validityTimespan)
+        )
+      )
+      newAgreement <- agreementManagementService.upgradeById(bearerToken)(agreement.id, agreementSeed)
+      apiAgreement <- getApiAgreement(bearerToken)(newAgreement)
+    } yield apiAgreement
+
+    onComplete(result) {
+      case Success(agreement) => upgradeAgreementById200(agreement)
+      case Failure(ex) =>
+        val errorResponse: Problem =
+          Problem(Option(ex.getMessage), 400, s"Error while updating agreement $agreementId")
+        upgradeAgreementById400(errorResponse)
+    }
+  }
+
 }

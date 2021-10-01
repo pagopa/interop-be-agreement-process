@@ -83,4 +83,12 @@ object CatalogManagementService {
     }
   }
 
+  def hasEserviceNewPublishedVersion(latestVersion: Option[Long], currentVersion: Option[Long]): Future[Boolean] = {
+    (latestVersion, currentVersion) match {
+      case (Some(l), Some(c)) if l > c => Future.successful(true)
+      case (Some(_), None)             => Future.successful(true)
+      case _                           => Future.failed[Boolean](new RuntimeException("No new versions exist for this agreement!"))
+    }
+
+  }
 }

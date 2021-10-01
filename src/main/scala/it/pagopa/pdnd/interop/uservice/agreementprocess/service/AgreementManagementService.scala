@@ -33,6 +33,7 @@ trait AgreementManagementService {
     bearerToken: String
   )(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed): Future[Agreement]
 
+  def upgradeById(bearerToken: String)(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement]
 }
 
 @SuppressWarnings(

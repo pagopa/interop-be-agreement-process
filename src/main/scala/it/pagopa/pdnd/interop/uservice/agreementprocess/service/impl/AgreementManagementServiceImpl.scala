@@ -59,6 +59,21 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
+  override def upgradeById(bearerToken: String)(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement] = {
+    val request: ApiRequest[Agreement] = api.upgradeAgreementById(agreementId, agreementSeed)(BearerToken(bearerToken))
+    invoker
+      .execute[Agreement](request)
+      .map { x =>
+        logger.info(s"Agreement upgraded ${x.code}")
+        logger.info(s"Agreement upgraded ${x.content}")
+        x.content
+      }
+      .recoverWith { case ex =>
+        logger.error(s"Agreement upgrade FAILED: ${ex.getMessage}")
+        Future.failed[Agreement](ex)
+      }
+  }
+
   override def getAgreementById(bearerToken: String)(agreementId: String): Future[Agreement] = {
     val request: ApiRequest[Agreement] = api.getAgreement(agreementId)(BearerToken(bearerToken))
     invoker
