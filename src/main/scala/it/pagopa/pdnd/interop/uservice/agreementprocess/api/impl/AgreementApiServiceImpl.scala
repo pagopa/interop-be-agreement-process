@@ -83,6 +83,29 @@ class AgreementApiServiceImpl(
     }
   }
 
+  /** Code: 204, Message: Active agreement suspended.
+    * Code: 400, Message: Bad Request, DataType: Problem
+    */
+  override def suspendAgreement(
+    agreementId: String
+  )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
+    logger.info(s"Suspending agreement $agreementId")
+    val result = for {
+      bearerToken <- extractBearer(contexts)
+      agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      _           <- AgreementManagementService.isActive(agreement)
+      _           <- agreementManagementService.suspendById(bearerToken)(agreementId)
+    } yield ()
+
+    onComplete(result) {
+      case Success(_) => suspendAgreement204
+      case Failure(ex) =>
+        val errorResponse: Problem =
+          Problem(Option(ex.getMessage), 400, s"Error while suspending agreement $agreementId")
+        suspendAgreement400(errorResponse)
+    }
+  }
+
   /** Code: 201, Message: Agreement created., DataType: Agreement
     * Code: 400, Message: Bad Request, DataType: Problem
     */

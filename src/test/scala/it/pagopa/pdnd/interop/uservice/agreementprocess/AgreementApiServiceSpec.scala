@@ -337,4 +337,48 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   }
 
+  "Agreement Suspension" should {
+    "succeed on active agreement" in {
+      val activeAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Active)
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(activeAgreement))
+
+      (mockAgreementManagementService
+        .suspendById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(activeAgreement))
+
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.NoContent
+      }
+    }
+
+    "fail if missing authorization header" in {
+      val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString)(toEntityMarshallerProblem, contexts) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if agreement is not Active" in {
+      val currentAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Suspended)
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(currentAgreement))
+
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+  }
+
 }
