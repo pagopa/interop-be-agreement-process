@@ -3,9 +3,20 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
+import cats.implicits.toTraverseOps
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
+  AgreementEnums,
+  AgreementSeed,
+  VerifiedAttribute,
+  VerifiedAttributeSeed
+}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
-import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{AgreementNotFound, DescriptorNotFound}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{
+  ActiveAgreementAlreadyExists,
+  AgreementAttributeNotFound,
+  AgreementNotFound,
+  DescriptorNotFound
+}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
@@ -13,7 +24,11 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.AttributeValue
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
+  AttributeValue => CatalogAttributeValue,
+  EService => CatalogEService
+}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
@@ -45,14 +60,12 @@ class AgreementApiServiceImpl(
   )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
     logger.info(s"Activating agreement $agreementId")
     val result = for {
-      bearerToken      <- extractBearer(contexts)
-      agreement        <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      pendingAgreement <- AgreementManagementService.isPending(agreement)
-      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(
-        pendingAgreement.consumerId.toString
-      )
-      eservice       <- catalogManagementService.getEServiceById(bearerToken)(pendingAgreement.eserviceId)
-      activeEservice <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
+      bearerToken           <- extractBearer(contexts)
+      agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      _                     <- verifyAgreementActivationEligibility(bearerToken)(agreement)
+      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId.toString)
+      eservice              <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
+      activeEservice        <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
       _ <- AgreementManagementService.verifyAttributes(
         consumerAttributesIds,
         activeEservice.attributes,
@@ -67,6 +80,29 @@ class AgreementApiServiceImpl(
         val errorResponse: Problem =
           Problem(Option(ex.getMessage), 400, s"Error while activating agreement $agreementId")
         activateAgreement400(errorResponse)
+    }
+  }
+
+  /** Code: 204, Message: Active agreement suspended.
+    * Code: 400, Message: Bad Request, DataType: Problem
+    */
+  override def suspendAgreement(
+    agreementId: String
+  )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
+    logger.info(s"Suspending agreement $agreementId")
+    val result = for {
+      bearerToken <- extractBearer(contexts)
+      agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      _           <- AgreementManagementService.isActive(agreement)
+      _           <- agreementManagementService.suspendById(bearerToken)(agreementId)
+    } yield ()
+
+    onComplete(result) {
+      case Success(_) => suspendAgreement204
+      case Failure(ex) =>
+        val errorResponse: Problem =
+          Problem(Option(ex.getMessage), 400, s"Error while suspending agreement $agreementId")
+        suspendAgreement400(errorResponse)
     }
   }
 
@@ -121,7 +157,8 @@ class AgreementApiServiceImpl(
     consumerId: Option[String],
     eserviceId: Option[String],
     descriptorId: Option[String],
-    status: Option[String]
+    status: Option[String],
+    latest: Option[Boolean]
   )(implicit
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
@@ -136,7 +173,8 @@ class AgreementApiServiceImpl(
         descriptorId = descriptorId,
         status = status
       )
-      apiAgreements <- Future.traverse(agreements)(getApiAgreement(bearerToken))
+      apiAgreementsWithVersion <- Future.traverse(agreements)(getApiAgreement(bearerToken))
+      apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
     } yield apiAgreements
 
     onComplete(result) {
@@ -184,41 +222,65 @@ class AgreementApiServiceImpl(
       descriptor <- eservice.descriptors
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
-      producer  <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
-      consumer  <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
-      attribute <- Future.traverse(agreement.verifiedAttributes)(getApiAttribute(eservice.attributes))
+      producer   <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
+      consumer   <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
+      attributes <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
       consumer = Organization(id = consumer.institutionId, name = consumer.description),
       eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
       status = agreement.status.toString,
-      attributes = attribute
+      attributes = attributes
     )
   }
+
+  private def getApiAgreementAttributes(
+    verifiedAttributes: Seq[VerifiedAttribute],
+    eService: CatalogEService
+  ): Future[Seq[AgreementAttributes]] =
+    for {
+      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
+      eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
+      eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
+      agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
+      agreementGroupAttributes <- eServiceGroupAttributes.traverse(
+        _.traverse(eServiceToAgreementAttribute(_, attributes))
+      )
+      apiSingleAttributes = agreementSingleAttributes.map(single => AgreementAttributes(Some(single), None))
+      apiGroupAttributes  = agreementGroupAttributes.map(group => AgreementAttributes(None, Some(group)))
+    } yield apiSingleAttributes ++ apiGroupAttributes
+
+  private def eServiceToAgreementAttribute(
+    eServiceAttributeValue: CatalogAttributeValue,
+    agreementAttributes: Seq[Attribute]
+  ): Future[Attribute] =
+    agreementAttributes
+      .find(_.id.toString == eServiceAttributeValue.id)
+      .toFuture(AgreementAttributeNotFound(eServiceAttributeValue.id))
 
   private def getApiAttribute(
     attributes: ManagementAttributes
   )(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
-    val fromSingle: Seq[AttributeValue] =
+    val fromSingle: Seq[CatalogAttributeValue] =
       attributes.verified.flatMap(attribute => attribute.single.toList.find(_.id == verifiedAttribute.id.toString))
 
-    val fromGroup: Seq[AttributeValue] =
+    val fromGroup: Seq[CatalogAttributeValue] =
       attributes.verified.flatMap(attribute => attribute.group.flatMap(_.find(_.id == verifiedAttribute.id.toString)))
 
     val allVerifiedAttributes: Map[String, Boolean] =
       (fromSingle ++ fromGroup).map(attribute => attribute.id -> attribute.explicitAttributeVerification).toMap
 
     for {
-      attribute <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
-      id        <- Future.fromTry(Try(UUID.fromString(attribute.id)))
+      att  <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
+      uuid <- Future.fromTry(Try(UUID.fromString(att.id)))
     } yield Attribute(
-      id = id,
-      code = attribute.code,
-      description = attribute.description,
-      origin = attribute.origin,
-      name = attribute.name,
-      explicitAttributeVerification = allVerifiedAttributes.get(attribute.id),
+      id = uuid,
+      code = att.code,
+      description = att.description,
+      origin = att.origin,
+      name = att.name,
+      explicitAttributeVerification = allVerifiedAttributes.get(att.id),
       verified = Some(verifiedAttribute.verified),
       verificationDate = verifiedAttribute.verificationDate,
       validityTimespan = verifiedAttribute.validityTimespan
@@ -254,4 +316,72 @@ class AgreementApiServiceImpl(
         verifyAgreementAttribute404(errorResponse)
     }
   }
+
+  /** Verify if an agreement can be activated.
+    * Checks performed:
+    * - no other active agreement exists for the same combination of Producer, Consumer, EService, Descriptor
+    * - the given agreement is in status Pending (first activation) or Suspended (re-activation)
+    * @param bearerToken auth token
+    * @param agreement to be activated
+    * @return
+    */
+  private def verifyAgreementActivationEligibility(
+    bearerToken: String
+  )(agreement: ManagementAgreement): Future[Unit] = {
+    for {
+      activeAgreement <- agreementManagementService.getAgreements(bearerToken)(
+        producerId = Some(agreement.producerId.toString),
+        consumerId = Some(agreement.consumerId.toString),
+        eserviceId = Some(agreement.eserviceId.toString),
+        descriptorId = Some(agreement.descriptorId.toString),
+        status = Some(AgreementEnums.Status.Active.toString)
+      )
+      _ <- Either.cond(activeAgreement.isEmpty, (), ActiveAgreementAlreadyExists(agreement)).toFuture
+      _ <- AgreementManagementService.isPending(agreement).recoverWith { case _ =>
+        AgreementManagementService.isSuspended(agreement)
+      }
+    } yield ()
+  }
+
+  /** Code: 200, Message: Agreement updated., DataType: Agreement
+    * Code: 404, Message: Agreement not found, DataType: Problem
+    * Code: 400, Message: Invalid ID supplied, DataType: Problem
+    */
+  override def upgradeAgreementById(agreementId: String)(implicit
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement],
+    contexts: Seq[(String, String)]
+  ): Route = {
+    val result = for {
+      bearerToken <- extractBearer(contexts)
+      agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      eservice    <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
+      latestActiveEserviceDescriptor <- eservice.descriptors
+        .find(d => d.status == EServiceDescriptorEnums.Status.Published)
+        .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
+      latestDescriptorVersion = latestActiveEserviceDescriptor.version.toLongOption
+      currentVersion          = eservice.descriptors.find(d => d.id == agreement.descriptorId).flatMap(_.version.toLongOption)
+      _ <- CatalogManagementService.hasEserviceNewPublishedVersion(latestDescriptorVersion, currentVersion)
+      agreementSeed = AgreementSeed(
+        eserviceId = eservice.id,
+        descriptorId = latestActiveEserviceDescriptor.id,
+        producerId = agreement.producerId,
+        consumerId = agreement.consumerId,
+        verifiedAttributes = agreement.verifiedAttributes.map(v =>
+          VerifiedAttributeSeed(id = v.id, verified = v.verified, validityTimespan = v.validityTimespan)
+        )
+      )
+      newAgreement <- agreementManagementService.upgradeById(bearerToken)(agreement.id, agreementSeed)
+      apiAgreement <- getApiAgreement(bearerToken)(newAgreement)
+    } yield apiAgreement
+
+    onComplete(result) {
+      case Success(agreement) => upgradeAgreementById200(agreement)
+      case Failure(ex) =>
+        val errorResponse: Problem =
+          Problem(Option(ex.getMessage), 400, s"Error while updating agreement $agreementId")
+        upgradeAgreementById400(errorResponse)
+    }
+  }
+
 }

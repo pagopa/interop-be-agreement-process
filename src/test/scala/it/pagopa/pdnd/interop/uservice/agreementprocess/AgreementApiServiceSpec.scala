@@ -1,103 +1,70 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess
 
-import akka.actor.ActorSystem
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.AgreementEnums
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
-  AgreementApiMarshallerImpl,
-  AgreementApiServiceImpl,
-  localTimeFormat,
-  uuidFormat
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{AgreementApiServiceImpl, ConsumerApiMarshallerImpl}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{AgreementApi, ConsumerApiMarshaller, HealthApi}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
+  AgreementManagementService,
+  AttributeManagementService,
+  CatalogManagementService,
+  PartyManagementService
 }
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
-  AgreementApi,
-  AgreementApiMarshaller,
-  ConsumerApi,
-  HealthApi
-}
-import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.{Authenticator, executionContext}
-import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{
-  Agreement,
-  AgreementPayload,
-  Attribute,
-  Attributes,
-  EService,
-  Organization
-}
-import it.pagopa.pdnd.interop.uservice.agreementprocess.server.Controller
-import it.pagopa.pdnd.interop.uservice.agreementprocess.service._
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorEnums}
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
-import spray.json.{DefaultJsonProtocol, enrichAny}
 
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
-class AgreementApiServiceSpec
-    extends ScalaTestWithActorTestKit
-    with MockFactory
-    with AnyWordSpecLike
-    with SprayJsonSupport
-    with DefaultJsonProtocol
-    with SpecHelper {
+class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
-  implicit val testSystem: ActorSystem = system.classicSystem
+  val consumerApiMarshaller: ConsumerApiMarshaller               = new ConsumerApiMarshallerImpl
+  val mockHealthApi: HealthApi                                   = mock[HealthApi]
+  val mockAgreementApi: AgreementApi                             = mock[AgreementApi]
+  val mockPartyManagementService: PartyManagementService         = mock[PartyManagementService]
+  val mockAgreementManagementService: AgreementManagementService = mock[AgreementManagementService]
+  val mockCatalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
+  val mockAttributeManagementService: AttributeManagementService = mock[AttributeManagementService]
 
-  val agreementApiMarshaller: AgreementApiMarshaller         = new AgreementApiMarshallerImpl
-  val mockHealthApi: HealthApi                               = mock[HealthApi]
-  val mockConsumerApi: ConsumerApi                           = mock[ConsumerApi]
-  val partyManagementService: PartyManagementService         = mock[PartyManagementService]
-  val agreementManagementService: AgreementManagementService = mock[AgreementManagementService]
-  val catalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
-  val attributeManagementService: AttributeManagementService = mock[AttributeManagementService]
+  import consumerApiMarshaller._
 
-  var controller: Option[Controller]                 = None
-  var bindServer: Option[Future[Http.ServerBinding]] = None
+  val service = new AgreementApiServiceImpl(
+    mockAgreementManagementService,
+    mockCatalogManagementService,
+    mockPartyManagementService,
+    mockAttributeManagementService
+  )(ExecutionContext.global)
 
-  val wrappingDirective: AuthenticationDirective[Seq[(String, String)]] =
-    SecurityDirectives.authenticateOAuth2("SecurityRealm", Authenticator)
+  implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
 
-  override def beforeAll(): Unit = {
-
-    val agreementApi = new AgreementApi(
-      new AgreementApiServiceImpl(
-        agreementManagementService = agreementManagementService,
-        partyManagementService = partyManagementService,
-        catalogManagementService = catalogManagementService,
-        attributeManagementService = attributeManagementService
-      ),
-      agreementApiMarshaller,
-      wrappingDirective
-    )
-
-    controller = Some(new Controller(agreement = agreementApi, health = mockHealthApi, consumer = mockConsumerApi))
-
-    controller foreach { controller =>
-      bindServer = Some(
-        Http()
-          .newServerAt("0.0.0.0", 8088)
-          .bind(controller.routes)
+  "Agreement Activation" should {
+    "succeed on pending agreement" in {
+      val pendingAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Pending)
+      val eService = TestDataOne.eService.copy(descriptors =
+        Seq(
+          EServiceDescriptor(
+            pendingAgreement.descriptorId,
+            "1",
+            None,
+            Seq.empty,
+            0,
+            None,
+            Seq.empty,
+            EServiceDescriptorEnums.Status.Published
+          )
+        )
       )
 
-      Await.result(bindServer.get, 100.seconds)
-    }
-  }
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(pendingAgreement))
 
-  override def afterAll(): Unit = {
-    bindServer.foreach(_.foreach(_.unbind()))
-  }
-
-  "Processing an agreement request" should {
-
-    "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
-
-      (agreementManagementService
+      (mockAgreementManagementService
         .getAgreements(_: String)(
           _: Option[String],
           _: Option[String],
@@ -107,225 +74,309 @@ class AgreementApiServiceSpec
         ))
         .expects(
           Common.bearerToken,
-          None,
-          Some(Common.consumerId),
-          None,
-          None,
+          Some(TestDataOne.producerId.toString),
+          Some(pendingAgreement.consumerId.toString),
+          Some(eService.id.toString),
+          Some(TestDataOne.descriptorId.toString),
           Some(AgreementEnums.Status.Active.toString)
         )
-        .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
-
-      (catalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataOne.eserviceId)
-        .returns(Future.successful(TestDataOne.eService))
         .once()
+        .returns(Future.successful(Seq.empty))
 
-      (catalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataTwo.eserviceId)
-        .returns(Future.successful(TestDataTwo.eService))
-        .once()
-
-      (partyManagementService
+      (mockPartyManagementService
         .getPartyAttributes(_: String)(_: String))
-        .expects(Common.bearerToken, Common.consumerId)
-        .returns(Future.successful(Seq(Common.certifiedAttribute)))
+        .expects(Common.bearerToken, pendingAgreement.consumerId.toString)
+        .once()
+        .returns(Future.successful(Seq.empty))
 
-      (attributeManagementService.getAttribute _)
-        .expects(Common.certifiedAttribute)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
+      (mockCatalogManagementService
+        .getEServiceById(_: String)(_: UUID))
+        .expects(Common.bearerToken, eService.id)
+        .once()
+        .returns(Future.successful(eService))
 
-      (attributeManagementService.getAttribute _)
-        .expects(Common.verifiedAttributeId1)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId1))
+      (mockAgreementManagementService
+        .activateById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(pendingAgreement))
 
-      (attributeManagementService.getAttribute _)
-        .expects(Common.verifiedAttributeId2)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId2))
-
-      (attributeManagementService.getAttribute _)
-        .expects(Common.verifiedAttributeId3)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
-
-      (attributeManagementService.getAttribute _)
-        .expects(Common.declaredAttributeId1)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId1))
-
-      (attributeManagementService.getAttribute _)
-        .expects(Common.declaredAttributeId2)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId2))
-
-      (attributeManagementService.getAttribute _)
-        .expects(Common.declaredAttributeId3)
-        .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
-
-      import akka.actor.ActorSystem
-      import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-      import akka.http.scaladsl.Http
-      import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-      import akka.http.scaladsl.model.HttpMethods
-      import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
-      import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-      import org.scalamock.scalatest.MockFactory
-      import org.scalatest.wordspec.AnyWordSpecLike
-      import spray.json.{DefaultJsonProtocol, RootJsonFormat}
-
-      import java.util.UUID
-      import scala.concurrent.duration.{Duration, DurationInt}
-      import scala.concurrent.{Await, Future}
-
-      class AgreementApiServiceSpec
-          extends ScalaTestWithActorTestKit
-          with MockFactory
-          with AnyWordSpecLike
-          with SprayJsonSupport
-          with DefaultJsonProtocol
-          with SpecHelper {
-
-        implicit val testSystem: ActorSystem = system.classicSystem
-
-        val agreementApiMarshaller: AgreementApiMarshaller         = new AgreementApiMarshallerImpl
-        val mockHealthApi: HealthApi                               = mock[HealthApi]
-        val mockConsumerApi: ConsumerApi                           = mock[ConsumerApi]
-        val partyManagementService: PartyManagementService         = mock[PartyManagementService]
-        val agreementManagementService: AgreementManagementService = mock[AgreementManagementService]
-        val catalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
-        val attributeManagementService: AttributeManagementService = mock[AttributeManagementService]
-
-        var controller: Option[Controller]                 = None
-        var bindServer: Option[Future[Http.ServerBinding]] = None
-
-        val wrappingDirective: AuthenticationDirective[Seq[(String, String)]] =
-          SecurityDirectives.authenticateOAuth2("SecurityRealm", Authenticator)
-
-        override def beforeAll(): Unit = {
-
-          val agreementApi = new AgreementApi(
-            new AgreementApiServiceImpl(
-              agreementManagementService = agreementManagementService,
-              partyManagementService = partyManagementService,
-              catalogManagementService = catalogManagementService,
-              attributeManagementService = attributeManagementService
-            ),
-            agreementApiMarshaller,
-            wrappingDirective
-          )
-
-          controller =
-            Some(new Controller(agreement = agreementApi, health = mockHealthApi, consumer = mockConsumerApi))
-
-          controller foreach { controller =>
-            bindServer = Some(
-              Http()
-                .newServerAt("0.0.0.0", 8088)
-                .bind(controller.routes)
-            )
-
-            Await.result(bindServer.get, 100.seconds)
-          }
-        }
-
-        override def afterAll(): Unit = {
-          bindServer.foreach(_.foreach(_.unbind()))
-        }
-
-        "Processing an agreement request" should {
-
-          "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
-
-            (agreementManagementService
-              .getAgreements(_: String)(
-                _: Option[String],
-                _: Option[String],
-                _: Option[String],
-                _: Option[String],
-                _: Option[String]
-              ))
-              .expects(
-                Common.bearerToken,
-                None,
-                Some(Common.consumerId),
-                None,
-                None,
-                Some(AgreementEnums.Status.Active.toString)
-              )
-              .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
-
-            (catalogManagementService
-              .getEServiceById(_: String)(_: UUID))
-              .expects(Common.bearerToken, TestDataOne.eserviceId)
-              .returns(Future.successful(TestDataOne.eService))
-              .once()
-
-            (catalogManagementService
-              .getEServiceById(_: String)(_: UUID))
-              .expects(Common.bearerToken, TestDataTwo.eserviceId)
-              .returns(Future.successful(TestDataTwo.eService))
-              .once()
-
-            (partyManagementService
-              .getPartyAttributes(_: String)(_: String))
-              .expects(Common.bearerToken, Common.consumerId)
-              .returns(Future.successful(Seq(Common.certifiedAttribute)))
-
-            (attributeManagementService.getAttribute _)
-              .expects(Common.certifiedAttribute)
-              .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
-
-            (attributeManagementService.getAttribute _)
-              .expects(Common.verifiedAttributeId1)
-              .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId1))
-
-            (attributeManagementService.getAttribute _)
-              .expects(Common.verifiedAttributeId2)
-              .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId2))
-
-            (attributeManagementService.getAttribute _)
-              .expects(Common.verifiedAttributeId3)
-              .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
-
-            (attributeManagementService.getAttribute _)
-              .expects(Common.declaredAttributeId1)
-              .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId1))
-
-            (attributeManagementService.getAttribute _)
-              .expects(Common.declaredAttributeId2)
-              .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId2))
-
-            (attributeManagementService.getAttribute _)
-              .expects(Common.declaredAttributeId3)
-              .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
-
-            val payload = AgreementPayload(
-              eserviceId = TestDataSix.eserviceId,
-              descriptorId = TestDataSix.descriptorId,
-              consumerId = TestDataSix.consumerId
-            )
-
-            implicit val agreementPayloadFormat: RootJsonFormat[AgreementPayload] =
-              jsonFormat3(AgreementPayload)
-
-            val requestData = Source.single(ByteString.fromString(payload.toJson.compactPrint))
-
-            val response = request(data = requestData, path = "agreements", verb = HttpMethods.POST)
-
-            implicit def organizationJsonFormat: RootJsonFormat[Organization] = jsonFormat2(Organization)
-            implicit def eServiceJsonFormat: RootJsonFormat[EService]         = jsonFormat3(EService)
-            implicit def attributeJsonFormat: RootJsonFormat[Attribute]       = jsonFormat9(Attribute)
-            implicit def agreementJsonFormat: RootJsonFormat[Agreement]       = jsonFormat6(Agreement)
-
-            implicit val fromEntityUnmarshallerAttributes: FromEntityUnmarshaller[Agreement] =
-              sprayJsonUnmarshaller[Agreement]
-
-            val body = Await.result(Unmarshal(response.entity).to[Agreement], Duration.Inf)
-
-          }
-
-        }
-
+      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.NoContent
       }
+    }
 
+    "succeed on suspended agreement" in {
+      val suspendedAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Suspended)
+      val eService = TestDataOne.eService.copy(descriptors =
+        Seq(
+          EServiceDescriptor(
+            suspendedAgreement.descriptorId,
+            "1",
+            None,
+            Seq.empty,
+            0,
+            None,
+            Seq.empty,
+            EServiceDescriptorEnums.Status.Published
+          )
+        )
+      )
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(suspendedAgreement))
+
+      (mockAgreementManagementService
+        .getAgreements(_: String)(
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String]
+        ))
+        .expects(
+          Common.bearerToken,
+          Some(TestDataOne.producerId.toString),
+          Some(suspendedAgreement.consumerId.toString),
+          Some(eService.id.toString),
+          Some(TestDataOne.descriptorId.toString),
+          Some(AgreementEnums.Status.Active.toString)
+        )
+        .once()
+        .returns(Future.successful(Seq.empty))
+
+      (mockPartyManagementService
+        .getPartyAttributes(_: String)(_: String))
+        .expects(Common.bearerToken, suspendedAgreement.consumerId.toString)
+        .once()
+        .returns(Future.successful(Seq.empty))
+
+      (mockCatalogManagementService
+        .getEServiceById(_: String)(_: UUID))
+        .expects(Common.bearerToken, eService.id)
+        .once()
+        .returns(Future.successful(eService))
+
+      (mockAgreementManagementService
+        .activateById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(suspendedAgreement))
+
+      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.NoContent
+      }
+    }
+
+    "fail if missing authorization header" in {
+      val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
+      Get() ~> service.activateAgreement(TestDataOne.id.toString)(toEntityMarshallerProblem, contexts) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if an active agreement already exists" in {
+      val currentAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Suspended)
+      val activeAgreement  = TestDataOne.agreement.copy(id = UUID.randomUUID(), status = AgreementEnums.Status.Active)
+
+      val eService = TestDataOne.eService.copy(descriptors =
+        Seq(
+          EServiceDescriptor(
+            currentAgreement.descriptorId,
+            "1",
+            None,
+            Seq.empty,
+            0,
+            None,
+            Seq.empty,
+            EServiceDescriptorEnums.Status.Published
+          )
+        )
+      )
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(currentAgreement))
+
+      (mockAgreementManagementService
+        .getAgreements(_: String)(
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String]
+        ))
+        .expects(
+          Common.bearerToken,
+          Some(TestDataOne.producerId.toString),
+          Some(currentAgreement.consumerId.toString),
+          Some(eService.id.toString),
+          Some(TestDataOne.descriptorId.toString),
+          Some(AgreementEnums.Status.Active.toString)
+        )
+        .once()
+        .returns(Future.successful(Seq(activeAgreement)))
+
+      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if agreement is not Pending or Suspended" in {
+      val currentAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Active)
+
+      val eService = TestDataOne.eService.copy(descriptors =
+        Seq(
+          EServiceDescriptor(
+            currentAgreement.descriptorId,
+            "1",
+            None,
+            Seq.empty,
+            0,
+            None,
+            Seq.empty,
+            EServiceDescriptorEnums.Status.Published
+          )
+        )
+      )
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(currentAgreement))
+
+      (mockAgreementManagementService
+        .getAgreements(_: String)(
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String]
+        ))
+        .expects(
+          Common.bearerToken,
+          Some(TestDataOne.producerId.toString),
+          Some(currentAgreement.consumerId.toString),
+          Some(eService.id.toString),
+          Some(TestDataOne.descriptorId.toString),
+          Some(AgreementEnums.Status.Active.toString)
+        )
+        .once()
+        .returns(Future.successful(Seq.empty))
+
+      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if descriptor is not Published" in {
+      val currentAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Suspended)
+
+      val eService = TestDataOne.eService.copy(descriptors =
+        Seq(
+          EServiceDescriptor(
+            currentAgreement.descriptorId,
+            "1",
+            None,
+            Seq.empty,
+            0,
+            None,
+            Seq.empty,
+            EServiceDescriptorEnums.Status.Deprecated
+          )
+        )
+      )
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(currentAgreement))
+
+      (mockAgreementManagementService
+        .getAgreements(_: String)(
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String],
+          _: Option[String]
+        ))
+        .expects(
+          Common.bearerToken,
+          Some(TestDataOne.producerId.toString),
+          Some(currentAgreement.consumerId.toString),
+          Some(eService.id.toString),
+          Some(TestDataOne.descriptorId.toString),
+          Some(AgreementEnums.Status.Active.toString)
+        )
+        .once()
+        .returns(Future.successful(Seq.empty))
+
+      (mockPartyManagementService
+        .getPartyAttributes(_: String)(_: String))
+        .expects(Common.bearerToken, currentAgreement.consumerId.toString)
+        .once()
+        .returns(Future.successful(Seq.empty))
+
+      (mockCatalogManagementService
+        .getEServiceById(_: String)(_: UUID))
+        .expects(Common.bearerToken, eService.id)
+        .once()
+        .returns(Future.successful(eService))
+
+      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+  }
+
+  "Agreement Suspension" should {
+    "succeed on active agreement" in {
+      val activeAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Active)
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(activeAgreement))
+
+      (mockAgreementManagementService
+        .suspendById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(activeAgreement))
+
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.NoContent
+      }
+    }
+
+    "fail if missing authorization header" in {
+      val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString)(toEntityMarshallerProblem, contexts) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if agreement is not Active" in {
+      val currentAgreement = TestDataOne.agreement.copy(status = AgreementEnums.Status.Suspended)
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .once()
+        .returns(Future.successful(currentAgreement))
+
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
   }
