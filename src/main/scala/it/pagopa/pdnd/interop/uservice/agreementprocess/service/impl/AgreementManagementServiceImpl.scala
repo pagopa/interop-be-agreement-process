@@ -59,6 +59,21 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
+  override def suspendById(bearerToken: String)(agreementId: String): Future[Agreement] = {
+    val request: ApiRequest[Agreement] = api.suspendAgreement(agreementId)(BearerToken(bearerToken))
+    invoker
+      .execute[Agreement](request)
+      .map { x =>
+        logger.info(s"Suspending agreement ${x.code}")
+        logger.info(s"Suspending agreement ${x.content}")
+        x.content
+      }
+      .recoverWith { case ex =>
+        logger.error(s"Suspending agreement FAILED: ${ex.getMessage}")
+        Future.failed[Agreement](ex)
+      }
+  }
+
   override def upgradeById(bearerToken: String)(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement] = {
     val request: ApiRequest[Agreement] = api.upgradeAgreementById(agreementId, agreementSeed)(BearerToken(bearerToken))
     invoker

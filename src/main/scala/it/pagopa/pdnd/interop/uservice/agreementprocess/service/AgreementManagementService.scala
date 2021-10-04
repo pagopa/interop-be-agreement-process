@@ -28,6 +28,7 @@ trait AgreementManagementService {
   ): Future[Seq[Agreement]]
 
   def activateById(bearerToken: String)(agreementId: String): Future[Agreement]
+  def suspendById(bearerToken: String)(agreementId: String): Future[Agreement]
 
   def markVerifiedAttribute(
     bearerToken: String
