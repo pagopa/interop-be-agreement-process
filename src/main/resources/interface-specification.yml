@@ -440,6 +440,8 @@ components:
           description: 'represents the origin of this attribute (e.g.: IPA, Normattiva, etc.)'
         name:
           type: string
+        explicitAttributeVerification:
+          type: boolean
         verified:
           type: boolean
         verificationDate:

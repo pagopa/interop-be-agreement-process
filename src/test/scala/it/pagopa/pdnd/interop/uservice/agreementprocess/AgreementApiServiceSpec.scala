@@ -1,10 +1,24 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.AgreementEnums
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{AgreementApiServiceImpl, ConsumerApiMarshallerImpl}
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{AgreementApi, ConsumerApiMarshaller, HealthApi}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
+  AgreementApiMarshallerImpl,
+  AgreementApiServiceImpl,
+  ConsumerApiMarshallerImpl,
+  localTimeFormat,
+  uuidFormat
+}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
+  AgreementApi,
+  AgreementApiMarshaller,
+  ConsumerApiMarshaller,
+  HealthApi
+}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
   AttributeManagementService,
@@ -15,6 +29,7 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{EServiceD
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
+import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,6 +37,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
   val consumerApiMarshaller: ConsumerApiMarshaller               = new ConsumerApiMarshallerImpl
+  val agreementApiMarshaller: AgreementApiMarshaller             = new AgreementApiMarshallerImpl
   val mockHealthApi: HealthApi                                   = mock[HealthApi]
   val mockAgreementApi: AgreementApi                             = mock[AgreementApi]
   val mockPartyManagementService: PartyManagementService         = mock[PartyManagementService]
@@ -376,6 +392,113 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       Get() ~> service.suspendAgreement(TestDataOne.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "Agreement GET" should {
+    "retrieves an agreement" in {
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataSeven.agreementId.toString)
+        .once()
+        .returns(Future.successful(TestDataSeven.agreement))
+
+      (mockCatalogManagementService
+        .getEServiceById(_: String)(_: UUID))
+        .expects(Common.bearerToken, TestDataSeven.eservice.id)
+        .once()
+        .returns(Future.successful(TestDataSeven.eservice))
+
+      (mockPartyManagementService
+        .getOrganization(_: String)(_: UUID))
+        .expects(Common.bearerToken, TestDataSeven.producerId)
+        .once()
+        .returns(Future.successful(TestDataSeven.producer))
+
+      (mockPartyManagementService
+        .getOrganization(_: String)(_: UUID))
+        .expects(Common.bearerToken, TestDataSeven.consumerId)
+        .once()
+        .returns(Future.successful(TestDataSeven.consumer))
+
+      (mockAttributeManagementService
+        .getAttribute(_: String))
+        .expects(TestDataSeven.eservice.attributes.verified(0).single.get.id)
+        .once()
+        .returns(Future.successful(ClientAttributes.verifiedAttributeId1))
+
+      (mockAttributeManagementService
+        .getAttribute(_: String))
+        .expects(TestDataSeven.eservice.attributes.verified(1).single.get.id)
+        .once()
+        .returns(Future.successful(ClientAttributes.verifiedAttributeId2))
+
+      import agreementApiMarshaller._
+      import spray.json.DefaultJsonProtocol._
+
+      implicit def organizationJsonFormat: RootJsonFormat[Organization]               = jsonFormat2(Organization)
+      implicit def eServiceJsonFormat: RootJsonFormat[EService]                       = jsonFormat3(EService)
+      implicit def attributeJsonFormat: RootJsonFormat[Attribute]                     = jsonFormat9(Attribute)
+      implicit def agreementAttributesJsonFormat: RootJsonFormat[AgreementAttributes] = jsonFormat2(AgreementAttributes)
+      implicit def agreementJsonFormat: RootJsonFormat[Agreement]                     = jsonFormat6(Agreement)
+      import SprayJsonSupport.sprayJsonUnmarshaller
+
+      implicit def fromEntityUnmarshallerAgreement: FromEntityUnmarshaller[Agreement] =
+        sprayJsonUnmarshaller[Agreement]
+
+      val expected = Agreement(
+        id = TestDataSeven.agreementId,
+        producer = Organization(id = TestDataSeven.producer.institutionId, name = TestDataSeven.producer.description),
+        consumer = Organization(id = TestDataSeven.consumer.institutionId, name = TestDataSeven.consumer.description),
+        eservice = EService(
+          id = TestDataSeven.eservice.id,
+          name = TestDataSeven.eservice.name,
+          version = TestDataSeven.eservice.descriptors(0).version
+        ),
+        status = TestDataSeven.agreement.status.toString,
+        attributes = Seq(
+          AgreementAttributes(
+            single = Some(
+              Attribute(
+                id = UUID.fromString(ClientAttributes.verifiedAttributeId1.id),
+                code = ClientAttributes.verifiedAttributeId1.code,
+                description = ClientAttributes.verifiedAttributeId1.description,
+                origin = ClientAttributes.verifiedAttributeId1.origin,
+                name = ClientAttributes.verifiedAttributeId1.name,
+                explicitAttributeVerification =
+                  Some(TestDataSeven.eservice.attributes.verified(0).single.get.explicitAttributeVerification),
+                verified = Some(TestDataSeven.agreement.verifiedAttributes(0).verified),
+                verificationDate = TestDataSeven.agreement.verifiedAttributes(0).verificationDate,
+                validityTimespan = TestDataSeven.agreement.verifiedAttributes(0).validityTimespan
+              )
+            ),
+            group = None
+          ),
+          AgreementAttributes(
+            single = Some(
+              Attribute(
+                id = UUID.fromString(ClientAttributes.verifiedAttributeId2.id),
+                code = ClientAttributes.verifiedAttributeId2.code,
+                description = ClientAttributes.verifiedAttributeId2.description,
+                origin = ClientAttributes.verifiedAttributeId2.origin,
+                name = ClientAttributes.verifiedAttributeId2.name,
+                explicitAttributeVerification =
+                  Some(TestDataSeven.eservice.attributes.verified(1).single.get.explicitAttributeVerification),
+                verified = Some(TestDataSeven.agreement.verifiedAttributes(1).verified),
+                verificationDate = TestDataSeven.agreement.verifiedAttributes(1).verificationDate,
+                validityTimespan = TestDataSeven.agreement.verifiedAttributes(1).validityTimespan
+              )
+            ),
+            group = None
+          )
+        )
+      )
+
+      Get() ~> service.getAgreementById(TestDataSeven.agreementId.toString) ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[Agreement] shouldEqual expected
       }
     }
 

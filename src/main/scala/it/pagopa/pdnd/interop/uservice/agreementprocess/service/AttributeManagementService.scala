@@ -24,13 +24,14 @@ object AttributeManagementService {
 
   def toApi(attr: ClientAttribute): Future[Attribute] = Future.fromTry {
     for {
-      uuidId <- Try(UUID.fromString(attr.id))
+      id <- Try(UUID.fromString(attr.id))
     } yield Attribute(
-      id = uuidId,
+      id = id,
       code = attr.code,
       description = attr.description,
       origin = attr.origin,
       name = attr.name,
+      explicitAttributeVerification = None,
       verified = None,
       verificationDate = None,
       validityTimespan = None

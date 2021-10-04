@@ -39,10 +39,10 @@ import scala.util.{Failure, Success, Try}
   Array(
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.Any",
-    "org.wartremover.warts.Equals",
     "org.wartremover.warts.StringPlusAny",
     "org.wartremover.warts.ToString",
     "org.wartremover.warts.Nothing",
+    "org.wartremover.warts.Equals",
     "org.wartremover.warts.Recursion"
   )
 )
@@ -173,7 +173,7 @@ class AgreementApiServiceImpl(
         descriptorId = descriptorId,
         status = status
       )
-      apiAgreementsWithVersion <- Future.traverse(agreements)(a => getApiAgreement(bearerToken)(a))
+      apiAgreementsWithVersion <- Future.traverse(agreements)(getApiAgreement(bearerToken))
       apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
     } yield apiAgreements
 
@@ -240,7 +240,7 @@ class AgreementApiServiceImpl(
     eService: CatalogEService
   ): Future[Seq[AgreementAttributes]] =
     for {
-      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute)
+      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
       eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
       eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
       agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
@@ -259,7 +259,18 @@ class AgreementApiServiceImpl(
       .find(_.id.toString == eServiceAttributeValue.id)
       .toFuture(AgreementAttributeNotFound(eServiceAttributeValue.id))
 
-  private def getApiAttribute(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
+  private def getApiAttribute(
+    attributes: ManagementAttributes
+  )(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
+    val fromSingle: Seq[CatalogAttributeValue] =
+      attributes.verified.flatMap(attribute => attribute.single.toList.find(_.id == verifiedAttribute.id.toString))
+
+    val fromGroup: Seq[CatalogAttributeValue] =
+      attributes.verified.flatMap(attribute => attribute.group.flatMap(_.find(_.id == verifiedAttribute.id.toString)))
+
+    val allVerifiedAttributes: Map[String, Boolean] =
+      (fromSingle ++ fromGroup).map(attribute => attribute.id -> attribute.explicitAttributeVerification).toMap
+
     for {
       att  <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
       uuid <- Future.fromTry(Try(UUID.fromString(att.id)))
@@ -269,6 +280,7 @@ class AgreementApiServiceImpl(
       description = att.description,
       origin = att.origin,
       name = att.name,
+      explicitAttributeVerification = allVerifiedAttributes.get(att.id),
       verified = Some(verifiedAttribute.verified),
       verificationDate = verifiedAttribute.verificationDate,
       validityTimespan = verifiedAttribute.validityTimespan

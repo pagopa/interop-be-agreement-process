@@ -12,7 +12,8 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   Agreement => ClientAgreement
 }
 import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.model.{Attribute => ClientAttribute}
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes, EService}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
+import it.pagopa.pdnd.interop.uservice.partymanagement.client.model.Organization
 
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -295,6 +296,92 @@ trait SpecHelper {
       status = AgreementEnums.Status.Suspended,
       verifiedAttributes = Seq.empty
     )
+  }
+
+  object TestDataSeven {
+    val agreementId: UUID  = UUID.randomUUID()
+    val eserviceId: UUID   = UUID.randomUUID()
+    val descriptorId: UUID = UUID.randomUUID()
+    val producerId: UUID   = UUID.randomUUID()
+    val consumerId: UUID   = UUID.randomUUID()
+
+    val consumer = Organization(
+      institutionId = "institutionIdC",
+      description = "Consumer",
+      managerName = "name",
+      managerSurname = "surname",
+      digitalAddress = "digitalAddress",
+      partyId = consumerId.toString,
+      attributes = Seq.empty
+    )
+
+    val producer = Organization(
+      institutionId = "institutionIdP",
+      description = "Producer",
+      managerName = "name",
+      managerSurname = "surname",
+      digitalAddress = "digitalAddress",
+      partyId = producerId.toString,
+      attributes = Seq.empty
+    )
+
+    val eservice: EService = EService(
+      id = eserviceId,
+      producerId = producerId,
+      name = "name",
+      description = "description",
+      technology = "REST",
+      attributes = Attributes(
+        certified = Seq.empty,
+        declared = Seq.empty,
+        verified = Seq(
+          Attribute(
+            single = Some(AttributeValue(id = Common.verifiedAttributeId1, explicitAttributeVerification = true)),
+            group = None
+          ),
+          Attribute(
+            single = Some(AttributeValue(id = Common.verifiedAttributeId2, explicitAttributeVerification = false)),
+            group = None
+          )
+        )
+      ),
+      descriptors = Seq(
+        EServiceDescriptor(
+          id = descriptorId,
+          version = "1",
+          description = None,
+          audience = Seq.empty,
+          voucherLifespan = 1,
+          interface = None,
+          docs = Seq.empty,
+          status = EServiceDescriptorEnums.Status.Published
+        )
+      )
+    )
+
+    val agreement: ClientAgreement = ClientAgreement(
+      id = agreementId,
+      eserviceId = eserviceId,
+      descriptorId = descriptorId,
+      producerId = producerId,
+      consumerId = consumerId,
+      status = AgreementEnums.Status.Pending,
+      verifiedAttributes = Seq(
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = false,
+          verificationDate = None,
+          validityTimespan = None
+        ),
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = false,
+          verificationDate = None,
+          validityTimespan = None
+        )
+      )
+    )
+
   }
 
   val agreementsAllTrue: Seq[ClientAgreement]        = Seq(TestDataOne.agreement, TestDataTwo.agreement)
