@@ -27,8 +27,10 @@ trait AgreementManagementService {
     status: Option[String] = None
   ): Future[Seq[Agreement]]
 
-  def activateById(bearerToken: String)(agreementId: String): Future[Agreement]
-  def suspendById(bearerToken: String)(agreementId: String): Future[Agreement]
+  def activateById(
+    bearerToken: String
+  )(agreementId: String, statusChangeDetails: StatusChangeDetails): Future[Agreement]
+  def suspendById(bearerToken: String)(agreementId: String, statusChangeDetails: StatusChangeDetails): Future[Agreement]
 
   def markVerifiedAttribute(
     bearerToken: String
@@ -71,6 +73,18 @@ object AgreementManagementService {
       agreement.eserviceId == payload.eserviceId &&
       agreement.descriptorId == payload.descriptorId &&
       agreement.status == AgreementEnums.Status.Active
+  }
+
+  def getStatusChangeDetails(agreement: Agreement, partyId: String): Future[StatusChangeDetails] = {
+    val consumerId = agreement.consumerId.toString
+    val producerId = agreement.producerId.toString
+
+    if (consumerId == partyId)
+      Future.successful(StatusChangeDetails(changedBy = Some(StatusChangeDetailsEnums.ChangedBy.Consumer)))
+    else if (producerId == partyId)
+      Future.successful(StatusChangeDetails(changedBy = Some(StatusChangeDetailsEnums.ChangedBy.Producer)))
+    else
+      Future.failed(new RuntimeException("the party doing the operation is neither consumer nor producer"))
   }
 
   def isActive(agreement: Agreement): Future[Agreement] =

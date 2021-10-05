@@ -55,9 +55,10 @@ class AgreementApiServiceImpl(
     extends AgreementApiService {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def activateAgreement(
-    agreementId: String
-  )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
+  override def activateAgreement(agreementId: String, partyId: String)(implicit
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    contexts: Seq[(String, String)]
+  ): Route = {
     logger.info(s"Activating agreement $agreementId")
     val result = for {
       bearerToken           <- extractBearer(contexts)
@@ -71,7 +72,8 @@ class AgreementApiServiceImpl(
         activeEservice.attributes,
         agreement.verifiedAttributes
       )
-      _ <- agreementManagementService.activateById(bearerToken)(agreementId)
+      changeStatusDetails <- AgreementManagementService.getStatusChangeDetails(agreement, partyId)
+      _                   <- agreementManagementService.activateById(bearerToken)(agreementId, changeStatusDetails)
     } yield ()
 
     onComplete(result) {
@@ -86,15 +88,17 @@ class AgreementApiServiceImpl(
   /** Code: 204, Message: Active agreement suspended.
     * Code: 400, Message: Bad Request, DataType: Problem
     */
-  override def suspendAgreement(
-    agreementId: String
-  )(implicit toEntityMarshallerProblem: ToEntityMarshaller[Problem], contexts: Seq[(String, String)]): Route = {
+  override def suspendAgreement(agreementId: String, partyId: String)(implicit
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    contexts: Seq[(String, String)]
+  ): Route = {
     logger.info(s"Suspending agreement $agreementId")
     val result = for {
-      bearerToken <- extractBearer(contexts)
-      agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      _           <- AgreementManagementService.isActive(agreement)
-      _           <- agreementManagementService.suspendById(bearerToken)(agreementId)
+      bearerToken         <- extractBearer(contexts)
+      agreement           <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      _                   <- AgreementManagementService.isActive(agreement)
+      changeStatusDetails <- AgreementManagementService.getStatusChangeDetails(agreement, partyId)
+      _                   <- agreementManagementService.suspendById(bearerToken)(agreementId, changeStatusDetails)
     } yield ()
 
     onComplete(result) {
