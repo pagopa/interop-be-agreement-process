@@ -79,12 +79,15 @@ object AgreementManagementService {
     val consumerId = agreement.consumerId.toString
     val producerId = agreement.producerId.toString
 
-    if (consumerId == partyId)
-      Future.successful(StatusChangeDetails(changedBy = Some(StatusChangeDetailsEnums.ChangedBy.Consumer)))
-    else if (producerId == partyId)
-      Future.successful(StatusChangeDetails(changedBy = Some(StatusChangeDetailsEnums.ChangedBy.Producer)))
-    else
-      Future.failed(new RuntimeException("the party doing the operation is neither consumer nor producer"))
+    partyId match {
+      case `consumerId` => 
+        Future.successful(StatusChangeDetails(changedBy = 
+Some(StatusChangeDetailsEnums.ChangedBy.Consumer)))
+      case `producerId` => 
+        Future.successful(StatusChangeDetails(changedBy = Some(StatusChangeDetailsEnums.ChangedBy.Producer)))
+      case _ => 
+        Future.failed(new RuntimeException("the party doing the operation is neither consumer nor producer"))
+   }
   }
 
   def isActive(agreement: Agreement): Future[Agreement] =
