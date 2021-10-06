@@ -235,7 +235,9 @@ class AgreementApiServiceImpl(
       consumer = Organization(id = consumer.institutionId, name = consumer.description),
       eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
       status = agreement.status.toString,
-      attributes = attributes
+      attributes = attributes,
+      suspendedByConsumer = agreement.suspendedByConsumer,
+      suspendedByProducer = agreement.suspendedByProducer
     )
   }
 

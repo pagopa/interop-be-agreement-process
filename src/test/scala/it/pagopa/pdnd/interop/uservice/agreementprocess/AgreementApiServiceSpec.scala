@@ -449,7 +449,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       implicit def eServiceJsonFormat: RootJsonFormat[EService]                       = jsonFormat3(EService)
       implicit def attributeJsonFormat: RootJsonFormat[Attribute]                     = jsonFormat9(Attribute)
       implicit def agreementAttributesJsonFormat: RootJsonFormat[AgreementAttributes] = jsonFormat2(AgreementAttributes)
-      implicit def agreementJsonFormat: RootJsonFormat[Agreement]                     = jsonFormat6(Agreement)
+      implicit def agreementJsonFormat: RootJsonFormat[Agreement]                     = jsonFormat8(Agreement)
       import SprayJsonSupport.sprayJsonUnmarshaller
 
       implicit def fromEntityUnmarshallerAgreement: FromEntityUnmarshaller[Agreement] =
@@ -465,6 +465,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           version = TestDataSeven.eservice.descriptors(0).version
         ),
         status = TestDataSeven.agreement.status.toString,
+        suspendedByConsumer = None,
+        suspendedByProducer = None,
         attributes = Seq(
           AgreementAttributes(
             single = Some(

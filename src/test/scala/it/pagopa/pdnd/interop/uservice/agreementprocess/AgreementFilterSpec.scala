@@ -38,7 +38,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg1,
         eservice = eservice1,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid2,
@@ -46,7 +48,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg2,
         eservice = eservice2,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid3,
@@ -54,7 +58,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg3,
         eservice = eservice3,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid4,
@@ -62,7 +68,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg4,
         eservice = eservice4,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       )
     )
   }
@@ -123,7 +131,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg1,
         eservice = eservice1,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid2,
@@ -131,7 +141,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg2,
         eservice = eservice2,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid3,
@@ -139,7 +151,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg3,
         eservice = eservice3,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid4,
@@ -147,7 +161,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg4,
         eservice = eservice4,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       )
     )
 
@@ -188,7 +204,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg1,
         eservice = eservice1,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid2,
@@ -196,7 +214,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg2,
         eservice = eservice2,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid3,
@@ -204,7 +224,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg3,
         eservice = eservice3,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       ),
       Agreement(
         id = uuid4,
@@ -212,7 +234,9 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         consumer = consumerOrg4,
         eservice = eservice4,
         status = "Active",
-        attributes = Seq.empty
+        attributes = Seq.empty,
+        suspendedByConsumer = None,
+        suspendedByProducer = None
       )
     )
 
