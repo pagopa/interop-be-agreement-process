@@ -53,7 +53,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-  '/agreements/{agreementId}/party/{partyId}/activate':
+  '/agreements/{agreementId}/parties/{partyId}/activate':
     parameters:
       - schema:
           type: string
@@ -84,7 +84,7 @@ paths:
       tags:
         - agreement
       description: Activates the pending agreement if all the pre-requisites are met.
-  '/agreements/{agreementId}/party/{partyId}/suspend':
+  '/agreements/{agreementId}/parties/{partyId}/suspend':
     parameters:
       - schema:
           type: string
