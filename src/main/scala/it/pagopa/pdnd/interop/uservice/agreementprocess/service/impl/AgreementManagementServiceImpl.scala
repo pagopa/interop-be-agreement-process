@@ -44,8 +44,11 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def activateById(bearerToken: String)(agreementId: String): Future[Agreement] = {
-    val request: ApiRequest[Agreement] = api.activateAgreement(agreementId)(BearerToken(bearerToken))
+  override def activateById(
+    bearerToken: String
+  )(agreementId: String, statusChangeDetails: StatusChangeDetails): Future[Agreement] = {
+    val request: ApiRequest[Agreement] =
+      api.activateAgreement(agreementId, statusChangeDetails)(BearerToken(bearerToken))
     invoker
       .execute[Agreement](request)
       .map { x =>
@@ -59,8 +62,11 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
   }
 
-  override def suspendById(bearerToken: String)(agreementId: String): Future[Agreement] = {
-    val request: ApiRequest[Agreement] = api.suspendAgreement(agreementId)(BearerToken(bearerToken))
+  override def suspendById(
+    bearerToken: String
+  )(agreementId: String, statusChangeDetails: StatusChangeDetails): Future[Agreement] = {
+    val request: ApiRequest[Agreement] =
+      api.suspendAgreement(agreementId, statusChangeDetails)(BearerToken(bearerToken))
     invoker
       .execute[Agreement](request)
       .map { x =>

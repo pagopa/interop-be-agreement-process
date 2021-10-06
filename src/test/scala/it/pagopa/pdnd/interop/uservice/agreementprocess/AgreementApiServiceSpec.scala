@@ -4,7 +4,8 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.AgreementEnums
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.StatusChangeDetailsEnums.ChangedBy.Producer
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{AgreementEnums, StatusChangeDetails}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
@@ -112,12 +113,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .activateById(_: String)(_: String, _: StatusChangeDetails))
+        .expects(Common.bearerToken, TestDataOne.id.toString, StatusChangeDetails(changedBy = Some(Producer)))
         .once()
         .returns(Future.successful(pendingAgreement))
 
-      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+      Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent
       }
     }
@@ -177,19 +178,22 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .activateById(_: String)(_: String, _: StatusChangeDetails))
+        .expects(Common.bearerToken, TestDataOne.id.toString, StatusChangeDetails(changedBy = Some(Producer)))
         .once()
         .returns(Future.successful(suspendedAgreement))
 
-      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+      Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent
       }
     }
 
     "fail if missing authorization header" in {
       val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
-      Get() ~> service.activateAgreement(TestDataOne.id.toString)(toEntityMarshallerProblem, contexts) ~> check {
+      Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString)(
+        toEntityMarshallerProblem,
+        contexts
+      ) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -238,7 +242,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
         .returns(Future.successful(Seq(activeAgreement)))
 
-      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+      Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -286,7 +290,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
         .returns(Future.successful(Seq.empty))
 
-      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+      Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -346,7 +350,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
         .returns(Future.successful(eService))
 
-      Get() ~> service.activateAgreement(TestDataOne.id.toString) ~> check {
+      Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -364,19 +368,22 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(activeAgreement))
 
       (mockAgreementManagementService
-        .suspendById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .suspendById(_: String)(_: String, _: StatusChangeDetails))
+        .expects(Common.bearerToken, TestDataOne.id.toString, StatusChangeDetails(Some(Producer)))
         .once()
         .returns(Future.successful(activeAgreement))
 
-      Get() ~> service.suspendAgreement(TestDataOne.id.toString) ~> check {
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent
       }
     }
 
     "fail if missing authorization header" in {
       val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
-      Get() ~> service.suspendAgreement(TestDataOne.id.toString)(toEntityMarshallerProblem, contexts) ~> check {
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString)(
+        toEntityMarshallerProblem,
+        contexts
+      ) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -390,7 +397,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
         .returns(Future.successful(currentAgreement))
 
-      Get() ~> service.suspendAgreement(TestDataOne.id.toString) ~> check {
+      Get() ~> service.suspendAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
