@@ -226,14 +226,21 @@ class AgreementApiServiceImpl(
       descriptor <- eservice.descriptors
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
-      producer   <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
-      consumer   <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
-      attributes <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
+      activeDescriptorOption <- CatalogManagementService.getActiveDescriptorOption(eservice, descriptor)
+      producer               <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
+      consumer               <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
+      attributes             <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
       consumer = Organization(id = consumer.institutionId, name = consumer.description),
-      eservice = EService(id = eservice.id, name = eservice.name, version = descriptor.version),
+      eservice = EService(
+        id = eservice.id,
+        name = eservice.name,
+        version = descriptor.version,
+        activeDescriptor =
+          activeDescriptorOption.map(d => ActiveDescriptor(id = d.id, status = d.status.toString, version = d.version))
+      ),
       status = agreement.status.toString,
       attributes = attributes,
       suspendedByConsumer = agreement.suspendedByConsumer,
