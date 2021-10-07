@@ -9,6 +9,7 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
   Attribute,
   AttributeValue,
   EService,
+  EServiceDescriptor,
   EServiceDescriptorEnums
 }
 
@@ -32,6 +33,20 @@ trait CatalogManagementService {
   )
 )
 object CatalogManagementService {
+  def getActiveDescriptorOption(
+    eservice: EService,
+    currentDescriptor: EServiceDescriptor
+  ): Future[Option[EServiceDescriptor]] = {
+
+    Future.successful {
+      val currentVersion = currentDescriptor.version.toLongOption
+      eservice.descriptors
+        .find(d =>
+          d.status == EServiceDescriptorEnums.Status.Published && Ordering[Option[Long]]
+            .gt(d.version.toLongOption, currentVersion)
+        )
+    }
+  }
 
   def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
     val allowedStatus: List[EServiceDescriptorEnums.Status.Value] = List(Published)

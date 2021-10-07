@@ -359,6 +359,8 @@ components:
           type: string
         version:
           type: string
+        activeDescriptor:
+          $ref: '#/components/schemas/ActiveDescriptor'
       additionalProperties: false
       required:
         - id
@@ -409,18 +411,20 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Agreement'
-    Audience:
+    ActiveDescriptor:
       properties:
-        producer:
+        id:
           type: string
-        audience:
-          type: array
-          items:
-            type: string
+          format: uuid
+        status:
+          type: string
+        version:
+          type: string
       additionalProperties: false
       required:
-        - producer
-        - audience
+        - id
+        - status
+        - version
     Attributes:
       type: object
       properties:
