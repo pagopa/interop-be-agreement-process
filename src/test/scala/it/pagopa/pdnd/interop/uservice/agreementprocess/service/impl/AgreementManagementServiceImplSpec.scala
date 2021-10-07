@@ -80,7 +80,10 @@ class AgreementManagementServiceImplSpec
           verified = Seq.empty
         )
       val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
+        Seq(
+          VerifiedAttribute(id = attribute1, verified = Some(true)),
+          VerifiedAttribute(id = attribute2, verified = Some(true))
+        )
 
       val f =
         AgreementManagementService
@@ -99,7 +102,10 @@ class AgreementManagementServiceImplSpec
           verified = Seq.empty
         )
       val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
+        Seq(
+          VerifiedAttribute(id = attribute1, verified = Some(true)),
+          VerifiedAttribute(id = attribute2, verified = Some(true))
+        )
 
       val f =
         AgreementManagementService.verifyAttributes(
@@ -122,7 +128,10 @@ class AgreementManagementServiceImplSpec
           verified = Seq.empty
         )
       val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
+        Seq(
+          VerifiedAttribute(id = attribute1, verified = Some(true)),
+          VerifiedAttribute(id = attribute2, verified = Some(true))
+        )
 
       val f =
         AgreementManagementService.verifyAttributes(
@@ -155,7 +164,10 @@ class AgreementManagementServiceImplSpec
           verified = Seq.empty
         )
       val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(VerifiedAttribute(id = attribute1, verified = true), VerifiedAttribute(id = attribute2, verified = true))
+        Seq(
+          VerifiedAttribute(id = attribute1, verified = Some(true)),
+          VerifiedAttribute(id = attribute2, verified = Some(true))
+        )
 
       val f =
         AgreementManagementService.verifyAttributes(
@@ -191,7 +203,10 @@ class AgreementManagementServiceImplSpec
           verified = Seq.empty
         )
       val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(VerifiedAttribute(id = attribute1, verified = false), VerifiedAttribute(id = attribute2, verified = true))
+        Seq(
+          VerifiedAttribute(id = attribute1, verified = Some(false)),
+          VerifiedAttribute(id = attribute2, verified = Some(true))
+        )
 
       val f =
         AgreementManagementService
@@ -339,17 +354,17 @@ class AgreementManagementServiceImplSpec
       val expected = Seq(
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = false,
+          verified = None,
           validityTimespan = None
         ),
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = false,
+          verified = None,
           validityTimespan = None
         ),
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = false,
+          verified = None,
           validityTimespan = None
         )
       )
@@ -365,17 +380,17 @@ class AgreementManagementServiceImplSpec
       val expected = Seq(
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = true,
+          verified = Some(true),
           validityTimespan = None
         ),
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = true,
+          verified = Some(true),
           validityTimespan = None
         ),
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = false,
+          verified = None,
           validityTimespan = None
         )
       )
@@ -391,17 +406,17 @@ class AgreementManagementServiceImplSpec
       val expected = Seq(
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = false,
+          verified = None,
           validityTimespan = None
         ),
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = true,
+          verified = Some(true),
           validityTimespan = None
         ),
         VerifiedAttributeSeed(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = false,
+          verified = None,
           validityTimespan = None
         )
       )

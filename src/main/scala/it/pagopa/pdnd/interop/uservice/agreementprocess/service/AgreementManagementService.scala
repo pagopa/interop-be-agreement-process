@@ -132,7 +132,8 @@ object AgreementManagementService {
 
     def hasCertified: Boolean = hasAllAttributesFn(eserviceAttributes.certified)
 
-    def hasVerified: Boolean = agreementVerifiedAttributes.foldLeft(true)((acc, attr) => attr.verified && acc)
+    def hasVerified: Boolean =
+      agreementVerifiedAttributes.foldLeft(true)((acc, attr) => attr.verified.contains(true) && acc)
 
     if (hasCertified && hasVerified)
       Future.successful(true)
@@ -163,7 +164,7 @@ object AgreementManagementService {
     // Need to verify the right behaviour
     allVerifiedAttribute
       .groupBy(_.id)
-      .filter { case (_, attrs) => attrs.nonEmpty && attrs.forall(_.verified) }
+      .filter { case (_, attrs) => attrs.nonEmpty && attrs.forall(_.verified.contains(true)) }
       .keys
       .toSet
 
@@ -184,8 +185,9 @@ object AgreementManagementService {
     Future.fromTry {
       val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
       Try(UUID.fromString(attribute.id)).map { uuid =>
-        if (isImplicitVerifications) VerifiedAttributeSeed(uuid, consumerVerifiedAttributes.contains(uuid))
-        else VerifiedAttributeSeed(uuid, verified = false)
+        if (isImplicitVerifications && consumerVerifiedAttributes.contains(uuid))
+          VerifiedAttributeSeed(uuid, Some(true))
+        else VerifiedAttributeSeed(uuid, verified = None)
       }
 
     }

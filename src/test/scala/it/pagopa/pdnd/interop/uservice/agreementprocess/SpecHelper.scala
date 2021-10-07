@@ -72,19 +72,19 @@ trait SpecHelper {
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         )
@@ -128,13 +128,13 @@ trait SpecHelper {
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         )
@@ -169,19 +169,19 @@ trait SpecHelper {
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = false,
+          verified = Some(false),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = false,
+          verified = Some(false),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = false,
+          verified = None,
           verificationDate = None,
           validityTimespan = None
         )
@@ -215,19 +215,19 @@ trait SpecHelper {
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = false,
+          verified = Some(false),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         )
@@ -261,19 +261,19 @@ trait SpecHelper {
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = true,
+          verified = Some(true),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = false,
+          verified = Some(false),
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId3),
-          verified = true,
+          verified = None,
           verificationDate = None,
           validityTimespan = None
         )
@@ -369,13 +369,13 @@ trait SpecHelper {
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
-          verified = false,
+          verified = None,
           verificationDate = None,
           validityTimespan = None
         ),
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId2),
-          verified = false,
+          verified = Some(false),
           verificationDate = None,
           validityTimespan = None
         )

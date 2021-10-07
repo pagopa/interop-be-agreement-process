@@ -480,7 +480,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
                 name = ClientAttributes.verifiedAttributeId1.name,
                 explicitAttributeVerification =
                   Some(TestDataSeven.eservice.attributes.verified(0).single.get.explicitAttributeVerification),
-                verified = Some(TestDataSeven.agreement.verifiedAttributes(0).verified),
+                verified = TestDataSeven.agreement.verifiedAttributes(0).verified,
                 verificationDate = TestDataSeven.agreement.verifiedAttributes(0).verificationDate,
                 validityTimespan = TestDataSeven.agreement.verifiedAttributes(0).validityTimespan
               )
@@ -497,7 +497,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
                 name = ClientAttributes.verifiedAttributeId2.name,
                 explicitAttributeVerification =
                   Some(TestDataSeven.eservice.attributes.verified(1).single.get.explicitAttributeVerification),
-                verified = Some(TestDataSeven.agreement.verifiedAttributes(1).verified),
+                verified = TestDataSeven.agreement.verifiedAttributes(1).verified,
                 verificationDate = TestDataSeven.agreement.verifiedAttributes(1).verificationDate,
                 validityTimespan = TestDataSeven.agreement.verifiedAttributes(1).validityTimespan
               )
