@@ -294,7 +294,7 @@ class AgreementApiServiceImpl(
       origin = att.origin,
       name = att.name,
       explicitAttributeVerification = allVerifiedAttributes.get(att.id),
-      verified = Some(verifiedAttribute.verified),
+      verified = verifiedAttribute.verified,
       verificationDate = verifiedAttribute.verificationDate,
       validityTimespan = verifiedAttribute.validityTimespan
     )
@@ -317,7 +317,7 @@ class AgreementApiServiceImpl(
       })
       _ <- agreementManagementService.markVerifiedAttribute(bearerToken)(
         agreementId,
-        VerifiedAttributeSeed(attributeUUID, verified = true)
+        VerifiedAttributeSeed(attributeUUID, verified = Some(true))
       )
     } yield ()
 
