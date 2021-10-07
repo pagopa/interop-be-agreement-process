@@ -45,7 +45,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = Published
+            status = Status.Deprecated
           ),
           EServiceDescriptor(
             id = UUID.randomUUID(),

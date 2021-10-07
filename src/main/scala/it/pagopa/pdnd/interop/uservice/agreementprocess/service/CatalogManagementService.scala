@@ -41,12 +41,10 @@ object CatalogManagementService {
     Future.successful {
       val currentVersion = currentDescriptor.version.toLongOption
       eservice.descriptors
-        .filter(d =>
+        .find(d =>
           d.status == EServiceDescriptorEnums.Status.Published && Ordering[Option[Long]]
             .gt(d.version.toLongOption, currentVersion)
         )
-        .sortWith((a, b) => Ordering[Option[Long]].gt(a.version.toLongOption, b.version.toLongOption))
-        .headOption
     }
   }
 
