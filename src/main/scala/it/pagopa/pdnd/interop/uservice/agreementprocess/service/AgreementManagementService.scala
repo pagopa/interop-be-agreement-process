@@ -128,12 +128,13 @@ object AgreementManagementService {
     agreementVerifiedAttributes: Seq[VerifiedAttribute]
   ): Future[Boolean] = {
 
-    def hasAllAttributesFn(attributes: Seq[Attribute]): Boolean = hasAllAttributes(consumerAttributesIds)(attributes)
+    def hasCertified: Boolean = hasAllAttributes(consumerAttributesIds)(eserviceAttributes.certified)
 
-    def hasCertified: Boolean = hasAllAttributesFn(eserviceAttributes.certified)
-
-    def hasVerified: Boolean =
-      agreementVerifiedAttributes.foldLeft(true)((acc, attr) => attr.verified.contains(true) && acc)
+    def hasVerified: Boolean = {
+      val verifiedAttributes: Seq[String] =
+        agreementVerifiedAttributes.filter(_.verified.contains(true)).map(_.id.toString)
+      hasAllAttributes(verifiedAttributes)(eserviceAttributes.verified)
+    }
 
     if (hasCertified && hasVerified)
       Future.successful(true)
@@ -146,12 +147,12 @@ object AgreementManagementService {
   }
 
   private def hasAttribute(consumerAttributes: Seq[String])(attribute: Attribute): Boolean = {
-    val hasSingleAttribute = () => attribute.single.forall(single => consumerAttributes.contains(single.id))
+    val hasSingleAttribute = attribute.single.forall(single => consumerAttributes.contains(single.id))
 
-    val hasGroupAttributes = () =>
+    val hasGroupAttributes =
       attribute.group.forall(orAttributes => consumerAttributes.intersect(orAttributes.map(_.id)).nonEmpty)
 
-    hasSingleAttribute() && hasGroupAttributes()
+    hasSingleAttribute && hasGroupAttributes
   }
 
   //TODO this function must be improve with
