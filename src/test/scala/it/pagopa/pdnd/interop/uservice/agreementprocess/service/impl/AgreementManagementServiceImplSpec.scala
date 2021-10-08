@@ -1,5 +1,6 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
+import akka.actor.ActorSystem
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
@@ -18,6 +19,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import scala.concurrent.ExecutionContextExecutor
 
 class AgreementManagementServiceImplSpec
     extends ScalaTestWithActorTestKit
@@ -27,194 +29,629 @@ class AgreementManagementServiceImplSpec
     with SpecHelper
     with AgreementManagementAPI {
 
-  implicit val testSystem       = system.classicSystem
-  implicit val executionContext = system.executionContext
+  implicit val testSystem: ActorSystem                    = system.classicSystem
+  implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
-  val attribute1 = UUID.randomUUID()
-  val attribute2 = UUID.randomUUID()
-  val attribute3 = UUID.randomUUID()
-  val attribute4 = UUID.randomUUID()
-  val attribute5 = UUID.randomUUID()
-  val attribute6 = UUID.randomUUID()
-  val attribute7 = UUID.randomUUID()
+  private val attribute1 = UUID.randomUUID()
+  private val attribute2 = UUID.randomUUID()
+  private val attribute3 = UUID.randomUUID()
+  private val attribute4 = UUID.randomUUID()
+  private val attribute5 = UUID.randomUUID()
 
-  "attribute verification" should {
+  "Attribute verification" when {
 
-    "verify agreements without attributes should return valid state" in {
+    "evaluating certified attributes" should {
+      "succeed if all single certified attributes are satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1, attribute2).map(_.toString)
 
-      val consumerAttributesIds: Seq[String] =
-        Seq(attribute1, attribute2, attribute3, attribute4, attribute5, attribute7).map(_.toString)
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(single = Some(AttributeValue(attribute2.toString, explicitAttributeVerification = false)))
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
 
-      val eserviceAttributes: Attributes =
-        Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty)
-      val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
 
-      val f =
-        AgreementManagementService
-          .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
 
-      f.futureValue shouldBe true
+        f.futureValue shouldBe true
+      }
+
+      "succeed if at least one grouped certified attribute is satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(group =
+                Some(
+                  Seq(
+                    AttributeValue(attribute1.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute2.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute3.toString, explicitAttributeVerification = false)
+                  )
+                )
+              )
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.futureValue shouldBe true
+      }
+
+      "succeed if single and grouped certified attributes are satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1, attribute3).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(group =
+                Some(
+                  Seq(
+                    AttributeValue(attribute2.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute3.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute4.toString, explicitAttributeVerification = false)
+                  )
+                )
+              )
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.futureValue shouldBe true
+      }
+
+      "fail if a single certified attribute is not satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1, attribute2).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(single = Some(AttributeValue(attribute3.toString, explicitAttributeVerification = false)))
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if a single certified attribute is not satisfied (no consumer attributes)" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(single = Some(AttributeValue(attribute3.toString, explicitAttributeVerification = false)))
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if all grouped certified attributes are not satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1, attribute2).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(group =
+                Some(
+                  Seq(
+                    AttributeValue(attribute3.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute4.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute5.toString, explicitAttributeVerification = false)
+                  )
+                )
+              )
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if a single certified attribute is satisfied but grouped is not satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1, attribute2).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(group = Some(Seq(AttributeValue(attribute3.toString, explicitAttributeVerification = false))))
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if a grouped certified attribute is satisfied but single is not satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute3).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(group = Some(Seq(AttributeValue(attribute3.toString, explicitAttributeVerification = false))))
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
     }
 
-    "verify attributes validity properly" in {
+    "evaluating verified attributes" should {
+      "succeed if all single verified attributes are satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
 
-      val consumerAttributesIds: Seq[String] =
-        Seq(attribute1, attribute2, attribute3, attribute4, attribute5, attribute7).map(_.toString)
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq.empty,
+            declared = Seq.empty,
+            verified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(single = Some(AttributeValue(attribute2.toString, explicitAttributeVerification = false)))
+            )
+          )
 
-      val eserviceAttributes: Attributes =
-        Attributes(
-          certified = Seq(
-            Attribute(single = Some(AttributeValue(attribute1.toString, false))),
-            Attribute(single = Some(AttributeValue(attribute2.toString, false))),
-            Attribute(group =
-              Some(
-                Seq(
-                  AttributeValue(attribute5.toString, false),
-                  AttributeValue(attribute6.toString, false),
-                  AttributeValue(attribute7.toString, false)
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(
+            VerifiedAttribute(id = attribute1, verified = Some(true)),
+            VerifiedAttribute(id = attribute2, verified = Some(true))
+          )
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.futureValue shouldBe true
+      }
+
+      "succeed if at least one grouped verified attribute is satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq.empty,
+            declared = Seq.empty,
+            verified = Seq(
+              Attribute(group =
+                Some(
+                  Seq(
+                    AttributeValue(attribute1.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute2.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute3.toString, explicitAttributeVerification = false)
+                  )
                 )
               )
             )
-          ),
-          declared = Seq.empty,
-          verified = Seq.empty
-        )
-      val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(
-          VerifiedAttribute(id = attribute1, verified = Some(true)),
-          VerifiedAttribute(id = attribute2, verified = Some(true))
-        )
+          )
 
-      val f =
-        AgreementManagementService
-          .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(
+            VerifiedAttribute(id = attribute1, verified = Some(true)),
+            VerifiedAttribute(id = attribute1, verified = None),
+            VerifiedAttribute(id = attribute1, verified = Some(false))
+          )
 
-      f.futureValue shouldBe true
-    }
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
 
-    "verify parties without attributes should return an invalid state" in {
-      val consumerAttributesIds: Seq[String] = Seq.empty
+        f.futureValue shouldBe true
+      }
 
-      val eserviceAttributes: Attributes =
-        Attributes(
-          certified = Seq(Attribute(single = Some(AttributeValue(attribute5.toString, false)))),
-          declared = Seq.empty,
-          verified = Seq.empty
-        )
-      val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(
-          VerifiedAttribute(id = attribute1, verified = Some(true)),
-          VerifiedAttribute(id = attribute2, verified = Some(true))
-        )
+      "succeed if single and grouped verified attributes are satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
 
-      val f =
-        AgreementManagementService.verifyAttributes(
-          consumerAttributesIds,
-          eserviceAttributes,
-          agreementVerifiedAttributes
-        );
-
-      f.failed.futureValue shouldBe a[RuntimeException]
-    }
-
-    "verify not valid simple certified attributes should return a failed future" in {
-
-      val consumerAttributesIds: Seq[String] = Seq(attribute1, attribute2, attribute3, attribute4).map(_.toString)
-
-      val eserviceAttributes: Attributes =
-        Attributes(
-          certified = Seq(Attribute(single = Some(AttributeValue(attribute5.toString, false)))),
-          declared = Seq.empty,
-          verified = Seq.empty
-        )
-      val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(
-          VerifiedAttribute(id = attribute1, verified = Some(true)),
-          VerifiedAttribute(id = attribute2, verified = Some(true))
-        )
-
-      val f =
-        AgreementManagementService.verifyAttributes(
-          consumerAttributesIds,
-          eserviceAttributes,
-          agreementVerifiedAttributes
-        );
-
-      f.failed.futureValue shouldBe a[RuntimeException]
-    }
-
-    "verify not valid group certified attributes should return a failed future" in {
-
-      val consumerAttributesIds: Seq[String] = Seq(attribute1, attribute2, attribute3, attribute4).map(_.toString)
-
-      val eserviceAttributes: Attributes =
-        Attributes(
-          certified = Seq(
-            Attribute(group =
-              Some(
-                Seq(
-                  AttributeValue(attribute5.toString, false),
-                  AttributeValue(attribute6.toString, false),
-                  AttributeValue(attribute7.toString, false)
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq.empty,
+            declared = Seq.empty,
+            verified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(group =
+                Some(
+                  Seq(
+                    AttributeValue(attribute2.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute3.toString, explicitAttributeVerification = false)
+                  )
                 )
               )
             )
-          ),
-          declared = Seq.empty,
-          verified = Seq.empty
-        )
-      val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(
-          VerifiedAttribute(id = attribute1, verified = Some(true)),
-          VerifiedAttribute(id = attribute2, verified = Some(true))
-        )
+          )
 
-      val f =
-        AgreementManagementService.verifyAttributes(
-          consumerAttributesIds,
-          eserviceAttributes,
-          agreementVerifiedAttributes
-        );
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(
+            VerifiedAttribute(id = attribute1, verified = Some(true)),
+            VerifiedAttribute(id = attribute2, verified = Some(true)),
+            VerifiedAttribute(id = attribute3, verified = None)
+          )
 
-      f.failed.futureValue shouldBe a[RuntimeException]
-    }
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
 
-    "verify that not verified attributes should break the validation of the agreement" in {
+        f.futureValue shouldBe true
+      }
 
-      val consumerAttributesIds: Seq[String] =
-        Seq(attribute1, attribute2, attribute3, attribute4, attribute5, attribute7).map(_.toString)
+      "fail if a single verified attribute has not been verified" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
 
-      val eserviceAttributes: Attributes =
-        Attributes(
-          certified = Seq(
-            Attribute(single = Some(AttributeValue(attribute1.toString, false))),
-            Attribute(single = Some(AttributeValue(attribute2.toString, false))),
-            Attribute(group =
-              Some(
-                Seq(
-                  AttributeValue(attribute5.toString, false),
-                  AttributeValue(attribute6.toString, false),
-                  AttributeValue(attribute7.toString, false)
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq.empty,
+            declared = Seq.empty,
+            verified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(single = Some(AttributeValue(attribute2.toString, explicitAttributeVerification = false)))
+            )
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(
+            VerifiedAttribute(id = attribute1, verified = Some(true)),
+            VerifiedAttribute(id = attribute2, verified = None)
+          )
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if a single verified attribute has been rejected" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq.empty,
+            declared = Seq.empty,
+            verified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(single = Some(AttributeValue(attribute2.toString, explicitAttributeVerification = false)))
+            )
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(
+            VerifiedAttribute(id = attribute1, verified = Some(true)),
+            VerifiedAttribute(id = attribute2, verified = Some(false))
+          )
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if all grouped verified attributes have not been verified" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq.empty,
+            declared = Seq.empty,
+            verified = Seq(
+              Attribute(group =
+                Some(
+                  Seq(
+                    AttributeValue(attribute1.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute2.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute3.toString, explicitAttributeVerification = false)
+                  )
                 )
               )
             )
-          ),
-          declared = Seq.empty,
-          verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq(
+          VerifiedAttribute(id = attribute1, verified = None),
+          VerifiedAttribute(id = attribute2, verified = None),
+          VerifiedAttribute(id = attribute3, verified = None)
         )
-      val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
-        Seq(
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if all grouped verified attributes have been rejected" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq.empty,
+            declared = Seq.empty,
+            verified = Seq(
+              Attribute(group =
+                Some(
+                  Seq(
+                    AttributeValue(attribute1.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute2.toString, explicitAttributeVerification = false),
+                    AttributeValue(attribute3.toString, explicitAttributeVerification = false)
+                  )
+                )
+              )
+            )
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq(
+          VerifiedAttribute(id = attribute1, verified = Some(false)),
+          VerifiedAttribute(id = attribute2, verified = Some(false)),
+          VerifiedAttribute(id = attribute3, verified = Some(false))
+        )
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if a single verified attribute is satisfied but grouped is not satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(group = Some(Seq(AttributeValue(attribute2.toString, explicitAttributeVerification = false))))
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq(
+          VerifiedAttribute(id = attribute1, verified = Some(true)),
+          VerifiedAttribute(id = attribute2, verified = Some(false))
+        )
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if a grouped verified attribute is satisfied but single is not satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified = Seq(
+              Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false))),
+              Attribute(group = Some(Seq(AttributeValue(attribute2.toString, explicitAttributeVerification = false))))
+            ),
+            declared = Seq.empty,
+            verified = Seq.empty
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq(
           VerifiedAttribute(id = attribute1, verified = Some(false)),
           VerifiedAttribute(id = attribute2, verified = Some(true))
         )
 
-      val f =
-        AgreementManagementService
-          .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes);
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
 
-      f.failed.futureValue shouldBe a[RuntimeException]
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
     }
+
+    "evaluating both certified and verified attributes" should {
+      "succeed if no attribute is required in the EService" in {
+
+        val consumerAttributesIds: Seq[String] =
+          Seq(attribute1, attribute2, attribute3).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty)
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
+
+        val f =
+          AgreementManagementService
+            .verifyAttributes(consumerAttributesIds, eserviceAttributes, agreementVerifiedAttributes)
+
+        f.futureValue shouldBe true
+      }
+
+      "succeed if certified and verified attributes are satisfied" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified =
+              Seq(Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false)))),
+            declared = Seq.empty,
+            verified =
+              Seq(Attribute(single = Some(AttributeValue(attribute2.toString, explicitAttributeVerification = false))))
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(VerifiedAttribute(id = attribute2, verified = Some(true)))
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.futureValue shouldBe true
+      }
+
+      "fail if certified attributes are satisfied but not verified attributes" in {
+        val consumerAttributesIds: Seq[String] = Seq(attribute1).map(_.toString)
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified =
+              Seq(Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false)))),
+            declared = Seq.empty,
+            verified =
+              Seq(Attribute(single = Some(AttributeValue(attribute2.toString, explicitAttributeVerification = false))))
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(VerifiedAttribute(id = attribute2, verified = None))
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+      "fail if verified attributes are satisfied but not certified attributes" in {
+        val consumerAttributesIds: Seq[String] = Seq.empty
+
+        val eserviceAttributes: Attributes =
+          Attributes(
+            certified =
+              Seq(Attribute(single = Some(AttributeValue(attribute1.toString, explicitAttributeVerification = false)))),
+            declared = Seq.empty,
+            verified =
+              Seq(Attribute(single = Some(AttributeValue(attribute2.toString, explicitAttributeVerification = false))))
+          )
+
+        val agreementVerifiedAttributes: Seq[VerifiedAttribute] =
+          Seq(VerifiedAttribute(id = attribute2, verified = Some(true)))
+
+        val f =
+          AgreementManagementService.verifyAttributes(
+            consumerAttributesIds,
+            eserviceAttributes,
+            agreementVerifiedAttributes
+          )
+
+        f.failed.futureValue shouldBe a[RuntimeException]
+      }
+
+    }
+
   }
+
   "attributes extraction" should {
 
     "retrieve all verified attributes owned by a consumer if all attributes are verified as true" in {
