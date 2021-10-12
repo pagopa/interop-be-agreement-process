@@ -11,7 +11,7 @@ object Dependencies {
     lazy val stream         = namespace                       %% "akka-stream"              % akkaVersion
     lazy val http           = namespace                       %% "akka-http"                % akkaHttpVersion
     lazy val httpJson       = namespace                       %% "akka-http-spray-json"     % akkaHttpVersion
-    lazy val httpJson4s     = "de.heikoseeberger"             %% "akka-http-json4s"         % "1.37.0"
+    lazy val httpJson4s     = "de.heikoseeberger"             %% "akka-http-json4s"         % "1.38.2"
     lazy val management     = "com.lightbend.akka.management" %% "akka-management"          % "1.1.1"
     lazy val slf4j          = namespace                       %% "akka-slf4j"               % akkaVersion
     lazy val testkit        = namespace                       %% "akka-actor-testkit-typed" % akkaVersion
@@ -60,6 +60,10 @@ object Dependencies {
     lazy val namespace  = "io.kamon"
     lazy val bundle     = namespace %% "kamon-bundle"     % kamonVersion
     lazy val prometheus = namespace %% "kamon-prometheus" % kamonVersion
+  }
+
+  private[this] object mustache {
+    lazy val mustache = "com.github.spullara.mustache.java" % "compiler" % mustacheVersion
   }
 
   private[this] object openapi4j {
@@ -111,6 +115,7 @@ object Dependencies {
       pagopa.catalogManagementClient           % Compile,
       pagopa.partyManagementClient             % Compile,
       pagopa.attributeRegistryManagementClient % Compile,
+      mustache.mustache                        % Compile,
       scalatest.core                           % Test,
       mockito.core                             % Test,
       scalamock.core                           % Test,

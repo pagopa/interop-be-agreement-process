@@ -1,7 +1,7 @@
 object Versions {
-  lazy val akkaVersion                        = "2.6.15"
-  lazy val akkaHttpVersion                    = "10.2.4"
-  lazy val awsSdkVersion                      = "2.4.17"
+  lazy val akkaVersion                        = "2.6.16"
+  lazy val akkaHttpVersion                    = "10.2.6"
+  lazy val awsSdkVersion                      = "2.17.56"
   lazy val projectionVersion                  = "1.2.1"
   lazy val cassandraPersistenceVersion        = "1.0.5"
   lazy val jdbcPersistenceVersion             = "5.0.1"
@@ -18,9 +18,10 @@ object Versions {
   lazy val scalaMockVersion                   = "5.1.0"
   lazy val mockitoVersion                     = "3.9.0"
   lazy val scalaPactVersion                   = "3.3.2-RC2"
-  lazy val agreementManagementVersion         = "0.1.0-SNAPSHOT"
+  lazy val agreementManagementVersion         = "0.0.0"
   lazy val catalogManagementVersion           = "0.1.0-SNAPSHOT"
   lazy val partyManagementVersion             = "0.1.0-SNAPSHOT"
   lazy val attributeRegistryManagementVersion = "0.1.0-SNAPSHOT"
   lazy val catsVersion                        = "2.6.1"
+  lazy val mustacheVersion                    = "0.9.0"
 }

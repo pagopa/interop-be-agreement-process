@@ -22,7 +22,8 @@ import scala.concurrent.duration.Duration
 
 trait SpecHelper {
 
-  final lazy val url: String                        = "http://localhost:8088/pdnd-interop-uservice-agreement-process/0.0.1"
+  final lazy val url: String =
+    s"http://localhost:8088/pdnd-interop-uservice-agreement-process/${buildinfo.BuildInfo.interfaceVersion}"
   final lazy val emptyData: Source[ByteString, Any] = Source.empty
   final val authorization: Seq[Authorization]       = Seq(headers.Authorization(OAuth2BearerToken(Common.bearerToken)))
 
