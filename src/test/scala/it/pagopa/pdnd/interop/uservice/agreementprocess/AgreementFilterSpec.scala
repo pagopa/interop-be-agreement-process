@@ -26,10 +26,10 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
     val consumerOrg3 = Organization("cons3", "cons3")
     val consumerOrg4 = Organization("cons4", "cons4")
 
-    val eservice1 = EService(UUID.randomUUID(), "eservice1", "1", None)
-    val eservice2 = EService(UUID.randomUUID(), "eservice2", "2", None)
-    val eservice3 = EService(UUID.randomUUID(), "eservice3", "3", None)
-    val eservice4 = EService(UUID.randomUUID(), "eservice4", "4", None)
+    val eservice1 = EService(UUID.randomUUID(), UUID.randomUUID(), "eservice1", "1", None)
+    val eservice2 = EService(UUID.randomUUID(), UUID.randomUUID(), "eservice2", "2", None)
+    val eservice3 = EService(UUID.randomUUID(), UUID.randomUUID(), "eservice3", "3", None)
+    val eservice4 = EService(UUID.randomUUID(), UUID.randomUUID(), "eservice4", "4", None)
 
     Seq(
       Agreement(
@@ -119,10 +119,10 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
 
     val eserviceId1 = UUID.randomUUID()
     val eserviceId2 = UUID.randomUUID()
-    val eservice1   = EService(eserviceId1, "eservice1", "100", None)
-    val eservice2   = EService(eserviceId1, "eservice2", "2", None)
-    val eservice3   = EService(eserviceId2, "eservice2", "30", None)
-    val eservice4   = EService(eserviceId2, "eservice2", "4", None)
+    val eservice1   = EService(eserviceId1, UUID.randomUUID(), "eservice1", "100", None)
+    val eservice2   = EService(eserviceId1, UUID.randomUUID(), "eservice2", "2", None)
+    val eservice3   = EService(eserviceId2, UUID.randomUUID(), "eservice2", "30", None)
+    val eservice4   = EService(eserviceId2, UUID.randomUUID(), "eservice2", "4", None)
 
     val agreementsToFilter = Seq(
       Agreement(
@@ -192,10 +192,10 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
 
     val eserviceId1 = UUID.randomUUID()
     val eserviceId2 = UUID.randomUUID()
-    val eservice1   = EService(eserviceId1, "eservice1", "100", None)
-    val eservice2   = EService(eserviceId1, "eservice2", "2", None)
-    val eservice3   = EService(eserviceId2, "eservice2", "pippo", None)
-    val eservice4   = EService(eserviceId2, "eservice2", "4", None)
+    val eservice1   = EService(eserviceId1, UUID.randomUUID(), "eservice1", "100", None)
+    val eservice2   = EService(eserviceId1, UUID.randomUUID(), "eservice2", "2", None)
+    val eservice3   = EService(eserviceId2, UUID.randomUUID(), "eservice2", "pippo", None)
+    val eservice4   = EService(eserviceId2, UUID.randomUUID(), "eservice2", "4", None)
 
     val agreementsToFilter = Seq(
       Agreement(

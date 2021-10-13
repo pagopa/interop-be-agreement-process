@@ -238,6 +238,7 @@ class AgreementApiServiceImpl(
         id = eservice.id,
         name = eservice.name,
         version = descriptor.version,
+        descriptorId = descriptor.id,
         activeDescriptor =
           activeDescriptorOption.map(d => ActiveDescriptor(id = d.id, status = d.status.toString, version = d.version))
       ),

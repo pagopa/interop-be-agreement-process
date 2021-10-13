@@ -11,7 +11,7 @@ class AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSu
 
   implicit def organizationJsonFormat: RootJsonFormat[Organization]               = jsonFormat2(Organization)
   implicit def activeDescriptorJsonFormat: RootJsonFormat[ActiveDescriptor]       = jsonFormat3(ActiveDescriptor)
-  implicit def eServiceJsonFormat: RootJsonFormat[EService]                       = jsonFormat4(EService)
+  implicit def eServiceJsonFormat: RootJsonFormat[EService]                       = jsonFormat5(EService)
   implicit def attributeJsonFormat: RootJsonFormat[Attribute]                     = jsonFormat9(Attribute)
   implicit def agreementAttributesJsonFormat: RootJsonFormat[AgreementAttributes] = jsonFormat2(AgreementAttributes)
   implicit def agreementJsonFormat: RootJsonFormat[Agreement]                     = jsonFormat8(Agreement)

@@ -355,6 +355,9 @@ components:
         id:
           type: string
           format: uuid
+        descriptorId:
+          type: string
+          format: uuid
         name:
           type: string
         version:
@@ -366,6 +369,7 @@ components:
         - id
         - name
         - version
+        - descriptorId
     Agreement:
       properties:
         id:
