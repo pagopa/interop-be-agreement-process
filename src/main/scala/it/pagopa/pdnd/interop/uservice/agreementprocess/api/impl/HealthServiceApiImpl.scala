@@ -11,7 +11,7 @@ class HealthServiceApiImpl extends HealthApiService {
   /** Code: 200, Message: successful operation, DataType: Problem
     */
   override def getStatus()(implicit
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    contexts: Seq[(String, String)]
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = getStatus200(Problem(None, 200, "OK"))
 }

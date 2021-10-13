@@ -56,8 +56,8 @@ class AgreementApiServiceImpl(
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def activateAgreement(agreementId: String, partyId: String)(implicit
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    contexts: Seq[(String, String)]
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     logger.info(s"Activating agreement $agreementId")
     val result = for {
@@ -89,8 +89,8 @@ class AgreementApiServiceImpl(
     * Code: 400, Message: Bad Request, DataType: Problem
     */
   override def suspendAgreement(agreementId: String, partyId: String)(implicit
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    contexts: Seq[(String, String)]
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     logger.info(s"Suspending agreement $agreementId")
     val result = for {
@@ -114,9 +114,9 @@ class AgreementApiServiceImpl(
     * Code: 400, Message: Bad Request, DataType: Problem
     */
   override def createAgreement(agreementPayload: AgreementPayload)(implicit
+    contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement],
-    contexts: Seq[(String, String)]
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
 
     logger.info(s"Creating agreement $agreementPayload")
@@ -164,9 +164,9 @@ class AgreementApiServiceImpl(
     status: Option[String],
     latest: Option[Boolean]
   )(implicit
+    contexts: Seq[(String, String)],
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    contexts: Seq[(String, String)]
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     val result: Future[Seq[Agreement]] = for {
       bearerToken <- extractBearer(contexts)
@@ -194,9 +194,9 @@ class AgreementApiServiceImpl(
     * Code: 400, Message: Invalid ID supplied, DataType: Problem
     */
   override def getAgreementById(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement],
-    contexts: Seq[(String, String)]
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
     val result: Future[Agreement] = for {
       bearerToken  <- extractBearer(contexts)
@@ -305,8 +305,8 @@ class AgreementApiServiceImpl(
     * Code: 404, Message: Attribute not found, DataType: Problem
     */
   override def verifyAgreementAttribute(agreementId: String, attributeId: String)(implicit
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    contexts: Seq[(String, String)]
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     logger.info(s"Marking agreement $agreementId verified attribute $attributeId as verified.")
 
@@ -361,9 +361,9 @@ class AgreementApiServiceImpl(
     * Code: 400, Message: Invalid ID supplied, DataType: Problem
     */
   override def upgradeAgreementById(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement],
-    contexts: Seq[(String, String)]
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
     val result = for {
       bearerToken <- extractBearer(contexts)

@@ -191,8 +191,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "fail if missing authorization header" in {
       val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
       Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString)(
-        toEntityMarshallerProblem,
-        contexts
+        contexts,
+        toEntityMarshallerProblem
       ) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
@@ -381,8 +381,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "fail if missing authorization header" in {
       val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
       Get() ~> service.suspendAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString)(
-        toEntityMarshallerProblem,
-        contexts
+        contexts,
+        toEntityMarshallerProblem
       ) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }

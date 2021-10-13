@@ -31,9 +31,9 @@ class ConsumerApiServiceImpl(
     * Code: 400, Message: Invalid ID supplied, DataType: Problem
     */
   override def getAttributesByConsumerId(consumerId: String)(implicit
+    contexts: Seq[(String, String)],
     toEntityMarshallerAttributes: ToEntityMarshaller[Attributes],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    contexts: Seq[(String, String)]
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     val result: Future[Attributes] = for {
       bearerToken <- extractBearer(contexts)
