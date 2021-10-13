@@ -234,11 +234,11 @@ class AgreementApiServiceImpl(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
       consumer = Organization(id = consumer.institutionId, name = consumer.description),
+      eserviceDescriptorId = descriptor.id,
       eservice = EService(
         id = eservice.id,
         name = eservice.name,
         version = descriptor.version,
-        descriptorId = descriptor.id,
         activeDescriptor =
           activeDescriptorOption.map(d => ActiveDescriptor(id = d.id, status = d.status.toString, version = d.version))
       ),

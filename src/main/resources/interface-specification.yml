@@ -355,9 +355,6 @@ components:
         id:
           type: string
           format: uuid
-        descriptorId:
-          type: string
-          format: uuid
         name:
           type: string
         version:
@@ -369,10 +366,12 @@ components:
         - id
         - name
         - version
-        - descriptorId
     Agreement:
       properties:
         id:
+          type: string
+          format: uuid
+        eserviceDescriptorId:
           type: string
           format: uuid
         producer:
@@ -408,6 +407,7 @@ components:
         - id
         - producer
         - consumer
+        - eserviceDescriptorId
         - eservice
         - attributes
         - status
