@@ -1,3 +1,5 @@
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
+
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.5.1")
@@ -18,6 +20,4 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.6")
 
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.3")
 
-//addSbtPlugin("com.itv" % "sbt-scalapact" % "3.3.2-RC2")
-
-libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.11.3"
+libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.11.5"

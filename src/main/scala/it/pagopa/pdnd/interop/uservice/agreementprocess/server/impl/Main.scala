@@ -32,6 +32,7 @@ import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.api.At
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.api.PartyApi
 import kamon.Kamon
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Future
 
@@ -79,6 +80,8 @@ object Main
     with PartyManagementAPI
     with AttributeRegistryManagementAPI {
 
+  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
   Kamon.init()
 
   final val agreementManagementService: AgreementManagementService = agreementManagement()
@@ -116,10 +119,11 @@ object Main
 
   locally {
     val _ = AkkaManagement.get(classicActorSystem).start()
-
   }
 
   val controller: Controller = new Controller(health = healthApi, agreement = agreementApi, consumer = consumerApi)
+
+  logger.error(s"Started build info = ${buildinfo.BuildInfo.toString}")
 
   val bindingFuture: Future[Http.ServerBinding] =
     Http().newServerAt("0.0.0.0", ApplicationConfiguration.serverPort).bind(corsHandler(controller.routes))
