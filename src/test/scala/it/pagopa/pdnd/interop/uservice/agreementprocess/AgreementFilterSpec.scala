@@ -40,7 +40,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid2,
@@ -50,7 +51,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid3,
@@ -60,7 +62,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid4,
@@ -70,7 +73,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       )
     )
   }
@@ -133,7 +137,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid2,
@@ -143,7 +148,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid3,
@@ -153,7 +159,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid4,
@@ -163,7 +170,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       )
     )
 
@@ -206,7 +214,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid2,
@@ -216,7 +225,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid3,
@@ -226,7 +236,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       ),
       Agreement(
         id = uuid4,
@@ -236,7 +247,8 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
         status = "Active",
         attributes = Seq.empty,
         suspendedByConsumer = None,
-        suspendedByProducer = None
+        suspendedByProducer = None,
+        eserviceDescriptorId = UUID.randomUUID()
       )
     )
 
