@@ -309,20 +309,16 @@ trait SpecHelper {
     val consumer = Organization(
       institutionId = "institutionIdC",
       description = "Consumer",
-      managerName = "name",
-      managerSurname = "surname",
       digitalAddress = "digitalAddress",
-      partyId = consumerId.toString,
+      id = consumerId,
       attributes = Seq.empty
     )
 
     val producer = Organization(
       institutionId = "institutionIdP",
       description = "Producer",
-      managerName = "name",
-      managerSurname = "surname",
       digitalAddress = "digitalAddress",
-      partyId = producerId.toString,
+      id = producerId,
       attributes = Seq.empty
     )
 
