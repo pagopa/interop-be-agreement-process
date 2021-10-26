@@ -64,7 +64,7 @@ class AgreementApiServiceImpl(
       bearerToken           <- extractBearer(contexts)
       agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       _                     <- verifyAgreementActivationEligibility(bearerToken)(agreement)
-      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId.toString)
+      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId)
       eservice              <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       activeEservice        <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
       _ <- AgreementManagementService.verifyAttributes(

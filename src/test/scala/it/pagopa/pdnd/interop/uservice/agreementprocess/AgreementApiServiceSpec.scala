@@ -101,8 +101,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: String))
-        .expects(Common.bearerToken, pendingAgreement.consumerId.toString)
+        .getPartyAttributes(_: String)(_: UUID))
+        .expects(Common.bearerToken, pendingAgreement.consumerId)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -166,8 +166,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: String))
-        .expects(Common.bearerToken, suspendedAgreement.consumerId.toString)
+        .getPartyAttributes(_: String)(_: UUID))
+        .expects(Common.bearerToken, suspendedAgreement.consumerId)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -339,8 +339,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: String))
-        .expects(Common.bearerToken, currentAgreement.consumerId.toString)
+        .getPartyAttributes(_: String)(_: UUID))
+        .expects(Common.bearerToken, currentAgreement.consumerId)
         .once()
         .returns(Future.successful(Seq.empty))
 
