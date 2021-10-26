@@ -14,8 +14,9 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   PartyManagementService
 }
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.ToString"))
 class ConsumerApiServiceImpl(
@@ -43,7 +44,8 @@ class ConsumerApiServiceImpl(
       )
       eserviceIds = agreements.map(_.eserviceId)
       eservices       <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken))
-      partyAttributes <- partyManagementService.getPartyAttributes(bearerToken)(consumerId)
+      consumerUuid    <- Future.fromTry(Try(UUID.fromString(consumerId)))
+      partyAttributes <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
       eserviceAttributes <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)
