@@ -24,7 +24,7 @@ trait AgreementManagementService {
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
     descriptorId: Option[String] = None,
-    status: Option[String] = None
+    status: Option[AgreementStatusEnum] = None
   ): Future[Seq[Agreement]]
 
   def activateById(
@@ -72,7 +72,7 @@ object AgreementManagementService {
     agreement.consumerId == payload.consumerId &&
       agreement.eserviceId == payload.eserviceId &&
       agreement.descriptorId == payload.descriptorId &&
-      agreement.status == AgreementEnums.Status.Active
+      agreement.status == ACTIVE
   }
 
   def getStatusChangeDetails(agreement: Agreement, partyId: String): Future[StatusChangeDetails] = {
@@ -81,9 +81,9 @@ object AgreementManagementService {
 
     partyId match {
       case `consumerId` =>
-        Future.successful(StatusChangeDetails(changedBy = Some(StatusChangeDetailsEnums.ChangedBy.Consumer)))
+        Future.successful(StatusChangeDetails(changedBy = Some(CONSUMER)))
       case `producerId` =>
-        Future.successful(StatusChangeDetails(changedBy = Some(StatusChangeDetailsEnums.ChangedBy.Producer)))
+        Future.successful(StatusChangeDetails(changedBy = Some(PRODUCER)))
       case _ =>
         Future.failed(new RuntimeException("the party doing the operation is neither consumer nor producer"))
     }
@@ -91,7 +91,7 @@ object AgreementManagementService {
 
   def isActive(agreement: Agreement): Future[Agreement] =
     agreement.status match {
-      case AgreementEnums.Status.Active =>
+      case ACTIVE =>
         Future.successful(agreement)
       case _ =>
         Future.failed(new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}"))
@@ -99,7 +99,7 @@ object AgreementManagementService {
 
   def isPending(agreement: Agreement): Future[Agreement] =
     agreement.status match {
-      case AgreementEnums.Status.Pending =>
+      case PENDING =>
         Future.successful(agreement)
       case _ =>
         Future.failed(new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}"))
@@ -107,7 +107,7 @@ object AgreementManagementService {
 
   def isSuspended(agreement: Agreement): Future[Agreement] =
     agreement.status match {
-      case AgreementEnums.Status.Suspended =>
+      case SUSPENDED =>
         Future.successful(agreement)
       case _ =>
         Future.failed(new RuntimeException(s"Agreement ${agreement.id} status is ${agreement.status}"))

@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.AgreementEnums
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.ACTIVE
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attributes, Problem}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
@@ -40,7 +40,7 @@ class ConsumerApiServiceImpl(
       bearerToken <- extractBearer(contexts)
       agreements <- agreementManagementService.getAgreements(bearerToken)(
         consumerId = Some(consumerId),
-        status = Some(AgreementEnums.Status.Active.toString)
+        status = Some(ACTIVE)
       )
       eserviceIds = agreements.map(_.eserviceId)
       eservices       <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken))

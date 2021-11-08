@@ -7,7 +7,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.AgreementEnums
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   ConsumerApiMarshallerImpl,
   ConsumerApiServiceImpl,
@@ -90,21 +90,23 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
 
-      (mockAgreementManagementService
-        .getAgreements(_: String)(
-          _: Option[String],
-          _: Option[String],
-          _: Option[String],
-          _: Option[String],
-          _: Option[String]
-        ))
+      (
+        mockAgreementManagementService
+          .getAgreements(_: String)(
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+          )
+        )
         .expects(
           Common.bearerToken,
           None,
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementEnums.Status.Active.toString)
+          Some(AgreementManagementDependency.ACTIVE)
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
 
@@ -183,21 +185,23 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer without verified attributes)" in {
 
-      (mockAgreementManagementService
-        .getAgreements(_: String)(
-          _: Option[String],
-          _: Option[String],
-          _: Option[String],
-          _: Option[String],
-          _: Option[String]
-        ))
+      (
+        mockAgreementManagementService
+          .getAgreements(_: String)(
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+          )
+        )
         .expects(
           Common.bearerToken,
           None,
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementEnums.Status.Active.toString)
+          Some(AgreementManagementDependency.ACTIVE)
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
 
@@ -259,21 +263,23 @@ class ConsumerApiServiceSpec
     }
 
     "retrieve all attributes owned by a customer (customer without declared attributes)" in {
-      (mockAgreementManagementService
-        .getAgreements(_: String)(
-          _: Option[String],
-          _: Option[String],
-          _: Option[String],
-          _: Option[String],
-          _: Option[String]
-        ))
+      (
+        mockAgreementManagementService
+          .getAgreements(_: String)(
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+          )
+        )
         .expects(
           Common.bearerToken,
           None,
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementEnums.Status.Active.toString)
+          Some(AgreementManagementDependency.ACTIVE)
         )
         .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
 

@@ -147,7 +147,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
     descriptorId: Option[String] = None,
-    status: Option[String] = None
+    status: Option[AgreementStatusEnum] = None
   ): Future[Seq[Agreement]] = {
 
     val request: ApiRequest[Seq[Agreement]] =

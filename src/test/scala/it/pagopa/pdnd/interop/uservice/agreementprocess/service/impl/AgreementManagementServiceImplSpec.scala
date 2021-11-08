@@ -12,7 +12,8 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
   AttributeValue,
   Attributes,
   EService,
-  EServiceDescriptor
+  EServiceDescriptor,
+  REST
 }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -711,7 +712,7 @@ class AgreementManagementServiceImplSpec
         producerId = UUID.randomUUID(),
         name = "name",
         description = "description",
-        technology = "REST",
+        technology = REST,
         attributes = Attributes(
           certified = Seq(
             Attribute(
@@ -755,7 +756,7 @@ class AgreementManagementServiceImplSpec
         producerId = UUID.randomUUID(),
         name = "name",
         description = "description",
-        technology = "REST",
+        technology = REST,
         attributes = Attributes(
           certified = Seq(
             Attribute(

@@ -53,7 +53,7 @@ class CatalogProviderContractSpec
     docs = Seq.empty,
     audience = Seq("pippo"),
     voucherLifespan = 124,
-    status = EServiceDescriptorEnums.Status.Draft
+    status = DRAFT
   )
 
   val response = EService(
@@ -61,7 +61,7 @@ class CatalogProviderContractSpec
     producerId = UUID.fromString("24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"),
     name = "string",
     description = "string",
-    technology = "REST",
+    technology = REST,
     attributes = Attributes(
       declared = Seq(Attribute(single = Some(AttributeValue("1234", false)))),
       certified = Seq(Attribute(single = Some(AttributeValue("1234", false)))),

@@ -1,17 +1,7 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
 import it.pagopa.pdnd.interop.uservice.agreementprocess.error.DescriptorNotFound
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums.Status.{
-  Deprecated,
-  Published
-}
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
-  Attribute,
-  AttributeValue,
-  EService,
-  EServiceDescriptor,
-  EServiceDescriptorEnums
-}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
 
 import java.util.UUID
 import scala.concurrent.Future
@@ -42,26 +32,26 @@ object CatalogManagementService {
       val currentVersion = currentDescriptor.version.toLongOption
       eservice.descriptors
         .find(d =>
-          d.status == EServiceDescriptorEnums.Status.Published && Ordering[Option[Long]]
+          d.status == PUBLISHED && Ordering[Option[Long]]
             .gt(d.version.toLongOption, currentVersion)
         )
     }
   }
 
   def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
-    val allowedStatus: List[EServiceDescriptorEnums.Status.Value] = List(Published)
+    val allowedStatus: List[EServiceDescriptorStatusEnum] = List(PUBLISHED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
 
   def validateOperationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
-    val allowedStatus: List[EServiceDescriptorEnums.Status.Value] = List(Published, Deprecated)
+    val allowedStatus: List[EServiceDescriptorStatusEnum] = List(PUBLISHED, DEPRECATED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
 
   def validateEServiceDescriptorStatus(
     eservice: EService,
     descriptorId: UUID,
-    allowedStatus: List[EServiceDescriptorEnums.Status.Value]
+    allowedStatus: List[EServiceDescriptorStatusEnum]
   ): Future[EService] = {
     val descriptorStatus = eservice.descriptors.find(_.id == descriptorId).map(_.status)
 

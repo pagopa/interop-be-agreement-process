@@ -7,12 +7,13 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
-  AgreementEnums,
   VerifiedAttribute,
   Agreement => ClientAgreement
 }
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.model.{Attribute => ClientAttribute}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.{model => CatalogManagementDependency}
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.model.Organization
 
 import java.time.OffsetDateTime
@@ -26,6 +27,11 @@ trait SpecHelper {
     s"http://localhost:8088/pdnd-interop-uservice-agreement-process/${buildinfo.BuildInfo.interfaceVersion}"
   final lazy val emptyData: Source[ByteString, Any] = Source.empty
   final val authorization: Seq[Authorization]       = Seq(headers.Authorization(OAuth2BearerToken(Common.bearerToken)))
+
+  System.setProperty("CATALOG_MANAGEMENT_URL", "http://localhost/")
+  System.setProperty("AGREEMENT_MANAGEMENT_URL", "http://localhost/")
+  System.setProperty("PARTY_MANAGEMENT_URL", "http://localhost/")
+  System.setProperty("ATTRIBUTE_REGISTRY_MANAGEMENT_URL", "http://localhost/")
 
   def request(data: Source[ByteString, Any], path: String, verb: HttpMethod)(implicit
     system: ClassicActorSystemProvider
@@ -69,7 +75,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementEnums.Status.Active,
+      status = AgreementManagementDependency.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -106,7 +112,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = "",
+      technology = CatalogManagementDependency.REST,
       attributes = Attributes(certified = Seq.empty, declared = declaredAttributes, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -125,7 +131,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementEnums.Status.Active,
+      status = AgreementManagementDependency.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -147,7 +153,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = "",
+      technology = CatalogManagementDependency.REST,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -166,7 +172,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementEnums.Status.Active,
+      status = AgreementManagementDependency.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -194,7 +200,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = "",
+      technology = CatalogManagementDependency.REST,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -212,7 +218,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementEnums.Status.Active,
+      status = AgreementManagementDependency.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -240,7 +246,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = "",
+      technology = CatalogManagementDependency.REST,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -258,7 +264,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementEnums.Status.Pending,
+      status = AgreementManagementDependency.PENDING,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -294,7 +300,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementEnums.Status.Suspended,
+      status = AgreementManagementDependency.SUSPENDED,
       verifiedAttributes = Seq.empty
     )
   }
@@ -327,7 +333,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "name",
       description = "description",
-      technology = "REST",
+      technology = CatalogManagementDependency.REST,
       attributes = Attributes(
         certified = Seq.empty,
         declared = Seq.empty,
@@ -351,7 +357,7 @@ trait SpecHelper {
           voucherLifespan = 1,
           interface = None,
           docs = Seq.empty,
-          status = EServiceDescriptorEnums.Status.Published
+          status = CatalogManagementDependency.PUBLISHED
         )
       )
     )
@@ -362,7 +368,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = consumerId,
-      status = AgreementEnums.Status.Pending,
+      status = AgreementManagementDependency.PENDING,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),

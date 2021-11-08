@@ -5,12 +5,13 @@ import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
-  AgreementEnums,
   AgreementSeed,
   VerifiedAttribute,
   VerifiedAttributeSeed
 }
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
+import it.pagopa.pdnd.interop.uservice.agreementprocess.common.Converter.dependencyAgreementStatusToApi
 import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{
   ActiveAgreementAlreadyExists,
   AgreementAttributeNotFound,
@@ -24,11 +25,11 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
   AttributeValue => CatalogAttributeValue,
   EService => CatalogEService
 }
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.{model => CatalogManagementDependency}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
@@ -170,12 +171,13 @@ class AgreementApiServiceImpl(
   ): Route = {
     val result: Future[Seq[Agreement]] = for {
       bearerToken <- extractBearer(contexts)
+      statusEnum  <- status.traverse(AgreementManagementDependency.AgreementStatusEnum.fromValue).toFuture
       agreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(
         producerId = producerId,
         consumerId = consumerId,
         eserviceId = eserviceId,
         descriptorId = descriptorId,
-        status = status
+        status = statusEnum
       )
       apiAgreementsWithVersion <- Future.traverse(agreements)(getApiAgreement(bearerToken))
       apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
@@ -242,7 +244,7 @@ class AgreementApiServiceImpl(
         activeDescriptor =
           activeDescriptorOption.map(d => ActiveDescriptor(id = d.id, status = d.status.toString, version = d.version))
       ),
-      status = agreement.status.toString,
+      status = dependencyAgreementStatusToApi(agreement.status),
       attributes = attributes,
       suspendedByConsumer = agreement.suspendedByConsumer,
       suspendedByProducer = agreement.suspendedByProducer
@@ -348,7 +350,7 @@ class AgreementApiServiceImpl(
         consumerId = Some(agreement.consumerId.toString),
         eserviceId = Some(agreement.eserviceId.toString),
         descriptorId = Some(agreement.descriptorId.toString),
-        status = Some(AgreementEnums.Status.Active.toString)
+        status = Some(AgreementManagementDependency.ACTIVE)
       )
       _ <- Either.cond(activeAgreement.isEmpty, (), ActiveAgreementAlreadyExists(agreement)).toFuture
       _ <- AgreementManagementService.isPending(agreement).recoverWith { case _ =>
@@ -371,7 +373,7 @@ class AgreementApiServiceImpl(
       agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       eservice    <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       latestActiveEserviceDescriptor <- eservice.descriptors
-        .find(d => d.status == EServiceDescriptorEnums.Status.Published)
+        .find(d => d.status == CatalogManagementDependency.PUBLISHED)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
       latestDescriptorVersion = latestActiveEserviceDescriptor.version.toLongOption
       currentVersion          = eservice.descriptors.find(d => d.id == agreement.descriptorId).flatMap(_.version.toLongOption)

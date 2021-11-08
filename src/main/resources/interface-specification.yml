@@ -180,11 +180,7 @@ paths:
         - in: query
           name: status
           schema:
-            type: string
-            enum:
-              - pending
-              - active
-              - suspended
+            $ref: '#/components/schemas/AgreementStatusEnum'
         - in: query
           name: latest
           schema:
@@ -381,11 +377,7 @@ components:
         eservice:
           $ref: '#/components/schemas/EService'
         status:
-          type: string
-          enum:
-            - active
-            - pending
-            - suspended
+          $ref: '#/components/schemas/AgreementStatusEnum'
         attributes:
           type: array
           items:
@@ -415,6 +407,14 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Agreement'
+    AgreementStatusEnum:
+      type: string
+      description: Agreement Status Enum
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - PENDING
+        - SUSPENDED
     ActiveDescriptor:
       properties:
         id:
