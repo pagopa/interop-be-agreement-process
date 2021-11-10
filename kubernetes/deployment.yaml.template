@@ -79,13 +79,13 @@ spec:
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
             - name: CATALOG_MANAGEMENT_URL
-              value: {{catalogManagementUrl}}
+              value: "{{catalogManagementUrl}}"
             - name: AGREEMENT_MANAGEMENT_URL
-              value: {{agreementManagementUrl}}
+              value: "{{agreementManagementUrl}}"
             - name: PARTY_MANAGEMENT_URL
-              value: {{partyManagementUrl}}
+              value: "{{partyManagementUrl}}"
             - name: ATTRIBUTE_REGISTRY_MANAGEMENT_URL
-              value: {{attributeRegistryManagementUrl}}
+              value: "{{attributeRegistryManagementUrl}}"
           volumeMounts:
             - name: application-conf
               mountPath: /opt/docker/etc
