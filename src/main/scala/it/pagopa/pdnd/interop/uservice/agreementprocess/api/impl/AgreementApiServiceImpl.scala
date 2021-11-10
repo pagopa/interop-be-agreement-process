@@ -5,11 +5,11 @@ import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
-  AgreementEnums,
   AgreementSeed,
   VerifiedAttribute,
   VerifiedAttributeSeed
 }
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{
   ActiveAgreementAlreadyExists,
@@ -18,17 +18,19 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{
   DescriptorNotFound
 }
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
+import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService.agreementStateToApi
+import it.pagopa.pdnd.interop.uservice.agreementprocess.service.CatalogManagementService.descriptorStateToApi
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
   AttributeManagementService,
   CatalogManagementService,
   PartyManagementService
 }
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EServiceDescriptorEnums
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
   AttributeValue => CatalogAttributeValue,
   EService => CatalogEService
 }
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.{model => CatalogManagementDependency}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
@@ -64,7 +66,7 @@ class AgreementApiServiceImpl(
       bearerToken           <- extractBearer(contexts)
       agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       _                     <- verifyAgreementActivationEligibility(bearerToken)(agreement)
-      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId.toString)
+      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId)
       eservice              <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       activeEservice        <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
       _ <- AgreementManagementService.verifyAttributes(
@@ -72,8 +74,8 @@ class AgreementApiServiceImpl(
         activeEservice.attributes,
         agreement.verifiedAttributes
       )
-      changeStatusDetails <- AgreementManagementService.getStatusChangeDetails(agreement, partyId)
-      _                   <- agreementManagementService.activateById(bearerToken)(agreementId, changeStatusDetails)
+      changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
+      _                  <- agreementManagementService.activateById(bearerToken)(agreementId, changeStateDetails)
     } yield ()
 
     onComplete(result) {
@@ -94,11 +96,11 @@ class AgreementApiServiceImpl(
   ): Route = {
     logger.info(s"Suspending agreement $agreementId")
     val result = for {
-      bearerToken         <- extractBearer(contexts)
-      agreement           <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      _                   <- AgreementManagementService.isActive(agreement)
-      changeStatusDetails <- AgreementManagementService.getStatusChangeDetails(agreement, partyId)
-      _                   <- agreementManagementService.suspendById(bearerToken)(agreementId, changeStatusDetails)
+      bearerToken        <- extractBearer(contexts)
+      agreement          <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      _                  <- AgreementManagementService.isActive(agreement)
+      changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
+      _                  <- agreementManagementService.suspendById(bearerToken)(agreementId, changeStateDetails)
     } yield ()
 
     onComplete(result) {
@@ -161,7 +163,7 @@ class AgreementApiServiceImpl(
     consumerId: Option[String],
     eserviceId: Option[String],
     descriptorId: Option[String],
-    status: Option[String],
+    state: Option[String],
     latest: Option[Boolean]
   )(implicit
     contexts: Seq[(String, String)],
@@ -170,12 +172,13 @@ class AgreementApiServiceImpl(
   ): Route = {
     val result: Future[Seq[Agreement]] = for {
       bearerToken <- extractBearer(contexts)
+      stateEnum   <- state.traverse(AgreementManagementDependency.AgreementState.fromValue).toFuture
       agreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(
         producerId = producerId,
         consumerId = consumerId,
         eserviceId = eserviceId,
         descriptorId = descriptorId,
-        status = status
+        state = stateEnum
       )
       apiAgreementsWithVersion <- Future.traverse(agreements)(getApiAgreement(bearerToken))
       apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
@@ -239,10 +242,11 @@ class AgreementApiServiceImpl(
         id = eservice.id,
         name = eservice.name,
         version = descriptor.version,
-        activeDescriptor =
-          activeDescriptorOption.map(d => ActiveDescriptor(id = d.id, status = d.status.toString, version = d.version))
+        activeDescriptor = activeDescriptorOption.map(d =>
+          ActiveDescriptor(id = d.id, state = descriptorStateToApi(d.state), version = d.version)
+        )
       ),
-      status = agreement.status.toString,
+      state = agreementStateToApi(agreement.state),
       attributes = attributes,
       suspendedByConsumer = agreement.suspendedByConsumer,
       suspendedByProducer = agreement.suspendedByProducer
@@ -334,7 +338,7 @@ class AgreementApiServiceImpl(
   /** Verify if an agreement can be activated.
     * Checks performed:
     * - no other active agreement exists for the same combination of Producer, Consumer, EService, Descriptor
-    * - the given agreement is in status Pending (first activation) or Suspended (re-activation)
+    * - the given agreement is in state Pending (first activation) or Suspended (re-activation)
     * @param bearerToken auth token
     * @param agreement to be activated
     * @return
@@ -348,7 +352,7 @@ class AgreementApiServiceImpl(
         consumerId = Some(agreement.consumerId.toString),
         eserviceId = Some(agreement.eserviceId.toString),
         descriptorId = Some(agreement.descriptorId.toString),
-        status = Some(AgreementEnums.Status.Active.toString)
+        state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
       _ <- Either.cond(activeAgreement.isEmpty, (), ActiveAgreementAlreadyExists(agreement)).toFuture
       _ <- AgreementManagementService.isPending(agreement).recoverWith { case _ =>
@@ -371,7 +375,7 @@ class AgreementApiServiceImpl(
       agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       eservice    <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       latestActiveEserviceDescriptor <- eservice.descriptors
-        .find(d => d.status == EServiceDescriptorEnums.Status.Published)
+        .find(d => d.state == CatalogManagementDependency.EServiceDescriptorState.PUBLISHED)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
       latestDescriptorVersion = latestActiveEserviceDescriptor.version.toLongOption
       currentVersion          = eservice.descriptors.find(d => d.id == agreement.descriptorId).flatMap(_.version.toLongOption)

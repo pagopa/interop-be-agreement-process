@@ -46,9 +46,9 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 
   override def activateById(
     bearerToken: String
-  )(agreementId: String, statusChangeDetails: StatusChangeDetails): Future[Agreement] = {
+  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement] = {
     val request: ApiRequest[Agreement] =
-      api.activateAgreement(agreementId, statusChangeDetails)(BearerToken(bearerToken))
+      api.activateAgreement(agreementId, stateChangeDetails)(BearerToken(bearerToken))
     invoker
       .execute[Agreement](request)
       .map { x =>
@@ -64,9 +64,9 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 
   override def suspendById(
     bearerToken: String
-  )(agreementId: String, statusChangeDetails: StatusChangeDetails): Future[Agreement] = {
+  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement] = {
     val request: ApiRequest[Agreement] =
-      api.suspendAgreement(agreementId, statusChangeDetails)(BearerToken(bearerToken))
+      api.suspendAgreement(agreementId, stateChangeDetails)(BearerToken(bearerToken))
     invoker
       .execute[Agreement](request)
       .map { x =>
@@ -105,7 +105,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith {
-        case ex: ApiError[_] if (ex.code == 404) =>
+        case ex: ApiError[_] if ex.code == 404 =>
           logger.error(s"Retrieving agreement ${ex.getMessage}")
           Future.failed[Agreement](AgreementNotFound(agreementId))
         case ex: ApiError[_] =>
@@ -147,7 +147,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
     descriptorId: Option[String] = None,
-    status: Option[String] = None
+    state: Option[AgreementState] = None
   ): Future[Seq[Agreement]] = {
 
     val request: ApiRequest[Seq[Agreement]] =
@@ -156,7 +156,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         consumerId = consumerId,
         eserviceId = eserviceId,
         descriptorId = descriptorId,
-        status = status
+        state = state
       )(BearerToken(bearerToken))
 
     invoker

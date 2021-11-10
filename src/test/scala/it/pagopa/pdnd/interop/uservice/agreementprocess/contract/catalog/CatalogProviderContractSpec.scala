@@ -8,8 +8,8 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.Serializers
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
-import org.json4s.{DefaultFormats, Formats}
 import org.json4s.jackson.Serialization
+import org.json4s.{DefaultFormats, Formats}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -53,7 +53,7 @@ class CatalogProviderContractSpec
     docs = Seq.empty,
     audience = Seq("pippo"),
     voucherLifespan = 124,
-    status = EServiceDescriptorEnums.Status.Draft
+    state = EServiceDescriptorState.DRAFT
   )
 
   val response = EService(
@@ -61,7 +61,7 @@ class CatalogProviderContractSpec
     producerId = UUID.fromString("24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"),
     name = "string",
     description = "string",
-    technology = "REST",
+    technology = EServiceTechnology.REST,
     attributes = Attributes(
       declared = Seq(Attribute(single = Some(AttributeValue("1234", false)))),
       certified = Seq(Attribute(single = Some(AttributeValue("1234", false)))),
