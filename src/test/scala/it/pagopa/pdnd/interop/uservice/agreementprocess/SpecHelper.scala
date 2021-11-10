@@ -75,7 +75,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementManagementDependency.ACTIVE,
+      state = AgreementManagementDependency.AgreementState.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -112,7 +112,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = CatalogManagementDependency.REST,
+      technology = CatalogManagementDependency.EServiceTechnology.REST,
       attributes = Attributes(certified = Seq.empty, declared = declaredAttributes, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -131,7 +131,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementManagementDependency.ACTIVE,
+      state = AgreementManagementDependency.AgreementState.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -153,7 +153,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = CatalogManagementDependency.REST,
+      technology = CatalogManagementDependency.EServiceTechnology.REST,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -172,7 +172,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementManagementDependency.ACTIVE,
+      state = AgreementManagementDependency.AgreementState.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -200,7 +200,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = CatalogManagementDependency.REST,
+      technology = CatalogManagementDependency.EServiceTechnology.REST,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -218,7 +218,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementManagementDependency.ACTIVE,
+      state = AgreementManagementDependency.AgreementState.ACTIVE,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -246,7 +246,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "",
       description = "",
-      technology = CatalogManagementDependency.REST,
+      technology = CatalogManagementDependency.EServiceTechnology.REST,
       attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
       descriptors = Seq.empty
     )
@@ -264,7 +264,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementManagementDependency.PENDING,
+      state = AgreementManagementDependency.AgreementState.PENDING,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),
@@ -300,7 +300,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
-      status = AgreementManagementDependency.SUSPENDED,
+      state = AgreementManagementDependency.AgreementState.SUSPENDED,
       verifiedAttributes = Seq.empty
     )
   }
@@ -317,7 +317,9 @@ trait SpecHelper {
       description = "Consumer",
       digitalAddress = "digitalAddress",
       id = consumerId,
-      attributes = Seq.empty
+      attributes = Seq.empty,
+      fiscalCode = "code",
+      products = Set.empty
     )
 
     val producer = Organization(
@@ -325,7 +327,9 @@ trait SpecHelper {
       description = "Producer",
       digitalAddress = "digitalAddress",
       id = producerId,
-      attributes = Seq.empty
+      attributes = Seq.empty,
+      fiscalCode = "code",
+      products = Set.empty
     )
 
     val eservice: EService = EService(
@@ -333,7 +337,7 @@ trait SpecHelper {
       producerId = producerId,
       name = "name",
       description = "description",
-      technology = CatalogManagementDependency.REST,
+      technology = CatalogManagementDependency.EServiceTechnology.REST,
       attributes = Attributes(
         certified = Seq.empty,
         declared = Seq.empty,
@@ -357,7 +361,7 @@ trait SpecHelper {
           voucherLifespan = 1,
           interface = None,
           docs = Seq.empty,
-          status = CatalogManagementDependency.PUBLISHED
+          state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
         )
       )
     )
@@ -368,7 +372,7 @@ trait SpecHelper {
       descriptorId = descriptorId,
       producerId = producerId,
       consumerId = consumerId,
-      status = AgreementManagementDependency.PENDING,
+      state = AgreementManagementDependency.AgreementState.PENDING,
       verifiedAttributes = Seq(
         VerifiedAttribute(
           id = UUID.fromString(Common.verifiedAttributeId1),

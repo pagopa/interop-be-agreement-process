@@ -1,15 +1,7 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.CatalogManagementService
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
-  ARCHIVED,
-  Attributes,
-  DEPRECATED,
-  EService,
-  EServiceDescriptor,
-  PUBLISHED,
-  REST
-}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -27,7 +19,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
         producerId = UUID.randomUUID(),
         name = "name",
         description = "description",
-        technology = REST,
+        technology = EServiceTechnology.REST,
         attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
         descriptors = Seq(
           EServiceDescriptor(
@@ -38,7 +30,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = DEPRECATED
+            state = EServiceDescriptorState.DEPRECATED
           ),
           EServiceDescriptor(
             id = UUID.randomUUID(),
@@ -48,7 +40,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = DEPRECATED
+            state = EServiceDescriptorState.DEPRECATED
           ),
           EServiceDescriptor(
             id = UUID.randomUUID(),
@@ -58,7 +50,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = ARCHIVED
+            state = EServiceDescriptorState.ARCHIVED
           ),
           EServiceDescriptor(
             id = UUID.randomUUID(),
@@ -68,7 +60,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = PUBLISHED
+            state = EServiceDescriptorState.PUBLISHED
           )
         )
       )
@@ -80,7 +72,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
         voucherLifespan = 123,
         interface = None,
         docs = Seq.empty,
-        status = PUBLISHED
+        state = EServiceDescriptorState.PUBLISHED
       )
 
       val nextDescriptor = CatalogManagementService.getActiveDescriptorOption(eservice, currentDescriptor)
@@ -95,7 +87,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
         producerId = UUID.randomUUID(),
         name = "name",
         description = "description",
-        technology = REST,
+        technology = EServiceTechnology.REST,
         attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
         descriptors = Seq.empty
       )
@@ -108,7 +100,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
         voucherLifespan = 123,
         interface = None,
         docs = Seq.empty,
-        status = PUBLISHED
+        state = EServiceDescriptorState.PUBLISHED
       )
 
       val nextDescriptor = CatalogManagementService.getActiveDescriptorOption(eservice, currentDescriptor)
@@ -123,7 +115,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
         producerId = UUID.randomUUID(),
         name = "name",
         description = "description",
-        technology = REST,
+        technology = EServiceTechnology.REST,
         attributes = Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty),
         descriptors = Seq(
           EServiceDescriptor(
@@ -134,7 +126,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = DEPRECATED
+            state = EServiceDescriptorState.DEPRECATED
           ),
           EServiceDescriptor(
             id = UUID.randomUUID(),
@@ -144,7 +136,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = DEPRECATED
+            state = EServiceDescriptorState.DEPRECATED
           ),
           EServiceDescriptor(
             id = UUID.randomUUID(),
@@ -154,7 +146,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = ARCHIVED
+            state = EServiceDescriptorState.ARCHIVED
           ),
           EServiceDescriptor(
             id = UUID.randomUUID(),
@@ -164,7 +156,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
             voucherLifespan = 123,
             interface = None,
             docs = Seq.empty,
-            status = ARCHIVED
+            state = EServiceDescriptorState.ARCHIVED
           )
         )
       )
@@ -176,7 +168,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
         voucherLifespan = 123,
         interface = None,
         docs = Seq.empty,
-        status = PUBLISHED
+        state = EServiceDescriptorState.PUBLISHED
       )
 
       val nextDescriptor = CatalogManagementService.getActiveDescriptorOption(eservice, currentDescriptor)

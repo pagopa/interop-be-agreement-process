@@ -97,7 +97,7 @@ class ConsumerApiServiceSpec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -106,7 +106,7 @@ class ConsumerApiServiceSpec
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
 
@@ -192,7 +192,7 @@ class ConsumerApiServiceSpec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -201,7 +201,7 @@ class ConsumerApiServiceSpec
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
 
@@ -270,7 +270,7 @@ class ConsumerApiServiceSpec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -279,7 +279,7 @@ class ConsumerApiServiceSpec
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
 

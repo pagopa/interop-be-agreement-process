@@ -178,9 +178,9 @@ paths:
           schema:
             type: string
         - in: query
-          name: status
+          name: state
           schema:
-            $ref: '#/components/schemas/AgreementStatusEnum'
+            $ref: '#/components/schemas/AgreementState'
         - in: query
           name: latest
           schema:
@@ -376,8 +376,8 @@ components:
           $ref: '#/components/schemas/Organization'
         eservice:
           $ref: '#/components/schemas/EService'
-        status:
-          $ref: '#/components/schemas/AgreementStatusEnum'
+        state:
+          $ref: '#/components/schemas/AgreementState'
         attributes:
           type: array
           items:
@@ -402,32 +402,41 @@ components:
         - eserviceDescriptorId
         - eservice
         - attributes
-        - status
+        - state
     Agreements:
       type: array
       items:
         $ref: '#/components/schemas/Agreement'
-    AgreementStatusEnum:
+    AgreementState:
       type: string
-      description: Agreement Status Enum
+      description: Agreement State
       enum:
         - ACTIVE
         - INACTIVE
         - PENDING
         - SUSPENDED
+    EServiceDescriptorState:
+      type: string
+      description: EService Descriptor State
+      enum:
+        - DRAFT
+        - PUBLISHED
+        - DEPRECATED
+        - SUSPENDED
+        - ARCHIVED
     ActiveDescriptor:
       properties:
         id:
           type: string
           format: uuid
-        status:
-          type: string
+        state:
+          $ref: '#/components/schemas/EServiceDescriptorState'
         version:
           type: string
       additionalProperties: false
       required:
         - id
-        - status
+        - state
         - version
     Attributes:
       type: object

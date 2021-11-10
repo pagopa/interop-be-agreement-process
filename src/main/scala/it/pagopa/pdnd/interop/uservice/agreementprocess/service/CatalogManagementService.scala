@@ -1,6 +1,7 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
 import it.pagopa.pdnd.interop.uservice.agreementprocess.error.DescriptorNotFound
+import it.pagopa.pdnd.interop.uservice.agreementprocess.{model => AgreementProcess}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
 
 import java.util.UUID
@@ -32,28 +33,29 @@ object CatalogManagementService {
       val currentVersion = currentDescriptor.version.toLongOption
       eservice.descriptors
         .find(d =>
-          d.status == PUBLISHED && Ordering[Option[Long]]
+          d.state == EServiceDescriptorState.PUBLISHED && Ordering[Option[Long]]
             .gt(d.version.toLongOption, currentVersion)
         )
     }
   }
 
   def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
-    val allowedStatus: List[EServiceDescriptorStatusEnum] = List(PUBLISHED)
+    val allowedStatus: List[EServiceDescriptorState] = List(EServiceDescriptorState.PUBLISHED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
 
   def validateOperationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
-    val allowedStatus: List[EServiceDescriptorStatusEnum] = List(PUBLISHED, DEPRECATED)
+    val allowedStatus: List[EServiceDescriptorState] =
+      List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.DEPRECATED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
 
   def validateEServiceDescriptorStatus(
     eservice: EService,
     descriptorId: UUID,
-    allowedStatus: List[EServiceDescriptorStatusEnum]
+    allowedStatus: List[EServiceDescriptorState]
   ): Future[EService] = {
-    val descriptorStatus = eservice.descriptors.find(_.id == descriptorId).map(_.status)
+    val descriptorStatus = eservice.descriptors.find(_.id == descriptorId).map(_.state)
 
     Future.fromTry(
       Either
@@ -88,12 +90,19 @@ object CatalogManagementService {
     }
   }
 
-  def hasEserviceNewPublishedVersion(latestVersion: Option[Long], currentVersion: Option[Long]): Future[Boolean] = {
+  def hasEserviceNewPublishedVersion(latestVersion: Option[Long], currentVersion: Option[Long]): Future[Boolean] =
     (latestVersion, currentVersion) match {
       case (Some(l), Some(c)) if l > c => Future.successful(true)
       case (Some(_), None)             => Future.successful(true)
       case _                           => Future.failed[Boolean](new RuntimeException("No new versions exist for this agreement!"))
     }
 
-  }
+  def descriptorStateToApi(state: EServiceDescriptorState): AgreementProcess.EServiceDescriptorState =
+    state match {
+      case EServiceDescriptorState.DRAFT      => AgreementProcess.EServiceDescriptorState.DRAFT
+      case EServiceDescriptorState.PUBLISHED  => AgreementProcess.EServiceDescriptorState.PUBLISHED
+      case EServiceDescriptorState.DEPRECATED => AgreementProcess.EServiceDescriptorState.DEPRECATED
+      case EServiceDescriptorState.SUSPENDED  => AgreementProcess.EServiceDescriptorState.SUSPENDED
+      case EServiceDescriptorState.ARCHIVED   => AgreementProcess.EServiceDescriptorState.ARCHIVED
+    }
 }

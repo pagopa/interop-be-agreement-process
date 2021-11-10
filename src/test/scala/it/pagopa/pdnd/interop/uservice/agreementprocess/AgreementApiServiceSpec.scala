@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.StatusChangeDetails
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
@@ -19,8 +19,8 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
   ConsumerApiMarshaller,
   HealthApi
 }
-import it.pagopa.pdnd.interop.uservice.agreementprocess.common.Converter.dependencyAgreementStatusToApi
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
+import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService.agreementStateToApi
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
   AttributeManagementService,
@@ -61,7 +61,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Activation" should {
     "succeed on pending agreement" in {
-      val pendingAgreement = TestDataOne.agreement.copy(status = AgreementManagementDependency.PENDING)
+      val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
@@ -72,7 +72,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             0,
             None,
             Seq.empty,
-            CatalogManagementDependency.PUBLISHED
+            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
           )
         )
       )
@@ -90,7 +90,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -99,7 +99,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           Some(pendingAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -117,11 +117,11 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: String)(_: String, _: StatusChangeDetails))
+        .activateById(_: String)(_: String, _: StateChangeDetails))
         .expects(
           Common.bearerToken,
           TestDataOne.id.toString,
-          StatusChangeDetails(changedBy = Some(AgreementManagementDependency.PRODUCER))
+          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
         )
         .once()
         .returns(Future.successful(pendingAgreement))
@@ -132,7 +132,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "succeed on suspended agreement" in {
-      val suspendedAgreement = TestDataOne.agreement.copy(status = AgreementManagementDependency.SUSPENDED)
+      val suspendedAgreement =
+        TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
@@ -143,7 +144,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             0,
             None,
             Seq.empty,
-            CatalogManagementDependency.PUBLISHED
+            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
           )
         )
       )
@@ -161,7 +162,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -170,7 +171,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           Some(suspendedAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -188,11 +189,11 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: String)(_: String, _: StatusChangeDetails))
+        .activateById(_: String)(_: String, _: StateChangeDetails))
         .expects(
           Common.bearerToken,
           TestDataOne.id.toString,
-          StatusChangeDetails(changedBy = Some(AgreementManagementDependency.PRODUCER))
+          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
         )
         .once()
         .returns(Future.successful(suspendedAgreement))
@@ -213,9 +214,9 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if an active agreement already exists" in {
-      val currentAgreement = TestDataOne.agreement.copy(status = AgreementManagementDependency.SUSPENDED)
+      val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
       val activeAgreement =
-        TestDataOne.agreement.copy(id = UUID.randomUUID(), status = AgreementManagementDependency.ACTIVE)
+        TestDataOne.agreement.copy(id = UUID.randomUUID(), state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
@@ -227,7 +228,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             0,
             None,
             Seq.empty,
-            CatalogManagementDependency.PUBLISHED
+            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
           )
         )
       )
@@ -245,7 +246,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -254,7 +255,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .once()
         .returns(Future.successful(Seq(activeAgreement)))
@@ -265,7 +266,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if agreement is not Pending or Suspended" in {
-      val currentAgreement = TestDataOne.agreement.copy(status = AgreementManagementDependency.ACTIVE)
+      val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
@@ -277,7 +278,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             0,
             None,
             Seq.empty,
-            CatalogManagementDependency.PUBLISHED
+            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
           )
         )
       )
@@ -295,7 +296,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -304,7 +305,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -315,7 +316,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if descriptor is not Published" in {
-      val currentAgreement = TestDataOne.agreement.copy(status = AgreementManagementDependency.SUSPENDED)
+      val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
@@ -327,7 +328,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             0,
             None,
             Seq.empty,
-            CatalogManagementDependency.DEPRECATED
+            CatalogManagementDependency.EServiceDescriptorState.DEPRECATED
           )
         )
       )
@@ -345,7 +346,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             _: Option[String],
             _: Option[String],
             _: Option[String],
-            _: Option[AgreementManagementDependency.AgreementStatusEnum]
+            _: Option[AgreementManagementDependency.AgreementState]
           )
         )
         .expects(
@@ -354,7 +355,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE)
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -380,7 +381,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Suspension" should {
     "succeed on active agreement" in {
-      val activeAgreement = TestDataOne.agreement.copy(status = AgreementManagementDependency.ACTIVE)
+      val activeAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
@@ -389,11 +390,11 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(activeAgreement))
 
       (mockAgreementManagementService
-        .suspendById(_: String)(_: String, _: StatusChangeDetails))
+        .suspendById(_: String)(_: String, _: StateChangeDetails))
         .expects(
           Common.bearerToken,
           TestDataOne.id.toString,
-          StatusChangeDetails(Some(AgreementManagementDependency.PRODUCER))
+          StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER))
         )
         .once()
         .returns(Future.successful(activeAgreement))
@@ -414,7 +415,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if agreement is not Active" in {
-      val currentAgreement = TestDataOne.agreement.copy(status = AgreementManagementDependency.SUSPENDED)
+      val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
@@ -492,7 +493,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           activeDescriptor = None
         ),
         eserviceDescriptorId = TestDataSeven.eservice.descriptors(0).id,
-        status = dependencyAgreementStatusToApi(TestDataSeven.agreement.status),
+        state = agreementStateToApi(TestDataSeven.agreement.state),
         suspendedByConsumer = None,
         suspendedByProducer = None,
         attributes = Seq(
