@@ -24,9 +24,9 @@ class CatalogProviderContractSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
+    with SpecHelper
     with CatalogManagementAPI
-    with BeforeAndAfterAll
-    with SpecHelper {
+    with BeforeAndAfterAll {
 
   // The import contains two things:
   // 1. The consumer test DSL/Builder
