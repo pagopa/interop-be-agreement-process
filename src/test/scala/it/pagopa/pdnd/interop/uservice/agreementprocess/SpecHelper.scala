@@ -318,7 +318,7 @@ trait SpecHelper {
       digitalAddress = "digitalAddress",
       id = consumerId,
       attributes = Seq.empty,
-      fiscalCode = "code",
+      taxCode = "code",
       products = Set.empty
     )
 
@@ -328,7 +328,7 @@ trait SpecHelper {
       digitalAddress = "digitalAddress",
       id = producerId,
       attributes = Seq.empty,
-      fiscalCode = "code",
+      taxCode = "code",
       products = Set.empty
     )
 
