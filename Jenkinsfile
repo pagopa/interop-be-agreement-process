@@ -31,7 +31,7 @@ pipeline {
       }
     }
 
-    stage('Contract testing') {
+    /*stage('Contract testing') {
       agent { label 'sbt-template' }
       environment {
         NEXUS = 'gateway.interop.pdnd.dev'
@@ -49,7 +49,7 @@ pipeline {
           }
         }
       }
-    }
+    }*/
 
     stage('Test and Deploy µservice') {
       agent { label 'sbt-template' }
