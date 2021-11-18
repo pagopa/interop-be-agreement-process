@@ -3,6 +3,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.contract.catalog
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.itv.scalapact.model.ScalaPactDescription
 import com.itv.scalapact.{ScalaPactMockConfig, ScalaPactMockServer}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.CatalogManagementAPI
 import it.pagopa.pdnd.interop.uservice.catalogmanagement
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
@@ -24,7 +25,8 @@ class CatalogProviderContractSpec
     with Matchers
     with ScalaFutures
     with CatalogManagementAPI
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with SpecHelper {
 
   // The import contains two things:
   // 1. The consumer test DSL/Builder
