@@ -6,6 +6,7 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiMarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import spray.json._
+import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
 
 class AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
 

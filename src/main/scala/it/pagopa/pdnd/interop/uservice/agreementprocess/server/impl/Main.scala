@@ -3,6 +3,8 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.directives.SecurityDirectives
 import akka.management.scaladsl.AkkaManagement
+import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.{Authenticator, PassThroughAuthenticator}
+import it.pagopa.pdnd.interop.commons.utils.CORSSupport
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
@@ -14,20 +16,17 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{AgreementApi, ConsumerApi, HealthApi}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.{
   ApplicationConfiguration,
-  Authenticator,
-  CorsSupport,
-  PassAuthenticator,
   classicActorSystem,
   executionContext
 }
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.Controller
+import it.pagopa.pdnd.interop.uservice.agreementprocess.service._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl.{
   AgreementManagementServiceImpl,
   AttributeManagementServiceImpl,
   CatalogManagementServiceImpl,
   PartyManagementServiceImpl
 }
-import it.pagopa.pdnd.interop.uservice.agreementprocess.service._
 import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.api.AttributeApi
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.api.PartyApi
@@ -36,7 +35,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Future
 
-trait AgreementManagementAPI {
+trait AgreementManagementDependency {
   private final val agreementManagementInvoker: AgreementManagementInvoker = AgreementManagementInvoker()
   private final val agreementManagementApi: AgreementManagementApi = AgreementManagementApi(
     ApplicationConfiguration.agreementManagementURL
@@ -47,7 +46,7 @@ trait AgreementManagementAPI {
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-trait CatalogManagementAPI {
+trait CatalogManagementDependency {
   private final val catalogManagementInvoker: CatalogManagementInvoker = CatalogManagementInvoker()
   private final val catalogApi: EServiceApi                            = EServiceApi(ApplicationConfiguration.catalogManagementURL)
   def catalogManagement(): CatalogManagementService =
@@ -56,14 +55,14 @@ trait CatalogManagementAPI {
     CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)
 }
 
-trait PartyManagementAPI {
+trait PartyManagementDependency {
   private final val partyManagementInvoker: PartyManagementInvoker = PartyManagementInvoker()
   private final val partyApi: PartyApi                             = PartyApi(ApplicationConfiguration.partyManagementURL)
   def partyManagement(): PartyManagementService =
     PartyManagementServiceImpl(partyManagementInvoker, partyApi)
 }
 
-trait AttributeRegistryManagementAPI {
+trait AttributeRegistryManagementDependency {
   private final val attributeRegistryManagementInvoker: AttributeRegistryManagementInvoker =
     AttributeRegistryManagementInvoker()
   private final val attributeApi: AttributeApi = AttributeApi(ApplicationConfiguration.attributeRegistryManagementURL)
@@ -74,11 +73,11 @@ trait AttributeRegistryManagementAPI {
 @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny", "org.wartremover.warts.Nothing"))
 object Main
     extends App
-    with CorsSupport
-    with AgreementManagementAPI
-    with CatalogManagementAPI
-    with PartyManagementAPI
-    with AttributeRegistryManagementAPI {
+    with CORSSupport
+    with AgreementManagementDependency
+    with CatalogManagementDependency
+    with PartyManagementDependency
+    with AttributeRegistryManagementDependency {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -114,7 +113,7 @@ object Main
   val healthApi: HealthApi = new HealthApi(
     new HealthServiceApiImpl(),
     new HealthApiMarshallerImpl(),
-    SecurityDirectives.authenticateOAuth2("SecurityRealm", PassAuthenticator)
+    SecurityDirectives.authenticateOAuth2("SecurityRealm", PassThroughAuthenticator)
   )
 
   locally {

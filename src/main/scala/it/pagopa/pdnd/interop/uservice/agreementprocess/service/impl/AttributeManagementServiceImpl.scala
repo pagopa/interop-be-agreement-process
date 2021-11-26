@@ -10,7 +10,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
 
 @SuppressWarnings(
   Array(
@@ -26,7 +26,7 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def getAttribute(attributeId: String): Future[ClientAttribute] = for {
-    uuid      <- Future.fromTry(Try(UUID.fromString(attributeId)))
+    uuid      <- attributeId.toFutureUUID
     attribute <- attributeByUUID(uuid)
   } yield attribute
 

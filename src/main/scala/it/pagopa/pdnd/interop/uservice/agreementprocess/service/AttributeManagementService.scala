@@ -1,10 +1,9 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attributes}
 
-import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 trait AttributeManagementService {
 
@@ -24,7 +23,7 @@ object AttributeManagementService {
 
   def toApi(attr: ClientAttribute): Future[Attribute] = Future.fromTry {
     for {
-      id <- Try(UUID.fromString(attr.id))
+      id <- attr.id.toUUID
     } yield Attribute(
       id = id,
       code = attr.code,
