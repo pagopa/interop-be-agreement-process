@@ -4,6 +4,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiMarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attributes, Problem}
 import spray.json.RootJsonFormat
+import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
 
 class ConsumerApiMarshallerImpl extends ConsumerApiMarshaller {
 

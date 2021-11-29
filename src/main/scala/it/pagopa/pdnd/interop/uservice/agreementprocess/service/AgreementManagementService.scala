@@ -1,12 +1,12 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.{model => AgreementProcess}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute, AttributeValue, Attributes, EService}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 trait AgreementManagementService {
@@ -184,7 +184,7 @@ object AgreementManagementService {
   ): Future[VerifiedAttributeSeed] =
     Future.fromTry {
       val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
-      Try(UUID.fromString(attribute.id)).map { uuid =>
+      attribute.id.toUUID.map { uuid =>
         if (isImplicitVerifications && consumerVerifiedAttributes.contains(uuid))
           VerifiedAttributeSeed(uuid, Some(true))
         else VerifiedAttributeSeed(uuid, verified = None)

@@ -4,6 +4,8 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.getFutureBearer
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementSeed,
   VerifiedAttribute,
@@ -33,9 +35,8 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.{model => CatalogManagementDependency}
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 @SuppressWarnings(
   Array(
@@ -63,7 +64,7 @@ class AgreementApiServiceImpl(
   ): Route = {
     logger.info(s"Activating agreement $agreementId")
     val result = for {
-      bearerToken           <- extractBearer(contexts)
+      bearerToken           <- getFutureBearer(contexts)
       agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       _                     <- verifyAgreementActivationEligibility(bearerToken)(agreement)
       consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId)
@@ -96,7 +97,7 @@ class AgreementApiServiceImpl(
   ): Route = {
     logger.info(s"Suspending agreement $agreementId")
     val result = for {
-      bearerToken        <- extractBearer(contexts)
+      bearerToken        <- getFutureBearer(contexts)
       agreement          <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       _                  <- AgreementManagementService.isActive(agreement)
       changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
@@ -123,7 +124,7 @@ class AgreementApiServiceImpl(
 
     logger.info(s"Creating agreement $agreementPayload")
     val result = for {
-      bearerToken <- extractBearer(contexts)
+      bearerToken <- getFutureBearer(contexts)
       consumerAgreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(consumerId =
         Some(agreementPayload.consumerId.toString)
       )
@@ -171,7 +172,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     val result: Future[Seq[Agreement]] = for {
-      bearerToken <- extractBearer(contexts)
+      bearerToken <- getFutureBearer(contexts)
       stateEnum   <- state.traverse(AgreementManagementDependency.AgreementState.fromValue).toFuture
       agreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(
         producerId = producerId,
@@ -202,7 +203,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
     val result: Future[Agreement] = for {
-      bearerToken  <- extractBearer(contexts)
+      bearerToken  <- getFutureBearer(contexts)
       agreement    <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       apiAgreement <- getApiAgreement(bearerToken)(agreement)
     } yield apiAgreement
@@ -291,7 +292,7 @@ class AgreementApiServiceImpl(
 
     for {
       att  <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
-      uuid <- Future.fromTry(Try(UUID.fromString(att.id)))
+      uuid <- att.id.toFutureUUID
     } yield Attribute(
       id = uuid,
       code = att.code,
@@ -316,10 +317,8 @@ class AgreementApiServiceImpl(
     logger.info(s"Marking agreement $agreementId verified attribute $attributeId as verified.")
 
     val result = for {
-      bearerToken <- extractBearer(contexts)
-      attributeUUID <- Future.fromTry(Try {
-        UUID.fromString(attributeId)
-      })
+      bearerToken   <- getFutureBearer(contexts)
+      attributeUUID <- attributeId.toFutureUUID
       _ <- agreementManagementService.markVerifiedAttribute(bearerToken)(
         agreementId,
         VerifiedAttributeSeed(attributeUUID, verified = Some(true))
@@ -371,7 +370,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
     val result = for {
-      bearerToken <- extractBearer(contexts)
+      bearerToken <- getFutureBearer(contexts)
       agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       eservice    <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       latestActiveEserviceDescriptor <- eservice.descriptors

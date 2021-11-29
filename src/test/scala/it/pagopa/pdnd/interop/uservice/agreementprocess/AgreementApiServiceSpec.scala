@@ -9,9 +9,7 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => Agre
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
-  ConsumerApiMarshallerImpl,
-  localTimeFormat,
-  uuidFormat
+  ConsumerApiMarshallerImpl
 }
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
   AgreementApi,
@@ -36,6 +34,7 @@ import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 

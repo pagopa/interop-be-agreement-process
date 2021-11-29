@@ -2,7 +2,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{PartyManagementInvoker, PartyManagementService}
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.api.PartyApi
-import it.pagopa.pdnd.interop.uservice.partymanagement.client.invoker.ApiRequest
+import it.pagopa.pdnd.interop.uservice.partymanagement.client.invoker.{ApiRequest, BearerToken}
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.model.Organization
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -24,7 +24,7 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
 
   override def getPartyAttributes(bearerToken: String)(partyId: UUID): Future[Seq[String]] = {
     logger.info(s"TODO > Bearer Token should be used $bearerToken") //TODO pass bearer token
-    val request: ApiRequest[Seq[String]] = partyApi.getPartyAttributes(partyId)
+    val request: ApiRequest[Seq[String]] = partyApi.getPartyAttributes(partyId)(BearerToken(bearerToken))
     invoker
       .execute[Seq[String]](request)
       .map { x =>
@@ -38,7 +38,7 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
   }
 
   override def getOrganization(bearerToken: String)(partyId: UUID): Future[Organization] = {
-    val request: ApiRequest[Organization] = partyApi.getOrganizationById(partyId)
+    val request: ApiRequest[Organization] = partyApi.getOrganizationById(partyId)(BearerToken(bearerToken))
     invoker
       .execute[Organization](request)
       .map { x =>

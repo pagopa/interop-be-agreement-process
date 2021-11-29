@@ -32,6 +32,9 @@ object Dependencies {
     lazy val attributeRegistryManagementClient =
       namespace %% "pdnd-interop-uservice-attribute-registry-management-client" % attributeRegistryManagementVersion
 
+    lazy val commons =
+      namespace %% "pdnd-interop-commons-utils" % commonsVersion
+
   }
 
   private[this] object cats {
@@ -99,31 +102,32 @@ object Dependencies {
       // For making Java 12 happy
       "javax.annotation" % "javax.annotation-api" % "1.3.2" % "compile",
       //
-      akka.actorTyped                          % Compile,
       akka.actor                               % Compile,
-      akka.persistence                         % Compile,
-      akka.management                          % Compile,
-      akka.stream                              % Compile,
+      akka.actorTyped                          % Compile,
       akka.http                                % Compile,
       akka.httpJson                            % Compile,
-      logback.classic                          % Compile,
-      cats.core                                % Compile,
+      akka.management                          % Compile,
+      akka.persistence                         % Compile,
       akka.slf4j                               % Compile,
-      openapi4j.operationValidator             % Compile,
+      akka.stream                              % Compile,
+      cats.core                                % Compile,
       kamon.bundle                             % Compile,
       kamon.prometheus                         % Compile,
-      pagopa.agreementManagementClient         % Compile,
-      pagopa.catalogManagementClient           % Compile,
-      pagopa.partyManagementClient             % Compile,
-      pagopa.attributeRegistryManagementClient % Compile,
+      logback.classic                          % Compile,
       mustache.mustache                        % Compile,
-      scalatest.core                           % Test,
+      openapi4j.operationValidator             % Compile,
+      pagopa.agreementManagementClient         % Compile,
+      pagopa.attributeRegistryManagementClient % Compile,
+      pagopa.catalogManagementClient           % Compile,
+      pagopa.commons                           % Compile,
+      pagopa.partyManagementClient             % Compile,
+      akka.httpTestkit                         % Test,
+      akka.testkit                             % Test,
+      akka.untypedTestkit                      % Test,
       mockito.core                             % Test,
       scalamock.core                           % Test,
-      akka.testkit                             % Test,
-      akka.httpTestkit                         % Test,
-      akka.untypedTestkit                      % Test,
-      scalapact.core                           % Test
+      scalapact.core                           % Test,
+      scalatest.core                           % Test
     )
     lazy val client: Seq[ModuleID] = Seq(
       akka.stream     % Compile,

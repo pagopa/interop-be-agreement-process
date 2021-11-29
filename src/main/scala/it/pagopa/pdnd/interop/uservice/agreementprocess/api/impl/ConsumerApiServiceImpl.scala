@@ -4,9 +4,11 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
+import it.pagopa.pdnd.interop.commons.utils.AkkaUtils
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{StringOps}
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attributes, Problem}
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
   AttributeManagementService,
@@ -14,9 +16,8 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   PartyManagementService
 }
 
-import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.ToString"))
 class ConsumerApiServiceImpl(
@@ -37,14 +38,14 @@ class ConsumerApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     val result: Future[Attributes] = for {
-      bearerToken <- extractBearer(contexts)
+      bearerToken <- AkkaUtils.getFutureBearer(contexts)
       agreements <- agreementManagementService.getAgreements(bearerToken)(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
       eserviceIds = agreements.map(_.eserviceId)
       eservices       <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken))
-      consumerUuid    <- Future.fromTry(Try(UUID.fromString(consumerId)))
+      consumerUuid    <- consumerId.toFutureUUID
       partyAttributes <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
       eserviceAttributes <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))

@@ -8,19 +8,16 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
-import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
-  ConsumerApiMarshallerImpl,
-  ConsumerApiServiceImpl,
-  localTimeFormat,
-  uuidFormat
-}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{ConsumerApiMarshallerImpl, ConsumerApiServiceImpl}
+import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
+import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.Authenticator
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
   AgreementApi,
   ConsumerApi,
   ConsumerApiMarshaller,
   HealthApi
 }
-import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.{Authenticator, executionContext}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.executionContext
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attributes}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.server.Controller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service._

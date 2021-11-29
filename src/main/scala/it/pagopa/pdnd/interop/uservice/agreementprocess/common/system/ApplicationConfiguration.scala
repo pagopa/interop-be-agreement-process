@@ -9,12 +9,9 @@ object ApplicationConfiguration {
     config.getInt("uservice-agreement-process.port")
   }
 
-  def agreementManagementURL: String = config.getString("services.agreement-management")
-
-  def catalogManagementURL: String = config.getString("services.catalog-management")
-
-  def partyManagementURL: String = config.getString("services.party-management")
-
+  def agreementManagementURL: String         = config.getString("services.agreement-management")
+  def catalogManagementURL: String           = config.getString("services.catalog-management")
+  def partyManagementURL: String             = config.getString("services.party-management")
   def attributeRegistryManagementURL: String = config.getString("services.attribute-registry-management")
 
 }

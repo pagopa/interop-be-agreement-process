@@ -2,7 +2,7 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.contract.catalog
 
 import com.itv.scalapact.model.ScalaPactDescription
 import com.itv.scalapact.{ScalaPactMockConfig, ScalaPactMockServer}
-import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.CatalogManagementAPI
+import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.CatalogManagementDependency
 import it.pagopa.pdnd.interop.uservice.catalogmanagement
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.Serializers
@@ -21,7 +21,7 @@ class CatalogProviderContractSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with CatalogManagementAPI
+    with CatalogManagementDependency
     with BeforeAndAfterAll {
 
   // The import contains two things:
