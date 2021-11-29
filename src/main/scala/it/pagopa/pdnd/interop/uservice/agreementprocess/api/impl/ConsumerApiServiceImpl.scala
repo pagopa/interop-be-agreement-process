@@ -4,7 +4,8 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{ContextsOps, StringOps}
+import it.pagopa.pdnd.interop.commons.utils.AkkaUtils
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{StringOps}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attributes, Problem}
@@ -37,7 +38,7 @@ class ConsumerApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     val result: Future[Attributes] = for {
-      bearerToken <- contexts.getFutureBearer
+      bearerToken <- AkkaUtils.getFutureBearer(contexts)
       agreements <- agreementManagementService.getAgreements(bearerToken)(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)

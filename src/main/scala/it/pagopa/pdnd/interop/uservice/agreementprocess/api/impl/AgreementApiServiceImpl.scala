@@ -4,7 +4,8 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{ContextsOps, EitherOps, OptionOps, StringOps}
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.getFutureBearer
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementSeed,
   VerifiedAttribute,
@@ -63,7 +64,7 @@ class AgreementApiServiceImpl(
   ): Route = {
     logger.info(s"Activating agreement $agreementId")
     val result = for {
-      bearerToken           <- contexts.getFutureBearer
+      bearerToken           <- getFutureBearer(contexts)
       agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       _                     <- verifyAgreementActivationEligibility(bearerToken)(agreement)
       consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId)
@@ -96,7 +97,7 @@ class AgreementApiServiceImpl(
   ): Route = {
     logger.info(s"Suspending agreement $agreementId")
     val result = for {
-      bearerToken        <- contexts.getFutureBearer
+      bearerToken        <- getFutureBearer(contexts)
       agreement          <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       _                  <- AgreementManagementService.isActive(agreement)
       changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
@@ -123,7 +124,7 @@ class AgreementApiServiceImpl(
 
     logger.info(s"Creating agreement $agreementPayload")
     val result = for {
-      bearerToken <- contexts.getFutureBearer
+      bearerToken <- getFutureBearer(contexts)
       consumerAgreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(consumerId =
         Some(agreementPayload.consumerId.toString)
       )
@@ -171,7 +172,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     val result: Future[Seq[Agreement]] = for {
-      bearerToken <- contexts.getFutureBearer
+      bearerToken <- getFutureBearer(contexts)
       stateEnum   <- state.traverse(AgreementManagementDependency.AgreementState.fromValue).toFuture
       agreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(
         producerId = producerId,
@@ -202,7 +203,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
     val result: Future[Agreement] = for {
-      bearerToken  <- contexts.getFutureBearer
+      bearerToken  <- getFutureBearer(contexts)
       agreement    <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       apiAgreement <- getApiAgreement(bearerToken)(agreement)
     } yield apiAgreement
@@ -316,7 +317,7 @@ class AgreementApiServiceImpl(
     logger.info(s"Marking agreement $agreementId verified attribute $attributeId as verified.")
 
     val result = for {
-      bearerToken   <- contexts.getFutureBearer
+      bearerToken   <- getFutureBearer(contexts)
       attributeUUID <- attributeId.toFutureUUID
       _ <- agreementManagementService.markVerifiedAttribute(bearerToken)(
         agreementId,
@@ -369,7 +370,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
     val result = for {
-      bearerToken <- contexts.getFutureBearer
+      bearerToken <- getFutureBearer(contexts)
       agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
       eservice    <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
       latestActiveEserviceDescriptor <- eservice.descriptors
