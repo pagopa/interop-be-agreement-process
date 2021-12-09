@@ -51,9 +51,11 @@ class ConsumerApiServiceImpl(
       eserviceAttributes <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)
-      certified           <- Future.traverse(partyAttributes)(attributeManagementService.getAttribute)
-      declared            <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute)
-      verified            <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(attributeManagementService.getAttribute)
+      certified           <- Future.traverse(partyAttributes)(attributeManagementService.getAttribute(bearerToken))
+      declared            <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute(bearerToken))
+      verified <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(
+        attributeManagementService.getAttribute(bearerToken)
+      )
       attributes <- AttributeManagementService.getAttributes(
         verified = verified,
         declared = declared,

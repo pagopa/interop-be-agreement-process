@@ -235,7 +235,7 @@ class AgreementApiServiceImpl(
       activeDescriptorOption <- CatalogManagementService.getActiveDescriptorOption(eservice, descriptor)
       producer               <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
       consumer               <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
-      attributes             <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
+      attributes             <- getApiAgreementAttributes(bearerToken)(agreement.verifiedAttributes, eservice)
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
@@ -257,11 +257,10 @@ class AgreementApiServiceImpl(
   }
 
   private def getApiAgreementAttributes(
-    verifiedAttributes: Seq[VerifiedAttribute],
-    eService: CatalogEService
-  ): Future[Seq[AgreementAttributes]] =
+    bearerToken: String
+  )(verifiedAttributes: Seq[VerifiedAttribute], eService: CatalogEService): Future[Seq[AgreementAttributes]] =
     for {
-      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
+      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(bearerToken)(eService.attributes))
       eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
       eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
       agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
@@ -281,8 +280,8 @@ class AgreementApiServiceImpl(
       .toFuture(AgreementAttributeNotFound(eServiceAttributeValue.id))
 
   private def getApiAttribute(
-    attributes: ManagementAttributes
-  )(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
+    bearerToken: String
+  )(attributes: ManagementAttributes)(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
     val fromSingle: Seq[CatalogAttributeValue] =
       attributes.verified.flatMap(attribute => attribute.single.toList.find(_.id == verifiedAttribute.id.toString))
 
@@ -293,7 +292,7 @@ class AgreementApiServiceImpl(
       (fromSingle ++ fromGroup).map(attribute => attribute.id -> attribute.explicitAttributeVerification).toMap
 
     for {
-      att  <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
+      att  <- attributeManagementService.getAttribute(bearerToken)(verifiedAttribute.id.toString)
       uuid <- att.id.toFutureUUID
     } yield Attribute(
       id = uuid,

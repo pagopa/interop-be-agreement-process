@@ -318,8 +318,7 @@ trait SpecHelper {
       digitalAddress = "digitalAddress",
       id = consumerId,
       attributes = Seq.empty,
-      taxCode = "code",
-      products = Set.empty
+      taxCode = "code"
     )
 
     val producer = Organization(
@@ -328,8 +327,7 @@ trait SpecHelper {
       digitalAddress = "digitalAddress",
       id = producerId,
       attributes = Seq.empty,
-      taxCode = "code",
-      products = Set.empty
+      taxCode = "code"
     )
 
     val eservice: EService = EService(
