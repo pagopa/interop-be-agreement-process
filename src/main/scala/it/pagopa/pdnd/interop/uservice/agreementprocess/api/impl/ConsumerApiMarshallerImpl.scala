@@ -2,16 +2,11 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiMarshaller
-import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attributes, Problem}
-import spray.json.RootJsonFormat
-import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attributes, Problem}
 
 class ConsumerApiMarshallerImpl extends ConsumerApiMarshaller {
 
-  implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat9(Attribute)
+  override implicit def toEntityMarshallerAttributes: ToEntityMarshaller[Attributes] = sprayJsonMarshaller[Attributes]
 
-  override implicit def toEntityMarshallerAttributes: ToEntityMarshaller[Attributes] =
-    sprayJsonMarshaller[Attributes](jsonFormat3(Attributes))
-
-  override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] = jsonFormat3(Problem)
+  override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] = sprayJsonMarshaller[Problem]
 }

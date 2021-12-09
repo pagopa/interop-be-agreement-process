@@ -6,25 +6,15 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiMarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import spray.json._
-import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
 
 class AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
 
-  implicit def organizationJsonFormat: RootJsonFormat[Organization]               = jsonFormat2(Organization)
-  implicit def activeDescriptorJsonFormat: RootJsonFormat[ActiveDescriptor]       = jsonFormat3(ActiveDescriptor)
-  implicit def eServiceJsonFormat: RootJsonFormat[EService]                       = jsonFormat4(EService)
-  implicit def attributeJsonFormat: RootJsonFormat[Attribute]                     = jsonFormat9(Attribute)
-  implicit def agreementAttributesJsonFormat: RootJsonFormat[AgreementAttributes] = jsonFormat2(AgreementAttributes)
-  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                     = jsonFormat9(Agreement)
-
-  override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] =
-    sprayJsonMarshaller[Problem](jsonFormat3(Problem))
+  override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] = sprayJsonMarshaller[Problem]
 
   override implicit def fromEntityUnmarshallerAgreementPayload: FromEntityUnmarshaller[AgreementPayload] =
-    sprayJsonUnmarshaller[AgreementPayload](jsonFormat3(AgreementPayload))
+    sprayJsonUnmarshaller[AgreementPayload]
 
-  override implicit def toEntityMarshallerAgreement: ToEntityMarshaller[Agreement] =
-    sprayJsonMarshaller[Agreement]
+  override implicit def toEntityMarshallerAgreement: ToEntityMarshaller[Agreement] = sprayJsonMarshaller[Agreement]
 
   override implicit def toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]] =
     sprayJsonMarshaller[Seq[Agreement]]

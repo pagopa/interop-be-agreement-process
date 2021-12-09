@@ -1,11 +1,12 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
 import it.pagopa.pdnd.interop.commons.utils.AkkaUtils
-import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{StringOps}
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attributes, Problem}
@@ -63,8 +64,9 @@ class ConsumerApiServiceImpl(
     onComplete(result) {
       case Success(res) => getAttributesByConsumerId200(res)
       case Failure(ex) =>
-        val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"error while retrieving attributes for consumer $consumerId")
+        val errorResponse: Problem = {
+          problemOf(StatusCodes.BadRequest, "0001", ex, s"Error while retrieving attributes for consumer $consumerId")
+        }
         getAttributesByConsumerId400(errorResponse)
     }
   }
