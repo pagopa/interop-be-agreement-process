@@ -36,6 +36,6 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
       status = httpError.intValue,
       title = httpError.defaultMessage,
       errors =
-        Seq(ProblemError(code = s"001-$errorCode", detail = Option(exception.getMessage).getOrElse(defaultMessage)))
+        Seq(ProblemError(code = s"005-$errorCode", detail = Option(exception.getMessage).getOrElse(defaultMessage)))
     )
 }
