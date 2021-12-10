@@ -456,14 +456,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataSeven.consumer))
 
       (mockAttributeManagementService
-        .getAttribute(_: String))
-        .expects(TestDataSeven.eservice.attributes.verified(0).single.get.id)
+        .getAttribute(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataSeven.eservice.attributes.verified(0).single.get.id)
         .once()
         .returns(Future.successful(ClientAttributes.verifiedAttributeId1))
 
       (mockAttributeManagementService
-        .getAttribute(_: String))
-        .expects(TestDataSeven.eservice.attributes.verified(1).single.get.id)
+        .getAttribute(_: String)(_: String))
+        .expects(Common.bearerToken, TestDataSeven.eservice.attributes.verified(1).single.get.id)
         .once()
         .returns(Future.successful(ClientAttributes.verifiedAttributeId2))
 

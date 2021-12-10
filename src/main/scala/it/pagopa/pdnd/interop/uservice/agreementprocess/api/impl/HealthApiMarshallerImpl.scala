@@ -8,6 +8,5 @@ import spray.json.DefaultJsonProtocol
 
 class HealthApiMarshallerImpl extends HealthApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
 
-  override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] =
-    sprayJsonMarshaller[Problem](jsonFormat3(Problem))
+  override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] = sprayJsonMarshaller[Problem]
 }

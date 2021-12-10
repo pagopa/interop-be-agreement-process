@@ -11,6 +11,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
+import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.invoker.BearerToken
 
 @SuppressWarnings(
   Array(
@@ -25,13 +26,13 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def getAttribute(attributeId: String): Future[ClientAttribute] = for {
+  override def getAttribute(bearerToken: String)(attributeId: String): Future[ClientAttribute] = for {
     uuid      <- attributeId.toFutureUUID
-    attribute <- attributeByUUID(uuid)
+    attribute <- attributeByUUID(bearerToken)(uuid)
   } yield attribute
 
-  private def attributeByUUID(attributeId: UUID): Future[ClientAttribute] = {
-    val request = api.getAttributeById(attributeId) // TODO maybe a batch request is better
+  private def attributeByUUID(bearerToken: String)(attributeId: UUID): Future[ClientAttribute] = {
+    val request = api.getAttributeById(attributeId)(BearerToken(bearerToken)) // TODO maybe a batch request is better
     invoker
       .execute(request)
       .map { x =>

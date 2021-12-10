@@ -7,7 +7,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait AttributeManagementService {
 
-  def getAttribute(attributeId: String): Future[ClientAttribute]
+  def getAttribute(bearerToken: String)(attributeId: String): Future[ClientAttribute]
 
 }
 

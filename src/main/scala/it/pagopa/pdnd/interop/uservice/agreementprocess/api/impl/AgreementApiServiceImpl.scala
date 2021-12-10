@@ -1,6 +1,7 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
@@ -82,8 +83,9 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => activateAgreement204
       case Failure(ex) =>
-        val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"Error while activating agreement $agreementId")
+        val errorResponse: Problem = {
+          problemOf(StatusCodes.BadRequest, "0002", ex, s"Error while activating agreement $agreementId")
+        }
         activateAgreement400(errorResponse)
     }
   }
@@ -108,7 +110,7 @@ class AgreementApiServiceImpl(
       case Success(_) => suspendAgreement204
       case Failure(ex) =>
         val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"Error while suspending agreement $agreementId")
+          problemOf(StatusCodes.BadRequest, "0003", ex, s"Error while suspending agreement $agreementId")
         suspendAgreement400(errorResponse)
     }
   }
@@ -151,7 +153,7 @@ class AgreementApiServiceImpl(
       case Success(agreement) => createAgreement201(agreement)
       case Failure(ex) =>
         val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"Error while creating agreement $agreementPayload")
+          problemOf(StatusCodes.BadRequest, "0004", ex, s"Error while creating agreement $agreementPayload")
         createAgreement400(errorResponse)
     }
   }
@@ -189,7 +191,7 @@ class AgreementApiServiceImpl(
       case Success(agreement) => getAgreements200(agreement)
       case Failure(ex) =>
         val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"Error while retrieving agreements with filters")
+          problemOf(StatusCodes.BadRequest, "0005", ex, "Error while retrieving agreements with filters")
         getAgreements400(errorResponse)
     }
   }
@@ -214,11 +216,11 @@ class AgreementApiServiceImpl(
         exception match {
           case ex: AgreementNotFound =>
             val errorResponse: Problem =
-              Problem(Option(ex.getMessage), 404, s"Agreement $agreementId not found")
+              problemOf(StatusCodes.NotFound, "0006", ex, s"Agreement $agreementId not found")
             getAgreementById404(errorResponse)
           case ex =>
             val errorResponse: Problem =
-              Problem(Option(ex.getMessage), 400, s"Error while retrieving agreement $agreementId")
+              problemOf(StatusCodes.BadRequest, "0007", ex, s"Error while retrieving agreement $agreementId")
             getAgreementById400(errorResponse)
         }
     }
@@ -233,7 +235,7 @@ class AgreementApiServiceImpl(
       activeDescriptorOption <- CatalogManagementService.getActiveDescriptorOption(eservice, descriptor)
       producer               <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
       consumer               <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
-      attributes             <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
+      attributes             <- getApiAgreementAttributes(bearerToken)(agreement.verifiedAttributes, eservice)
     } yield Agreement(
       id = agreement.id,
       producer = Organization(id = producer.institutionId, name = producer.description),
@@ -255,11 +257,10 @@ class AgreementApiServiceImpl(
   }
 
   private def getApiAgreementAttributes(
-    verifiedAttributes: Seq[VerifiedAttribute],
-    eService: CatalogEService
-  ): Future[Seq[AgreementAttributes]] =
+    bearerToken: String
+  )(verifiedAttributes: Seq[VerifiedAttribute], eService: CatalogEService): Future[Seq[AgreementAttributes]] =
     for {
-      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
+      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(bearerToken)(eService.attributes))
       eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
       eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
       agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
@@ -279,8 +280,8 @@ class AgreementApiServiceImpl(
       .toFuture(AgreementAttributeNotFound(eServiceAttributeValue.id))
 
   private def getApiAttribute(
-    attributes: ManagementAttributes
-  )(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
+    bearerToken: String
+  )(attributes: ManagementAttributes)(verifiedAttribute: VerifiedAttribute): Future[Attribute] = {
     val fromSingle: Seq[CatalogAttributeValue] =
       attributes.verified.flatMap(attribute => attribute.single.toList.find(_.id == verifiedAttribute.id.toString))
 
@@ -291,7 +292,7 @@ class AgreementApiServiceImpl(
       (fromSingle ++ fromGroup).map(attribute => attribute.id -> attribute.explicitAttributeVerification).toMap
 
     for {
-      att  <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
+      att  <- attributeManagementService.getAttribute(bearerToken)(verifiedAttribute.id.toString)
       uuid <- att.id.toFutureUUID
     } yield Attribute(
       id = uuid,
@@ -329,7 +330,12 @@ class AgreementApiServiceImpl(
       case Success(_) => verifyAgreementAttribute204
       case Failure(ex) =>
         val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"Error while verifying agreement $agreementId attribute $attributeId")
+          problemOf(
+            StatusCodes.BadRequest,
+            "0008",
+            ex,
+            s"Error while verifying agreement $agreementId attribute $attributeId"
+          )
         verifyAgreementAttribute404(errorResponse)
     }
   }
@@ -396,7 +402,7 @@ class AgreementApiServiceImpl(
       case Success(agreement) => upgradeAgreementById200(agreement)
       case Failure(ex) =>
         val errorResponse: Problem =
-          Problem(Option(ex.getMessage), 400, s"Error while updating agreement $agreementId")
+          problemOf(StatusCodes.BadRequest, "0009", ex, s"Error while updating agreement $agreementId")
         upgradeAgreementById400(errorResponse)
     }
   }
