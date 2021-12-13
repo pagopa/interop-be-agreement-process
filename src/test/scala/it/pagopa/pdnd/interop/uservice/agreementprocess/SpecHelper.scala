@@ -6,6 +6,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.nimbusds.jwt.JWTClaimsSet
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   VerifiedAttribute,
   Agreement => ClientAgreement
@@ -20,6 +21,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.util.Success
 
 trait SpecHelper {
 
@@ -32,6 +34,9 @@ trait SpecHelper {
   System.setProperty("AGREEMENT_MANAGEMENT_URL", "http://localhost/")
   System.setProperty("PARTY_MANAGEMENT_URL", "http://localhost/")
   System.setProperty("ATTRIBUTE_REGISTRY_MANAGEMENT_URL", "http://localhost/")
+  System.setProperty("WELL_KNOWN_URL", "http://localhost/.well-known/jwks.json")
+
+  def mockSubject(uuid: String) = Success(new JWTClaimsSet.Builder().subject(uuid).build())
 
   def request(data: Source[ByteString, Any], path: String, verb: HttpMethod)(implicit
     system: ClassicActorSystemProvider

@@ -35,6 +35,8 @@ object Dependencies {
     lazy val commons =
       namespace %% "pdnd-interop-commons-utils" % commonsVersion
 
+    lazy val commonsJWT =
+      namespace %% "pdnd-interop-commons-jwt" % commonsVersion
   }
 
   private[this] object cats {
@@ -120,6 +122,7 @@ object Dependencies {
       pagopa.attributeRegistryManagementClient % Compile,
       pagopa.catalogManagementClient           % Compile,
       pagopa.commons                           % Compile,
+      pagopa.commonsJWT                        % Compile,
       pagopa.partyManagementClient             % Compile,
       akka.httpTestkit                         % Test,
       akka.testkit                             % Test,
