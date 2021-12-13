@@ -7,9 +7,10 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
+import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{ConsumerApiMarshallerImpl, ConsumerApiServiceImpl}
-import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
+import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.Authenticator
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
   AgreementApi,
@@ -46,6 +47,7 @@ class ConsumerApiServiceSpec
   val mockAgreementManagementService: AgreementManagementService = mock[AgreementManagementService]
   val mockCatalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
   val mockAttributeManagementService: AttributeManagementService = mock[AttributeManagementService]
+  val mockJWTReader: JWTReader                                   = mock[JWTReader]
 
   var controller: Option[Controller]                 = None
   var bindServer: Option[Future[Http.ServerBinding]] = None
@@ -60,7 +62,8 @@ class ConsumerApiServiceSpec
         agreementManagementService = mockAgreementManagementService,
         partyManagementService = mockPartyManagementService,
         catalogManagementService = mockCatalogManagementService,
-        attributeManagementService = mockAttributeManagementService
+        attributeManagementService = mockAttributeManagementService,
+        jwtReader = mockJWTReader
       ),
       consumerApiMarshaller,
       wrappingDirective
@@ -86,6 +89,12 @@ class ConsumerApiServiceSpec
   "Processing a consumer request" should {
 
     "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
+
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
 
       (
         mockAgreementManagementService
@@ -189,6 +198,12 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer without verified attributes)" in {
 
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
+
       (
         mockAgreementManagementService
           .getAgreements(_: String)(
@@ -271,6 +286,13 @@ class ConsumerApiServiceSpec
     }
 
     "retrieve all attributes owned by a customer (customer without declared attributes)" in {
+
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
+
       (
         mockAgreementManagementService
           .getAgreements(_: String)(

@@ -2,10 +2,15 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.api
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCode
+import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
+import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.getFutureBearer
+import it.pagopa.pdnd.interop.commons.utils.TypeConversions.TryOps
 import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.pdnd.interop.uservice._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
 
@@ -38,4 +43,10 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
       errors =
         Seq(ProblemError(code = s"005-$errorCode", detail = Option(exception.getMessage).getOrElse(defaultMessage)))
     )
+
+  def validateBearer(contexts: Seq[(String, String)], jwt: JWTReader)(implicit ec: ExecutionContext): Future[String] =
+    for {
+      bearer <- getFutureBearer(contexts)
+      _      <- jwt.getClaims(bearer).toFuture
+    } yield bearer
 }

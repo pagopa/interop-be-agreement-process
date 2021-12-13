@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import it.pagopa.pdnd.interop.commons.utils.AkkaUtils
+import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiService
@@ -25,7 +25,8 @@ class ConsumerApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
   partyManagementService: PartyManagementService,
-  attributeManagementService: AttributeManagementService
+  attributeManagementService: AttributeManagementService,
+  jwtReader: JWTReader
 )(implicit ec: ExecutionContext)
     extends ConsumerApiService {
 
@@ -39,7 +40,7 @@ class ConsumerApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
     val result: Future[Attributes] = for {
-      bearerToken <- AkkaUtils.getFutureBearer(contexts)
+      bearerToken <- validateBearer(contexts, jwtReader)
       agreements <- agreementManagementService.getAgreements(bearerToken)(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)

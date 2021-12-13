@@ -86,6 +86,8 @@ spec:
               value: "{{partyManagementUrl}}"
             - name: ATTRIBUTE_REGISTRY_MANAGEMENT_URL
               value: "{{attributeRegistryManagementUrl}}"
+            - name: WELL_KNOWN_URL
+              value: "{{wellKnownURL}}"
           volumeMounts:
             - name: application-conf
               mountPath: /opt/docker/etc

@@ -4,6 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
@@ -34,7 +35,7 @@ import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{uuidFormat, offsetDateTimeFormat}
+import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
@@ -46,6 +47,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
   val mockAgreementManagementService: AgreementManagementService = mock[AgreementManagementService]
   val mockCatalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
   val mockAttributeManagementService: AttributeManagementService = mock[AttributeManagementService]
+  val mockJWTReader: JWTReader                                   = mock[JWTReader]
 
   import consumerApiMarshaller._
 
@@ -53,7 +55,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     mockAgreementManagementService,
     mockCatalogManagementService,
     mockPartyManagementService,
-    mockAttributeManagementService
+    mockAttributeManagementService,
+    mockJWTReader
   )(ExecutionContext.global)
 
   implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
@@ -75,6 +78,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
       )
+
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
 
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
@@ -147,6 +156,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
       )
+
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
 
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
@@ -232,6 +247,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
+
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
         .expects(Common.bearerToken, TestDataOne.id.toString)
@@ -281,6 +302,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
       )
+
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
 
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
@@ -332,6 +359,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
+
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
         .expects(Common.bearerToken, TestDataOne.id.toString)
@@ -382,6 +415,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "succeed on active agreement" in {
       val activeAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
+
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
         .expects(Common.bearerToken, TestDataOne.id.toString)
@@ -416,6 +455,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "fail if agreement is not Active" in {
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
+
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
         .expects(Common.bearerToken, TestDataOne.id.toString)
@@ -430,6 +475,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement GET" should {
     "retrieves an agreement" in {
+
+      (mockJWTReader
+        .getClaims(_: String))
+        .expects(*)
+        .returning(mockSubject(UUID.randomUUID().toString))
+        .once()
 
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: String))
