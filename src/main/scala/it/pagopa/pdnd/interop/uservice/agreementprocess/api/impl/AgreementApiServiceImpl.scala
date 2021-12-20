@@ -5,7 +5,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
+import com.typesafe.scalalogging.Logger
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
+import it.pagopa.pdnd.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementSeed,
@@ -34,7 +36,7 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{
   EService => CatalogEService
 }
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.{model => CatalogManagementDependency}
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -58,13 +60,13 @@ class AgreementApiServiceImpl(
   jwtReader: JWTReader
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  val logger = Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
 
   override def activateAgreement(agreementId: String, partyId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
-    logger.info(s"Activating agreement $agreementId")
+    logger.info("Activating agreement {}", agreementId)
     val result = for {
       bearerToken           <- validateBearer(contexts, jwtReader)
       agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
@@ -84,6 +86,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => activateAgreement204
       case Failure(ex) =>
+        logger.error("Error while activating agreement {} - {}", agreementId, ex.getMessage)
         val errorResponse: Problem = {
           problemOf(StatusCodes.BadRequest, "0002", ex, s"Error while activating agreement $agreementId")
         }
@@ -98,7 +101,7 @@ class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
-    logger.info(s"Suspending agreement $agreementId")
+    logger.info("Suspending agreement {}", agreementId)
     val result = for {
       bearerToken        <- validateBearer(contexts, jwtReader)
       agreement          <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
@@ -110,6 +113,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => suspendAgreement204
       case Failure(ex) =>
+        logger.error("Error while suspending agreement {} - {}", agreementId, ex.getMessage)
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0003", ex, s"Error while suspending agreement $agreementId")
         suspendAgreement400(errorResponse)
@@ -124,8 +128,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
-
-    logger.info(s"Creating agreement $agreementPayload")
+    logger.info("Creating agreement {}", agreementPayload)
     val result = for {
       bearerToken <- validateBearer(contexts, jwtReader)
       consumerAgreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(consumerId =
@@ -153,6 +156,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(agreement) => createAgreement201(agreement)
       case Failure(ex) =>
+        logger.error("Error while creating agreement {} - {}", agreementPayload, ex.getMessage)
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0004", ex, s"Error while creating agreement $agreementPayload")
         createAgreement400(errorResponse)
@@ -174,6 +178,15 @@ class AgreementApiServiceImpl(
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
+    logger.info(
+      "Getting agreements by producer = {}, consumer = {}, eservice = {}, descriptor = {}, state = {}, latest = {}",
+      producerId,
+      consumerId,
+      eserviceId,
+      descriptorId,
+      state,
+      latest
+    )
     val result: Future[Seq[Agreement]] = for {
       bearerToken <- validateBearer(contexts, jwtReader)
       stateEnum   <- state.traverse(AgreementManagementDependency.AgreementState.fromValue).toFuture
@@ -191,6 +204,16 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(agreement) => getAgreements200(agreement)
       case Failure(ex) =>
+        logger.error(
+          "Error while getting agreements by producer = {}, consumer = {}, eservice = {}, descriptor = {}, state = {}, latest = {} - {}",
+          producerId,
+          consumerId,
+          eserviceId,
+          descriptorId,
+          state,
+          latest,
+          ex.getMessage
+        )
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0005", ex, "Error while retrieving agreements with filters")
         getAgreements400(errorResponse)
@@ -205,6 +228,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
+    logger.info("Getting agreement by id {}", agreementId)
     val result: Future[Agreement] = for {
       bearerToken  <- validateBearer(contexts, jwtReader)
       agreement    <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
@@ -214,6 +238,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(agreement) => getAgreementById200(agreement)
       case Failure(exception) =>
+        logger.error("Error while getting agreement by id {} - {}", agreementId, exception.getMessage)
         exception match {
           case ex: AgreementNotFound =>
             val errorResponse: Problem =
@@ -316,8 +341,7 @@ class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
-    logger.info(s"Marking agreement $agreementId verified attribute $attributeId as verified.")
-
+    logger.info("Verifying agreement {} attribute {}", agreementId, attributeId)
     val result = for {
       bearerToken   <- validateBearer(contexts, jwtReader)
       attributeUUID <- attributeId.toFutureUUID
@@ -330,6 +354,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => verifyAgreementAttribute204
       case Failure(ex) =>
+        logger.error("Error while verifying agreement {} attribute {} - {}", agreementId, attributeId, ex.getMessage)
         val errorResponse: Problem =
           problemOf(
             StatusCodes.BadRequest,
@@ -376,6 +401,7 @@ class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
+    logger.info("Updating agreement {}", agreementId)
     val result = for {
       bearerToken <- validateBearer(contexts, jwtReader)
       agreement   <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
@@ -402,6 +428,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(agreement) => upgradeAgreementById200(agreement)
       case Failure(ex) =>
+        logger.error("Error while updating agreement {} - {}", agreementId, ex.getMessage)
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0009", ex, s"Error while updating agreement $agreementId")
         upgradeAgreementById400(errorResponse)
