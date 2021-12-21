@@ -5,19 +5,21 @@ import sbt._
 object Dependencies {
 
   private[this] object akka {
-    lazy val namespace      = "com.typesafe.akka"
-    lazy val actorTyped     = namespace                       %% "akka-actor-typed"         % akkaVersion
-    lazy val actor          = namespace                       %% "akka-actor"               % akkaVersion
-    lazy val persistence    = namespace                       %% "akka-persistence-typed"   % akkaVersion
-    lazy val stream         = namespace                       %% "akka-stream"              % akkaVersion
-    lazy val http           = namespace                       %% "akka-http"                % akkaHttpVersion
-    lazy val httpJson       = namespace                       %% "akka-http-spray-json"     % akkaHttpVersion
-    lazy val httpJson4s     = "de.heikoseeberger"             %% "akka-http-json4s"         % "1.38.2"
-    lazy val management     = "com.lightbend.akka.management" %% "akka-management"          % "1.1.1"
-    lazy val slf4j          = namespace                       %% "akka-slf4j"               % akkaVersion
-    lazy val testkit        = namespace                       %% "akka-actor-testkit-typed" % akkaVersion
-    lazy val httpTestkit    = namespace                       %% "akka-http-testkit"        % akkaHttpVersion
-    lazy val untypedTestkit = namespace                       %% "akka-testkit"             % akkaVersion
+    lazy val namespace   = "com.typesafe.akka"
+    lazy val actorTyped  = namespace                       %% "akka-actor-typed"       % akkaVersion
+    lazy val actor       = namespace                       %% "akka-actor"             % akkaVersion
+    lazy val persistence = namespace                       %% "akka-persistence-typed" % akkaVersion
+    lazy val stream      = namespace                       %% "akka-stream"            % akkaVersion
+    lazy val http        = namespace                       %% "akka-http"              % akkaHttpVersion
+    lazy val httpJson    = namespace                       %% "akka-http-spray-json"   % akkaHttpVersion
+    lazy val httpJson4s  = "de.heikoseeberger"             %% "akka-http-json4s"       % "1.38.2"
+    lazy val management  = "com.lightbend.akka.management" %% "akka-management"        % akkaManagementVersion
+    lazy val managementLogLevels =
+      "com.lightbend.akka.management" %% "akka-management-loglevels-logback" % akkaManagementVersion
+    lazy val slf4j          = namespace %% "akka-slf4j"               % akkaVersion
+    lazy val testkit        = namespace %% "akka-actor-testkit-typed" % akkaVersion
+    lazy val httpTestkit    = namespace %% "akka-http-testkit"        % akkaHttpVersion
+    lazy val untypedTestkit = namespace %% "akka-testkit"             % akkaVersion
 
   }
 
@@ -109,6 +111,7 @@ object Dependencies {
       akka.http                                % Compile,
       akka.httpJson                            % Compile,
       akka.management                          % Compile,
+      akka.managementLogLevels                 % Compile,
       akka.persistence                         % Compile,
       akka.slf4j                               % Compile,
       akka.stream                              % Compile,

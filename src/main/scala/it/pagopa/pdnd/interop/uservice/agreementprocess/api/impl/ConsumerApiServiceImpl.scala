@@ -5,7 +5,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
+import com.typesafe.scalalogging.Logger
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
+import it.pagopa.pdnd.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiService
@@ -16,6 +18,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -30,6 +33,8 @@ class ConsumerApiServiceImpl(
 )(implicit ec: ExecutionContext)
     extends ConsumerApiService {
 
+  val logger = Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
+
   /** Code: 200, Message: attributes found, DataType: Attributes
     * Code: 404, Message: Consumer not found, DataType: Problem
     * Code: 400, Message: Invalid ID supplied, DataType: Problem
@@ -39,6 +44,7 @@ class ConsumerApiServiceImpl(
     toEntityMarshallerAttributes: ToEntityMarshaller[Attributes],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = {
+    logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
       bearerToken <- validateBearer(contexts, jwtReader)
       agreements <- agreementManagementService.getAgreements(bearerToken)(
@@ -67,6 +73,7 @@ class ConsumerApiServiceImpl(
     onComplete(result) {
       case Success(res) => getAttributesByConsumerId200(res)
       case Failure(ex) =>
+        logger.error("Error while getting consumer {} attributes - {}", consumerId, ex.getMessage)
         val errorResponse: Problem = {
           problemOf(StatusCodes.BadRequest, "0001", ex, s"Error while retrieving attributes for consumer $consumerId")
         }

@@ -100,8 +100,8 @@ object Main
   dependenciesLoaded.transformWith {
     case Success(jwtValidator) => launchApp(jwtValidator)
     case Failure(ex) => {
-      logger.error(s"Startup error: ${ex.getMessage}")
-      logger.error(s"${ex.getStackTrace.mkString("\n")}")
+      logger.error("Startup error: {}", ex.getMessage)
+      logger.error(ex.getStackTrace.mkString("\n"))
       CoordinatedShutdown(classicActorSystem).run(StartupErrorShutdown)
     }
   }
@@ -145,7 +145,7 @@ object Main
 
     val controller: Controller = new Controller(health = healthApi, agreement = agreementApi, consumer = consumerApi)
 
-    logger.error(s"Started build info = ${buildinfo.BuildInfo.toString}")
+    logger.info(s"Started build info = ${buildinfo.BuildInfo.toString}")
 
     val bindingFuture: Future[Http.ServerBinding] =
       Http().newServerAt("0.0.0.0", ApplicationConfiguration.serverPort).bind(corsHandler(controller.routes))
