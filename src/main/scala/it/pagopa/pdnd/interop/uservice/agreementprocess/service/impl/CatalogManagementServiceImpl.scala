@@ -32,7 +32,7 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Retrieving e-service ${ex.getMessage}")
+        logger.error("Retrieving e-service FAILED", ex)
         Future.failed[EService](ex)
       }
   }
