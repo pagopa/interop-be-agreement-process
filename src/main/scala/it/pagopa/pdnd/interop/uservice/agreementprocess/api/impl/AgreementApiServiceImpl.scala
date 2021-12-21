@@ -86,7 +86,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => activateAgreement204
       case Failure(ex) =>
-        logger.error("Error while activating agreement {} - {}", agreementId, ex.getMessage)
+        logger.error("Error while activating agreement {}", agreementId, ex)
         val errorResponse: Problem = {
           problemOf(StatusCodes.BadRequest, "0002", ex, s"Error while activating agreement $agreementId")
         }
@@ -113,7 +113,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => suspendAgreement204
       case Failure(ex) =>
-        logger.error("Error while suspending agreement {} - {}", agreementId, ex.getMessage)
+        logger.error("Error while suspending agreement {}", agreementId, ex)
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0003", ex, s"Error while suspending agreement $agreementId")
         suspendAgreement400(errorResponse)
@@ -156,7 +156,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(agreement) => createAgreement201(agreement)
       case Failure(ex) =>
-        logger.error("Error while creating agreement {} - {}", agreementPayload, ex.getMessage)
+        logger.error("Error while creating agreement {}", agreementPayload, ex)
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0004", ex, s"Error while creating agreement $agreementPayload")
         createAgreement400(errorResponse)
@@ -205,14 +205,14 @@ class AgreementApiServiceImpl(
       case Success(agreement) => getAgreements200(agreement)
       case Failure(ex) =>
         logger.error(
-          "Error while getting agreements by producer = {}, consumer = {}, eservice = {}, descriptor = {}, state = {}, latest = {} - {}",
+          "Error while getting agreements by producer = {}, consumer = {}, eservice = {}, descriptor = {}, state = {}, latest = {}",
           producerId,
           consumerId,
           eserviceId,
           descriptorId,
           state,
           latest,
-          ex.getMessage
+          ex
         )
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0005", ex, "Error while retrieving agreements with filters")
@@ -238,7 +238,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(agreement) => getAgreementById200(agreement)
       case Failure(exception) =>
-        logger.error("Error while getting agreement by id {} - {}", agreementId, exception.getMessage)
+        logger.error("Error while getting agreement by id {}", agreementId, exception)
         exception match {
           case ex: AgreementNotFound =>
             val errorResponse: Problem =
@@ -354,7 +354,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => verifyAgreementAttribute204
       case Failure(ex) =>
-        logger.error("Error while verifying agreement {} attribute {} - {}", agreementId, attributeId, ex.getMessage)
+        logger.error("Error while verifying agreement {} attribute {}", agreementId, attributeId, ex)
         val errorResponse: Problem =
           problemOf(
             StatusCodes.BadRequest,
@@ -428,7 +428,7 @@ class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(agreement) => upgradeAgreementById200(agreement)
       case Failure(ex) =>
-        logger.error("Error while updating agreement {} - {}", agreementId, ex.getMessage)
+        logger.error("Error while updating agreement {}", agreementId, ex)
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, "0009", ex, s"Error while updating agreement $agreementId")
         upgradeAgreementById400(errorResponse)

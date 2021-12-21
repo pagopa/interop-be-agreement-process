@@ -32,7 +32,7 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Retrieving attributes by UUID FAILED: ${ex.getMessage}")
+        logger.error("Retrieving attributes by UUID FAILED", ex)
         Future.failed[Seq[String]](ex)
       }
   }
@@ -46,7 +46,7 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Retrieving Organization $partyId FAILED: ${ex.getMessage}")
+        logger.error(s"Retrieving Organization $partyId FAILED", ex)
         Future.failed[Organization](ex)
       }
   }

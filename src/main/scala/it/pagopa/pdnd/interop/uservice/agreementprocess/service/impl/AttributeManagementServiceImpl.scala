@@ -40,7 +40,7 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Retrieving attribute by UUID FAILED: ${ex.getMessage}")
+        logger.error("Retrieving attribute by UUID FAILED", ex)
         Future.failed[ClientAttribute](ex)
       }
   }

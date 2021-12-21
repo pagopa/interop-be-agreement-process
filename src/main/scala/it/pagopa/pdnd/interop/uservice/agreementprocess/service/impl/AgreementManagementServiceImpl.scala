@@ -39,7 +39,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Attribute verification FAILED: ${ex.getMessage}")
+        logger.error("Attribute verification FAILED", ex)
         Future.failed[Agreement](ex)
       }
   }
@@ -57,7 +57,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Activating agreement FAILED: ${ex.getMessage}")
+        logger.error("Activating agreement FAILED", ex)
         Future.failed[Agreement](ex)
       }
   }
@@ -75,7 +75,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Suspending agreement FAILED: ${ex.getMessage}")
+        logger.error("Suspending agreement FAILED", ex)
         Future.failed[Agreement](ex)
       }
   }
@@ -90,7 +90,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Agreement upgrade FAILED: ${ex.getMessage}")
+        logger.error("Agreement upgrade FAILED", ex)
         Future.failed[Agreement](ex)
       }
   }
@@ -106,10 +106,10 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       }
       .recoverWith {
         case ex: ApiError[_] if ex.code == 404 =>
-          logger.error(s"Retrieving agreement ${ex.getMessage}")
+          logger.error("Retrieving agreement FAILED", ex)
           Future.failed[Agreement](AgreementNotFound(agreementId))
         case ex: ApiError[_] =>
-          logger.error(s"Retrieving agreement ${ex.getMessage}")
+          logger.error("Retrieving agreement FAILED", ex)
           Future.failed[Agreement](ex)
       }
   }
@@ -137,7 +137,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Retrieving agreement ${ex.getMessage}")
+        logger.error("Retrieving agreement FAILED", ex)
         Future.failed[Agreement](ex)
       }
   }
@@ -167,7 +167,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith { case ex =>
-        logger.error(s"Retrieving agreements ${ex.getMessage}")
+        logger.error("Retrieving agreements FAILED", ex)
         Future.failed[Seq[Agreement]](ex)
       }
   }
