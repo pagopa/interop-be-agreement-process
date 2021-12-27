@@ -6,13 +6,12 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.directives.SecurityDirectives
 import akka.management.scaladsl.AkkaManagement
-import com.atlassian.oai.validator.report.ValidationReport
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.jwt.service.impl.DefaultJWTReader
 import it.pagopa.pdnd.interop.commons.jwt.{JWTConfiguration, PublicKeysHolder}
 import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.{Authenticator, PassThroughAuthenticator}
-import it.pagopa.pdnd.interop.commons.utils.CORSSupport
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.TryOps
+import it.pagopa.pdnd.interop.commons.utils.{CORSSupport, OpenapiUtils}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
@@ -43,8 +42,6 @@ import kamon.Kamon
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters._
-import scala.jdk.OptionConverters._
 import scala.util.{Failure, Success}
 
 trait AgreementManagementDependency {
@@ -155,7 +152,11 @@ object Main
       consumer = consumerApi,
       validationExceptionToRoute = Some(report => {
         val error =
-          problemOf(StatusCodes.BadRequest, "0000", defaultMessage = errorFromRequestValidationReport(report))
+          problemOf(
+            StatusCodes.BadRequest,
+            "0000",
+            defaultMessage = OpenapiUtils.errorFromRequestValidationReport(report)
+          )
         complete(error.status, error)(HealthApiMarshallerImpl.toEntityMarshallerProblem)
       })
     )
@@ -165,20 +166,5 @@ object Main
     val bindingFuture: Future[Http.ServerBinding] =
       Http().newServerAt("0.0.0.0", ApplicationConfiguration.serverPort).bind(corsHandler(controller.routes))
     bindingFuture
-  }
-
-  private def errorFromRequestValidationReport(report: ValidationReport): String = {
-    val messageStrings = report.getMessages.asScala.foldLeft[List[String]](List.empty)((tail, m) => {
-      val context = m.getContext.toScala.map(c =>
-        Seq(c.getRequestMethod.toScala, c.getRequestPath.toScala, c.getLocation.toScala).flatten
-      )
-      s"""${m.getAdditionalInfo.asScala.mkString(",")}
-         |${m.getLevel} - ${m.getMessage}
-         |${context.getOrElse(Seq.empty).mkString(" - ")}
-         |""".stripMargin :: tail
-    })
-
-    logger.error("Request failed: {}", messageStrings.mkString)
-    report.getMessages().asScala.map(_.getMessage).mkString(", ")
   }
 }
