@@ -74,9 +74,9 @@ object Dependencies {
     lazy val mustache = "com.github.spullara.mustache.java" % "compiler" % mustacheVersion
   }
 
-  private[this] object openapi4j {
-    lazy val namespace          = "org.openapi4j"
-    lazy val operationValidator = namespace % "openapi-operation-validator" % openapi4jVersion
+  private[this] object atlassian {
+    lazy val namespace        = "com.atlassian.oai"
+    lazy val swaggerValidator = namespace % "swagger-request-validator-core" % swaggerValidatorVersion
   }
 
   private[this] object scalatest {
@@ -115,12 +115,12 @@ object Dependencies {
       akka.persistence                         % Compile,
       akka.slf4j                               % Compile,
       akka.stream                              % Compile,
+      atlassian.swaggerValidator               % Compile,
       cats.core                                % Compile,
       kamon.bundle                             % Compile,
       kamon.prometheus                         % Compile,
       logback.classic                          % Compile,
       mustache.mustache                        % Compile,
-      openapi4j.operationValidator             % Compile,
       pagopa.agreementManagementClient         % Compile,
       pagopa.attributeRegistryManagementClient % Compile,
       pagopa.catalogManagementClient           % Compile,

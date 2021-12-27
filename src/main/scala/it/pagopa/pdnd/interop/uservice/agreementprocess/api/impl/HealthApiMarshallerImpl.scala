@@ -6,7 +6,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.api.HealthApiMarshaller
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.Problem
 import spray.json.DefaultJsonProtocol
 
-class HealthApiMarshallerImpl extends HealthApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
+object HealthApiMarshallerImpl extends HealthApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
 
   override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] = sprayJsonMarshaller[Problem]
 }
