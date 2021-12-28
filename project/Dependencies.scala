@@ -74,11 +74,6 @@ object Dependencies {
     lazy val mustache = "com.github.spullara.mustache.java" % "compiler" % mustacheVersion
   }
 
-  private[this] object openapi4j {
-    lazy val namespace          = "org.openapi4j"
-    lazy val operationValidator = namespace % "openapi-operation-validator" % openapi4jVersion
-  }
-
   private[this] object scalatest {
     lazy val namespace = "org.scalatest"
     lazy val core      = namespace %% "scalatest" % scalatestVersion
@@ -120,7 +115,6 @@ object Dependencies {
       kamon.prometheus                         % Compile,
       logback.classic                          % Compile,
       mustache.mustache                        % Compile,
-      openapi4j.operationValidator             % Compile,
       pagopa.agreementManagementClient         % Compile,
       pagopa.attributeRegistryManagementClient % Compile,
       pagopa.catalogManagementClient           % Compile,

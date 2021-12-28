@@ -2,21 +2,24 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl
 
 import akka.actor.CoordinatedShutdown
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.directives.SecurityDirectives
 import akka.management.scaladsl.AkkaManagement
-import it.pagopa.pdnd.interop.commons.jwt.{JWTConfiguration, PublicKeysHolder}
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.jwt.service.impl.DefaultJWTReader
+import it.pagopa.pdnd.interop.commons.jwt.{JWTConfiguration, PublicKeysHolder}
 import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.{Authenticator, PassThroughAuthenticator}
-import it.pagopa.pdnd.interop.commons.utils.CORSSupport
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.TryOps
+import it.pagopa.pdnd.interop.commons.utils.{CORSSupport, OpenapiUtils}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
   ConsumerApiMarshallerImpl,
   ConsumerApiServiceImpl,
   HealthApiMarshallerImpl,
-  HealthServiceApiImpl
+  HealthServiceApiImpl,
+  problemOf
 }
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{AgreementApi, ConsumerApi, HealthApi}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.common.system.{
@@ -135,7 +138,7 @@ object Main
 
     val healthApi: HealthApi = new HealthApi(
       new HealthServiceApiImpl(),
-      new HealthApiMarshallerImpl(),
+      HealthApiMarshallerImpl,
       SecurityDirectives.authenticateOAuth2("SecurityRealm", PassThroughAuthenticator)
     )
 
@@ -143,7 +146,20 @@ object Main
       val _ = AkkaManagement.get(classicActorSystem).start()
     }
 
-    val controller: Controller = new Controller(health = healthApi, agreement = agreementApi, consumer = consumerApi)
+    val controller: Controller = new Controller(
+      health = healthApi,
+      agreement = agreementApi,
+      consumer = consumerApi,
+      validationExceptionToRoute = Some(report => {
+        val error =
+          problemOf(
+            StatusCodes.BadRequest,
+            "0000",
+            defaultMessage = OpenapiUtils.errorFromRequestValidationReport(report)
+          )
+        complete(error.status, error)(HealthApiMarshallerImpl.toEntityMarshallerProblem)
+      })
+    )
 
     logger.info(s"Started build info = ${buildinfo.BuildInfo.toString}")
 
