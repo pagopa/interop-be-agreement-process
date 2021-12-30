@@ -11,15 +11,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
-@SuppressWarnings(
-  Array(
-    "org.wartremover.warts.StringPlusAny",
-    "org.wartremover.warts.DefaultArguments",
-    "org.wartremover.warts.ImplicitParameter",
-    "org.wartremover.warts.Equals",
-    "org.wartremover.warts.ToString"
-  )
-)
 final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, api: AgreementApi)(implicit
   ec: ExecutionContext
 ) extends AgreementManagementService {
@@ -38,9 +29,16 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.info(s"Attribute verified! agreement ${x.code} > ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error("Attribute verification FAILED", ex)
-        Future.failed[Agreement](ex)
+      .recoverWith {
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(
+            s"Attribute verification FAILED. code > $code - message > $message - response > $response",
+            error
+          )
+          Future.failed[Agreement](ex)
+        case ex =>
+          logger.error("Attribute verification FAILED", ex)
+          Future.failed[Agreement](ex)
       }
   }
 
@@ -56,9 +54,13 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.info(s"Activating agreement ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error("Activating agreement FAILED", ex)
-        Future.failed[Agreement](ex)
+      .recoverWith {
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(s"Activating agreement FAILED. code > $code - message > $message - response > $response", error)
+          Future.failed[Agreement](ex)
+        case ex =>
+          logger.error("Activating agreement FAILED", ex)
+          Future.failed[Agreement](ex)
       }
   }
 
@@ -74,9 +76,13 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.info(s"Suspending agreement ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error("Suspending agreement FAILED", ex)
-        Future.failed[Agreement](ex)
+      .recoverWith {
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(s"Suspending agreement FAILED. code > $code - message > $message - response > $response", error)
+          Future.failed[Agreement](ex)
+        case ex =>
+          logger.error("Suspending agreement FAILED", ex)
+          Future.failed[Agreement](ex)
       }
   }
 
@@ -89,9 +95,13 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.info(s"Agreement upgraded ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error("Agreement upgrade FAILED", ex)
-        Future.failed[Agreement](ex)
+      .recoverWith {
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(s"Agreement upgrade FAILED. code > $code - message > $message - response > $response", error)
+          Future.failed[Agreement](ex)
+        case ex =>
+          logger.error("Agreement upgrade FAILED", ex)
+          Future.failed[Agreement](ex)
       }
   }
 
@@ -105,11 +115,11 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         x.content
       }
       .recoverWith {
-        case ex: ApiError[_] if ex.code == 404 =>
-          logger.error("Retrieving agreement FAILED", ex)
+        case ex @ ApiError(code, message, response, error, _) if ex.code == 404 =>
+          logger.error(s"Retrieving agreement FAILED. code > $code - message > $message - response > $response", error)
           Future.failed[Agreement](AgreementNotFound(agreementId))
-        case ex: ApiError[_] =>
-          logger.error("Retrieving agreement FAILED", ex)
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(s"Retrieving agreement FAILED. code > $code - message > $message - response > $response", error)
           Future.failed[Agreement](ex)
       }
   }
@@ -136,9 +146,13 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.info(s"Retrieving agreement ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error("Retrieving agreement FAILED", ex)
-        Future.failed[Agreement](ex)
+      .recoverWith {
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(s"Creating agreement FAILED. code > $code - message > $message - response > $response", error)
+          Future.failed[Agreement](ex)
+        case ex =>
+          logger.error("Creating agreement FAILED", ex)
+          Future.failed[Agreement](ex)
       }
   }
 
@@ -166,9 +180,13 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         logger.info(s"Retrieving agreements ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error("Retrieving agreements FAILED", ex)
-        Future.failed[Seq[Agreement]](ex)
+      .recoverWith {
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(s"Retrieving agreements FAILED. code > $code - message > $message - response > $response", error)
+          Future.failed[Seq[Agreement]](ex)
+        case ex =>
+          logger.error("Retrieving agreements FAILED", ex)
+          Future.failed[Seq[Agreement]](ex)
       }
   }
 

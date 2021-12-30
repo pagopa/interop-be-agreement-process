@@ -8,7 +8,6 @@ import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.{Attribute
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 trait AgreementManagementService {
 
   def createAgreement(bearerToken: String)(
@@ -37,16 +36,6 @@ trait AgreementManagementService {
   def upgradeById(bearerToken: String)(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement]
 }
 
-@SuppressWarnings(
-  Array(
-    "org.wartremover.warts.StringPlusAny",
-    "org.wartremover.warts.DefaultArguments",
-    "org.wartremover.warts.ImplicitParameter",
-    "org.wartremover.warts.Equals",
-    "org.wartremover.warts.Nothing",
-    "org.wartremover.warts.ToString"
-  )
-)
 object AgreementManagementService {
 
   def validatePayload(

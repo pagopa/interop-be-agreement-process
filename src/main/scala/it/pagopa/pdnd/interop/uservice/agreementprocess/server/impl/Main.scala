@@ -54,7 +54,6 @@ trait AgreementManagementDependency {
     AgreementManagementServiceImpl(agreementManagementInvoker, agreementManagementApi)
 }
 
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 trait CatalogManagementDependency {
   private final val catalogManagementInvoker: CatalogManagementInvoker = CatalogManagementInvoker()
   private final val catalogApi: EServiceApi                            = EServiceApi(ApplicationConfiguration.catalogManagementURL)
@@ -82,7 +81,6 @@ trait AttributeRegistryManagementDependency {
 //shuts down the actor system in case of startup errors
 case object StartupErrorShutdown extends CoordinatedShutdown.Reason
 
-@SuppressWarnings(Array("org.wartremover.warts.StringPlusAny", "org.wartremover.warts.Nothing"))
 object Main
     extends App
     with CORSSupport

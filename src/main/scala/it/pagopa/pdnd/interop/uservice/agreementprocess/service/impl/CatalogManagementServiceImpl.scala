@@ -2,20 +2,13 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{CatalogManagementInvoker, CatalogManagementService}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.api.EServiceApi
-import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.{ApiRequest, BearerToken}
+import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.invoker.{ApiError, ApiRequest, BearerToken}
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model.EService
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
-@SuppressWarnings(
-  Array(
-    "org.wartremover.warts.StringPlusAny",
-    "org.wartremover.warts.ImplicitParameter",
-    "org.wartremover.warts.ToString"
-  )
-)
 final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker, api: EServiceApi)(implicit
   ec: ExecutionContext
 ) extends CatalogManagementService {
@@ -31,9 +24,13 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
         logger.info(s"Retrieving e-service ${x.content}")
         x.content
       }
-      .recoverWith { case ex =>
-        logger.error("Retrieving e-service FAILED", ex)
-        Future.failed[EService](ex)
+      .recoverWith {
+        case ex @ ApiError(code, message, response, error, _) =>
+          logger.error(s"Retrieving e-service FAILED. code > $code - message > $message - response > $response", error)
+          Future.failed[EService](ex)
+        case ex =>
+          logger.error("Retrieving e-service FAILED", ex)
+          Future.failed[EService](ex)
       }
   }
 }
