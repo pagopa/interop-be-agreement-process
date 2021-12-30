@@ -12,7 +12,6 @@ trait AttributeManagementService {
 }
 
 object AttributeManagementService {
-  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def getAttributes(certified: Seq[ClientAttribute], declared: Seq[ClientAttribute], verified: Seq[ClientAttribute])(
     implicit ec: ExecutionContext
   ): Future[Attributes] = for {

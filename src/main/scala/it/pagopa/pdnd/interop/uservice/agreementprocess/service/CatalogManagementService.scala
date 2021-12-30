@@ -14,15 +14,6 @@ trait CatalogManagementService {
 
 }
 
-@SuppressWarnings(
-  Array(
-    "org.wartremover.warts.StringPlusAny",
-    "org.wartremover.warts.ImplicitParameter",
-    "org.wartremover.warts.Equals",
-    "org.wartremover.warts.Option2Iterable",
-    "org.wartremover.warts.ToString"
-  )
-)
 object CatalogManagementService {
   def getActiveDescriptorOption(
     eservice: EService,

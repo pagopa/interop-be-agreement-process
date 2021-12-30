@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.ToString"))
 class ConsumerApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
