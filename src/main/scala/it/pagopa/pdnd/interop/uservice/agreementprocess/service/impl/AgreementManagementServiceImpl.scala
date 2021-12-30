@@ -1,21 +1,19 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.api.AgreementApi
-import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiError, ApiRequest, BearerToken}
+import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiRequest, BearerToken}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._
-import it.pagopa.pdnd.interop.uservice.agreementprocess.error.AgreementNotFound
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
-final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, api: AgreementApi)(implicit
-  ec: ExecutionContext
-) extends AgreementManagementService {
+final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, api: AgreementApi)
+    extends AgreementManagementService {
 
-  val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  implicit val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def markVerifiedAttribute(
     bearerToken: String
@@ -23,23 +21,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 
     val request: ApiRequest[Agreement] =
       api.updateAgreementVerifiedAttribute(agreementId, verifiedAttributeSeed)(BearerToken(bearerToken))
-    invoker
-      .execute[Agreement](request)
-      .map { x =>
-        logger.info(s"Attribute verified! agreement ${x.code} > ${x.content}")
-        x.content
-      }
-      .recoverWith {
-        case ex @ ApiError(code, message, response, error, _) =>
-          logger.error(
-            s"Attribute verification FAILED. code > $code - message > $message - response > $response",
-            error
-          )
-          Future.failed[Agreement](ex)
-        case ex =>
-          logger.error("Attribute verification FAILED", ex)
-          Future.failed[Agreement](ex)
-      }
+    invoker.invoke(request, s"Verifying attributes for agreement $agreementId")
   }
 
   override def activateById(
@@ -47,21 +29,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
   )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement] = {
     val request: ApiRequest[Agreement] =
       api.activateAgreement(agreementId, stateChangeDetails)(BearerToken(bearerToken))
-    invoker
-      .execute[Agreement](request)
-      .map { x =>
-        logger.info(s"Activating agreement ${x.code}")
-        logger.info(s"Activating agreement ${x.content}")
-        x.content
-      }
-      .recoverWith {
-        case ex @ ApiError(code, message, response, error, _) =>
-          logger.error(s"Activating agreement FAILED. code > $code - message > $message - response > $response", error)
-          Future.failed[Agreement](ex)
-        case ex =>
-          logger.error("Activating agreement FAILED", ex)
-          Future.failed[Agreement](ex)
-      }
+    invoker.invoke(request, s"Activating agreement by id = $agreementId")
   }
 
   override def suspendById(
@@ -69,59 +37,17 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
   )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement] = {
     val request: ApiRequest[Agreement] =
       api.suspendAgreement(agreementId, stateChangeDetails)(BearerToken(bearerToken))
-    invoker
-      .execute[Agreement](request)
-      .map { x =>
-        logger.info(s"Suspending agreement ${x.code}")
-        logger.info(s"Suspending agreement ${x.content}")
-        x.content
-      }
-      .recoverWith {
-        case ex @ ApiError(code, message, response, error, _) =>
-          logger.error(s"Suspending agreement FAILED. code > $code - message > $message - response > $response", error)
-          Future.failed[Agreement](ex)
-        case ex =>
-          logger.error("Suspending agreement FAILED", ex)
-          Future.failed[Agreement](ex)
-      }
+    invoker.invoke(request, s"Suspending agreement by id = $agreementId")
   }
 
   override def upgradeById(bearerToken: String)(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement] = {
     val request: ApiRequest[Agreement] = api.upgradeAgreementById(agreementId, agreementSeed)(BearerToken(bearerToken))
-    invoker
-      .execute[Agreement](request)
-      .map { x =>
-        logger.info(s"Agreement upgraded ${x.code}")
-        logger.info(s"Agreement upgraded ${x.content}")
-        x.content
-      }
-      .recoverWith {
-        case ex @ ApiError(code, message, response, error, _) =>
-          logger.error(s"Agreement upgrade FAILED. code > $code - message > $message - response > $response", error)
-          Future.failed[Agreement](ex)
-        case ex =>
-          logger.error("Agreement upgrade FAILED", ex)
-          Future.failed[Agreement](ex)
-      }
+    invoker.invoke(request, s"Updating agreement by id = $agreementId")
   }
 
   override def getAgreementById(bearerToken: String)(agreementId: String): Future[Agreement] = {
     val request: ApiRequest[Agreement] = api.getAgreement(agreementId)(BearerToken(bearerToken))
-    invoker
-      .execute[Agreement](request)
-      .map { x =>
-        logger.info(s"Retrieving agreement ${x.code}")
-        logger.info(s"Retrieving agreement ${x.content}")
-        x.content
-      }
-      .recoverWith {
-        case ex @ ApiError(code, message, response, error, _) if ex.code == 404 =>
-          logger.error(s"Retrieving agreement FAILED. code > $code - message > $message - response > $response", error)
-          Future.failed[Agreement](AgreementNotFound(agreementId))
-        case ex @ ApiError(code, message, response, error, _) =>
-          logger.error(s"Retrieving agreement FAILED. code > $code - message > $message - response > $response", error)
-          Future.failed[Agreement](ex)
-      }
+    invoker.invoke(request, s"Retrieving agreement by id = $agreementId")
   }
 
   override def createAgreement(bearerToken: String)(
@@ -139,21 +65,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     )
 
     val request: ApiRequest[Agreement] = api.addAgreement(seed)(BearerToken(bearerToken))
-    invoker
-      .execute[Agreement](request)
-      .map { x =>
-        logger.info(s"Retrieving agreement ${x.code}")
-        logger.info(s"Retrieving agreement ${x.content}")
-        x.content
-      }
-      .recoverWith {
-        case ex @ ApiError(code, message, response, error, _) =>
-          logger.error(s"Creating agreement FAILED. code > $code - message > $message - response > $response", error)
-          Future.failed[Agreement](ex)
-        case ex =>
-          logger.error("Creating agreement FAILED", ex)
-          Future.failed[Agreement](ex)
-      }
+    invoker.invoke(request, "Creating agreement")
   }
 
   override def getAgreements(bearerToken: String)(
@@ -173,21 +85,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
         state = state
       )(BearerToken(bearerToken))
 
-    invoker
-      .execute[Seq[Agreement]](request)
-      .map { x =>
-        logger.info(s"Retrieving agreements ${x.code}")
-        logger.info(s"Retrieving agreements ${x.content}")
-        x.content
-      }
-      .recoverWith {
-        case ex @ ApiError(code, message, response, error, _) =>
-          logger.error(s"Retrieving agreements FAILED. code > $code - message > $message - response > $response", error)
-          Future.failed[Seq[Agreement]](ex)
-        case ex =>
-          logger.error("Retrieving agreements FAILED", ex)
-          Future.failed[Seq[Agreement]](ex)
-      }
+    invoker.invoke(request, "Retrieving agreements")
   }
 
 }
