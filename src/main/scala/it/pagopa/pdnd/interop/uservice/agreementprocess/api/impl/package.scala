@@ -30,20 +30,6 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def problemErrorFormat: RootJsonFormat[ProblemError]                   = jsonFormat2(ProblemError)
   implicit def problemFormat: RootJsonFormat[Problem]                             = jsonFormat5(Problem)
 
-  def problemOf(
-    httpError: StatusCode,
-    errorCode: String,
-    exception: Throwable = new RuntimeException(),
-    defaultMessage: String = "Unknown error"
-  ): Problem =
-    Problem(
-      `type` = "about:blank",
-      status = httpError.intValue,
-      title = httpError.defaultMessage,
-      errors =
-        Seq(ProblemError(code = s"005-$errorCode", detail = Option(exception.getMessage).getOrElse(defaultMessage)))
-    )
-
   def validateBearer(contexts: Seq[(String, String)], jwt: JWTReader)(implicit ec: ExecutionContext): Future[String] =
     for {
       bearer <- getFutureBearer(contexts)

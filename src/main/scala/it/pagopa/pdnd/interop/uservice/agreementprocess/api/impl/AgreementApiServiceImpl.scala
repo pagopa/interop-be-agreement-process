@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.Logger
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.pdnd.interop.commons.utils.errors.ResourceConflictError
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementSeed,
   VerifiedAttribute,
@@ -144,6 +145,11 @@ class AgreementApiServiceImpl(
 
     onComplete(result) {
       case Success(agreement) => createAgreement201(agreement)
+      case Failure(ex: ResourceConflictError) =>
+        logger.error("Error while creating agreement {}", agreementPayload, ex)
+        val errorResponse: Problem =
+          problemOf(StatusCodes.Conflict, ex.code, ex, s"Error while creating agreement $agreementPayload")
+        createAgreement409(errorResponse)
       case Failure(ex) =>
         logger.error("Error while creating agreement {}", agreementPayload, ex)
         val errorResponse: Problem =

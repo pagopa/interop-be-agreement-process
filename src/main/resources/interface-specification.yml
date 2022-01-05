@@ -132,6 +132,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
       tags:
         - agreement
       requestBody:
@@ -272,7 +278,7 @@ paths:
         in: path
         description: verified attribute identifier
         required: true
-    patch:
+    post:
       summary: Verify agreement attribute
       operationId: verifyAgreementAttribute
       responses:
