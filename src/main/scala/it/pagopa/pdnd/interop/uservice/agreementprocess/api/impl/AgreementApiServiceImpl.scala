@@ -17,12 +17,7 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
 }
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
-import it.pagopa.pdnd.interop.uservice.agreementprocess.error.{
-  ActiveAgreementAlreadyExists,
-  AgreementAttributeNotFound,
-  AgreementNotFound,
-  DescriptorNotFound
-}
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService.agreementStateToApi
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.CatalogManagementService.descriptorStateToApi
@@ -78,7 +73,7 @@ class AgreementApiServiceImpl(
       case Failure(ex) =>
         logger.error("Error while activating agreement {}", agreementId, ex)
         val errorResponse: Problem = {
-          problemOf(StatusCodes.BadRequest, "0002", ex, s"Error while activating agreement $agreementId")
+          problemOf(StatusCodes.BadRequest, ActivateAgreementError(agreementId))
         }
         activateAgreement400(errorResponse)
     }
@@ -105,7 +100,7 @@ class AgreementApiServiceImpl(
       case Failure(ex) =>
         logger.error("Error while suspending agreement {}", agreementId, ex)
         val errorResponse: Problem =
-          problemOf(StatusCodes.BadRequest, "0003", ex, s"Error while suspending agreement $agreementId")
+          problemOf(StatusCodes.BadRequest, SuspendAgreementError(agreementId))
         suspendAgreement400(errorResponse)
     }
   }
@@ -153,7 +148,7 @@ class AgreementApiServiceImpl(
       case Failure(ex) =>
         logger.error("Error while creating agreement {}", agreementPayload, ex)
         val errorResponse: Problem =
-          problemOf(StatusCodes.BadRequest, "0004", ex, s"Error while creating agreement $agreementPayload")
+          problemOf(StatusCodes.BadRequest, CreateAgreementError(agreementPayload))
         createAgreement400(errorResponse)
     }
   }
@@ -210,7 +205,7 @@ class AgreementApiServiceImpl(
           ex
         )
         val errorResponse: Problem =
-          problemOf(StatusCodes.BadRequest, "0005", ex, "Error while retrieving agreements with filters")
+          problemOf(StatusCodes.BadRequest, RetrieveAgreementsError)
         getAgreements400(errorResponse)
     }
   }
@@ -237,11 +232,11 @@ class AgreementApiServiceImpl(
         exception match {
           case ex: AgreementNotFound =>
             val errorResponse: Problem =
-              problemOf(StatusCodes.NotFound, "0006", ex, s"Agreement $agreementId not found")
+              problemOf(StatusCodes.NotFound, ex)
             getAgreementById404(errorResponse)
-          case ex =>
+          case _ =>
             val errorResponse: Problem =
-              problemOf(StatusCodes.BadRequest, "0007", ex, s"Error while retrieving agreement $agreementId")
+              problemOf(StatusCodes.BadRequest, RetrieveAgreementError(agreementId))
             getAgreementById400(errorResponse)
         }
     }
@@ -351,12 +346,7 @@ class AgreementApiServiceImpl(
       case Failure(ex) =>
         logger.error("Error while verifying agreement {} attribute {}", agreementId, attributeId, ex)
         val errorResponse: Problem =
-          problemOf(
-            StatusCodes.BadRequest,
-            "0008",
-            ex,
-            s"Error while verifying agreement $agreementId attribute $attributeId"
-          )
+          problemOf(StatusCodes.BadRequest, VerifyAgreementAttributeError(agreementId, attributeId))
         verifyAgreementAttribute404(errorResponse)
     }
   }
@@ -425,7 +415,7 @@ class AgreementApiServiceImpl(
       case Failure(ex) =>
         logger.error("Error while updating agreement {}", agreementId, ex)
         val errorResponse: Problem =
-          problemOf(StatusCodes.BadRequest, "0009", ex, s"Error while updating agreement $agreementId")
+          problemOf(StatusCodes.BadRequest, UpdateAgreementError(agreementId))
         upgradeAgreementById400(errorResponse)
     }
   }
