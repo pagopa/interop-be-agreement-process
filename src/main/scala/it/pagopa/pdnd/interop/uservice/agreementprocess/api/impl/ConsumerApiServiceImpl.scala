@@ -11,6 +11,7 @@ import it.pagopa.pdnd.interop.commons.logging.{CanLogContextFields, ContextField
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.ConsumerApiService
+import it.pagopa.pdnd.interop.uservice.agreementprocess.error.AgreementProcessErrors.RetrieveAttributesError
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attributes, Problem}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
@@ -74,7 +75,7 @@ class ConsumerApiServiceImpl(
       case Failure(ex) =>
         logger.error("Error while getting consumer {} attributes", consumerId, ex)
         val errorResponse: Problem = {
-          problemOf(StatusCodes.BadRequest, "0001", ex, s"Error while retrieving attributes for consumer $consumerId")
+          problemOf(StatusCodes.BadRequest, RetrieveAttributesError(consumerId))
         }
         getAttributesByConsumerId400(errorResponse)
     }
