@@ -1,6 +1,6 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl
 
-import it.pagopa.pdnd.interop.commons.utils.errors.{ResourceConflictError, ResourceNotFoundError}
+import it.pagopa.pdnd.interop.commons.utils.errors.GenericComponentErrors.{ResourceConflictError, ResourceNotFoundError}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.api.AgreementApi
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.invoker.{ApiError, ApiRequest, BearerToken}
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model._

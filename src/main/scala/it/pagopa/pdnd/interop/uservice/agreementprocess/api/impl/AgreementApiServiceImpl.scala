@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
-import it.pagopa.pdnd.interop.commons.utils.errors.ResourceConflictError
+import it.pagopa.pdnd.interop.commons.utils.errors.GenericComponentErrors.ResourceConflictError
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementSeed,
   VerifiedAttribute,
