@@ -6,6 +6,7 @@ import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.getFutureBearer
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.TryOps
 import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
+import it.pagopa.pdnd.interop.commons.utils.errors.ComponentError
 import it.pagopa.pdnd.interop.uservice._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
@@ -30,18 +31,20 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def problemErrorFormat: RootJsonFormat[ProblemError]                   = jsonFormat2(ProblemError)
   implicit def problemFormat: RootJsonFormat[Problem]                             = jsonFormat5(Problem)
 
-  def problemOf(
-    httpError: StatusCode,
-    errorCode: String,
-    exception: Throwable = new RuntimeException(),
-    defaultMessage: String = "Unknown error"
-  ): Problem =
+  final val serviceErrorCodePrefix: String = "005"
+  final val defaultProblemType: String     = "about:blank"
+
+  def problemOf(httpError: StatusCode, error: ComponentError, defaultMessage: String = "Unknown error"): Problem =
     Problem(
-      `type` = "about:blank",
+      `type` = defaultProblemType,
       status = httpError.intValue,
       title = httpError.defaultMessage,
-      errors =
-        Seq(ProblemError(code = s"005-$errorCode", detail = Option(exception.getMessage).getOrElse(defaultMessage)))
+      errors = Seq(
+        ProblemError(
+          code = s"$serviceErrorCodePrefix-${error.code}",
+          detail = Option(error.getMessage).getOrElse(defaultMessage)
+        )
+      )
     )
 
   def validateBearer(contexts: Seq[(String, String)], jwt: JWTReader)(implicit ec: ExecutionContext): Future[String] =
