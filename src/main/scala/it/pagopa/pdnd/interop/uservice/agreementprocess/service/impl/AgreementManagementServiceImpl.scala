@@ -108,14 +108,35 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 
   private def invocationRecovery[T](resourceId: String): (Logger, String) => PartialFunction[Throwable, Future[T]] =
     (logger, message) => {
-      case ApiError(code, apiMessage, _, _, _) if code == 409 =>
-        logger.error(s"$apiMessage. code > $code - message > $message")
+      case ApiError(code, apiMessage, response, throwable, _) if code == 409 =>
+        logger.error(
+          "{} FAILED. code > {} - message > {} - response > {}",
+          message,
+          code,
+          apiMessage,
+          response,
+          throwable
+        )
         Future.failed[T](ResourceConflictError(resourceId))
-      case ApiError(code, apiMessage, _, _, _) if code == 404 =>
-        logger.error(s"$apiMessage. code > $code - message > $message")
+      case ApiError(code, apiMessage, response, throwable, _) if code == 404 =>
+        logger.error(
+          "{} FAILED. code > {} - message > {} - response > {}",
+          message,
+          code,
+          apiMessage,
+          response,
+          throwable
+        )
         Future.failed[T](ResourceNotFoundError(resourceId))
-      case ApiError(code, apiMessage, _, _, _) =>
-        logger.error(s"$apiMessage. code > $code - message > $message")
+      case ApiError(code, apiMessage, response, throwable, _) =>
+        logger.error(
+          "{} FAILED. code > {} - message > {} - response > {}",
+          message,
+          code,
+          apiMessage,
+          response,
+          throwable
+        )
         Future.failed[T](new RuntimeException(message))
       case ex =>
         logger.error(s"Error: ${ex.getMessage}")
