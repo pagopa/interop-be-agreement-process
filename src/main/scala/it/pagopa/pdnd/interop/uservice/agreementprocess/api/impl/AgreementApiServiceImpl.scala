@@ -5,10 +5,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.pdnd.interop.commons.utils.errors.GenericComponentErrors.ResourceConflictError
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   AgreementSeed,
   VerifiedAttribute,
@@ -44,7 +45,9 @@ class AgreementApiServiceImpl(
   jwtReader: JWTReader
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
-  val logger = Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
+
+  val logger: LoggerTakingImplicit[ContextFieldsToLog] =
+    Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
 
   override def activateAgreement(agreementId: String, partyId: String)(implicit
     contexts: Seq[(String, String)],
@@ -139,6 +142,11 @@ class AgreementApiServiceImpl(
 
     onComplete(result) {
       case Success(agreement) => createAgreement201(agreement)
+      case Failure(ex: ResourceConflictError) =>
+        logger.error("Error while creating agreement {}", agreementPayload, ex)
+        val errorResponse: Problem =
+          problemOf(StatusCodes.Conflict, ex, s"Error while creating agreement $agreementPayload")
+        createAgreement409(errorResponse)
       case Failure(ex) =>
         logger.error("Error while creating agreement {}", agreementPayload, ex)
         val errorResponse: Problem =
