@@ -6,9 +6,8 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.model.{Attribute, Attrib
 import scala.concurrent.{ExecutionContext, Future}
 
 trait AttributeManagementService {
-
   def getAttribute(bearerToken: String)(attributeId: String): Future[ClientAttribute]
-
+  def getAttributeByOriginAndCode(bearerToken: String)(origin: String, code: String): Future[ClientAttribute]
 }
 
 object AttributeManagementService {
