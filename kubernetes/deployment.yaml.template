@@ -88,6 +88,8 @@ spec:
               value: "{{attributeRegistryManagementUrl}}"
             - name: WELL_KNOWN_URL
               value: "{{wellKnownURL}}"
+            - name: MAIN_AUDIENCE
+              value: "{{mainAudience}}"
           volumeMounts:
             - name: application-conf
               mountPath: /opt/docker/etc

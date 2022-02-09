@@ -51,7 +51,8 @@ class CatalogProviderContractSpec
     docs = Seq.empty,
     audience = Seq("pippo"),
     voucherLifespan = 124,
-    state = EServiceDescriptorState.DRAFT
+    state = EServiceDescriptorState.DRAFT,
+    dailyCallsMaxNumber = 1000
   )
 
   val response = EService(
