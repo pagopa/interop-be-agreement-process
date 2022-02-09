@@ -67,14 +67,15 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
-            pendingAgreement.descriptorId,
-            "1",
-            None,
-            Seq.empty,
-            0,
-            None,
-            Seq.empty,
-            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
+            id = pendingAgreement.descriptorId,
+            version = "1",
+            description = None,
+            audience = Seq.empty,
+            voucherLifespan = 0,
+            interface = None,
+            docs = Seq.empty,
+            state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
+            dailyCallsMaxNumber = 1000
           )
         )
       )
@@ -145,14 +146,15 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
-            suspendedAgreement.descriptorId,
-            "1",
-            None,
-            Seq.empty,
-            0,
-            None,
-            Seq.empty,
-            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
+            id = suspendedAgreement.descriptorId,
+            version = "1",
+            description = None,
+            audience = Seq.empty,
+            voucherLifespan = 0,
+            interface = None,
+            docs = Seq.empty,
+            state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
+            dailyCallsMaxNumber = 1000
           )
         )
       )
@@ -235,14 +237,15 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
-            currentAgreement.descriptorId,
-            "1",
-            None,
-            Seq.empty,
-            0,
-            None,
-            Seq.empty,
-            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
+            id = currentAgreement.descriptorId,
+            version = "1",
+            description = None,
+            audience = Seq.empty,
+            voucherLifespan = 0,
+            interface = None,
+            docs = Seq.empty,
+            state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
+            dailyCallsMaxNumber = 1000
           )
         )
       )
@@ -291,14 +294,15 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
-            currentAgreement.descriptorId,
-            "1",
-            None,
-            Seq.empty,
-            0,
-            None,
-            Seq.empty,
-            CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
+            id = currentAgreement.descriptorId,
+            version = "1",
+            description = None,
+            audience = Seq.empty,
+            voucherLifespan = 0,
+            interface = None,
+            docs = Seq.empty,
+            state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
+            dailyCallsMaxNumber = 1000
           )
         )
       )
@@ -347,14 +351,15 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
-            currentAgreement.descriptorId,
-            "1",
-            None,
-            Seq.empty,
-            0,
-            None,
-            Seq.empty,
-            CatalogManagementDependency.EServiceDescriptorState.DEPRECATED
+            id = currentAgreement.descriptorId,
+            version = "1",
+            description = None,
+            audience = Seq.empty,
+            voucherLifespan = 0,
+            interface = None,
+            docs = Seq.empty,
+            state = CatalogManagementDependency.EServiceDescriptorState.DEPRECATED,
+            dailyCallsMaxNumber = 1000
           )
         )
       )
