@@ -15,7 +15,6 @@ final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, par
   implicit val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def getPartyAttributes(bearerToken: String)(partyId: UUID): Future[Seq[Attribute]] = {
-    logger.info(s"TODO > Bearer Token should be used $bearerToken") //TODO pass bearer token
     val request: ApiRequest[Seq[Attribute]] = partyApi.getPartyAttributes(partyId)(BearerToken(bearerToken))
     invoker.invoke(request, s"Retrieving Attributes of party $partyId")
   }
