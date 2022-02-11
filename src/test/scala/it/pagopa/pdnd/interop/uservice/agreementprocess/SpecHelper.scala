@@ -62,7 +62,7 @@ trait SpecHelper {
     val verifiedAttributeId1: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9214"
     val verifiedAttributeId2: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9215"
     val verifiedAttributeId3: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9216"
-    val certifiedAttribute: PartyManagementAttribute = PartyManagementAttribute("IPA", "MockCertified")
+    val certifiedAttribute: PartyManagementAttribute = PartyManagementAttribute("IPA", "MockCertified", "description")
     val declaredAttributeId1: String                 = "17f8dce0-0a5b-476b-9fdd-a7a658eb9213"
     val declaredAttributeId2: String                 = "17f8dce0-0a5b-476b-9fdd-a7a658eb9214"
     val declaredAttributeId3: String                 = "17f8dce0-0a5b-476b-9fdd-a7a658eb9215"
