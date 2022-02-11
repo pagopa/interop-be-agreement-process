@@ -29,4 +29,12 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
     invoker.invoke(request, s"Retrieving attribute by id = $attributeId")
   }
 
+  override def getAttributeByOriginAndCode(
+    bearerToken: String
+  )(origin: String, code: String): Future[ClientAttribute] = {
+    val request =
+      api.getAttributeByOriginAndCode(origin, code)(BearerToken(bearerToken)) // TODO maybe a batch request is better
+    invoker.invoke(request, s"Retrieving attribute by origin = $origin and code = $code")
+  }
+
 }

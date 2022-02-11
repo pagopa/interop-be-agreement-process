@@ -134,8 +134,8 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.certifiedAttribute)
+        .getAttributeByOriginAndCode(_: String)(_: String, _: String))
+        .expects(Common.bearerToken, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
       (mockAttributeManagementService
@@ -242,8 +242,8 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.certifiedAttribute)
+        .getAttributeByOriginAndCode(_: String)(_: String, _: String))
+        .expects(Common.bearerToken, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
       (mockAttributeManagementService
@@ -331,8 +331,8 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.certifiedAttribute)
+        .getAttributeByOriginAndCode(_: String)(_: String, _: String))
+        .expects(Common.bearerToken, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
       (mockAttributeManagementService

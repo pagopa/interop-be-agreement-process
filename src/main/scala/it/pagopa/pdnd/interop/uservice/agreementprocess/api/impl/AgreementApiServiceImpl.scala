@@ -52,12 +52,15 @@ class AgreementApiServiceImpl(
   ): Route = {
     logger.info("Activating agreement {}", agreementId)
     val result = for {
-      bearerToken           <- validateBearer(contexts, jwtReader)
-      agreement             <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      _                     <- verifyAgreementActivationEligibility(bearerToken)(agreement)
-      consumerAttributesIds <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId)
-      eservice              <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
-      activeEservice        <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
+      bearerToken        <- validateBearer(contexts, jwtReader)
+      agreement          <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
+      _                  <- verifyAgreementActivationEligibility(bearerToken)(agreement)
+      consumerAttributes <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId)
+      consumerAttributesIds <- consumerAttributes.traverse(a =>
+        attributeManagementService.getAttributeByOriginAndCode(bearerToken)(a.origin, a.code).map(_.id)
+      )
+      eservice       <- catalogManagementService.getEServiceById(bearerToken)(agreement.eserviceId)
+      activeEservice <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
       _ <- AgreementManagementService.verifyAttributes(
         consumerAttributesIds,
         activeEservice.attributes,
@@ -118,11 +121,17 @@ class AgreementApiServiceImpl(
       consumerAgreements <- agreementManagementService.getAgreements(bearerToken = bearerToken)(consumerId =
         Some(agreementPayload.consumerId.toString)
       )
-      validPayload               <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
-      eservice                   <- catalogManagementService.getEServiceById(bearerToken)(validPayload.eserviceId)
-      activeEservice             <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
-      consumer                   <- partyManagementService.getOrganization(bearerToken)(agreementPayload.consumerId)
-      activatableEservice        <- AgreementManagementService.verifyCertifiedAttributes(consumer.attributes, activeEservice)
+      validPayload   <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
+      eservice       <- catalogManagementService.getEServiceById(bearerToken)(validPayload.eserviceId)
+      activeEservice <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
+      consumer       <- partyManagementService.getOrganization(bearerToken)(agreementPayload.consumerId)
+      consumerAttributeIdentifiers <- consumer.attributes.traverse(a =>
+        attributeManagementService.getAttributeByOriginAndCode(bearerToken)(a.origin, a.code).map(_.id)
+      )
+      activatableEservice <- AgreementManagementService.verifyCertifiedAttributes(
+        consumerAttributeIdentifiers,
+        activeEservice
+      )
       consumerVerifiedAttributes <- AgreementManagementService.extractVerifiedAttribute(consumerAgreements)
       verifiedAttributes         <- CatalogManagementService.flattenAttributes(activatableEservice.attributes.verified)
       verifiedAttributeSeeds <- AgreementManagementService.applyImplicitVerification(

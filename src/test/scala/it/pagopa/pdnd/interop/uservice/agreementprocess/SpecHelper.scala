@@ -16,6 +16,7 @@ import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.model.
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.{model => CatalogManagementDependency}
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.model.Organization
+import it.pagopa.pdnd.interop.uservice.partymanagement.client.model.{Attribute => PartyManagementAttribute}
 
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -56,16 +57,16 @@ trait SpecHelper {
   }
 
   object Common {
-    val bearerToken: String          = "bearerToken"
-    val consumerId: String           = "07f8dce0-0a5b-476b-9fdd-a7a658eb9213"
-    val verifiedAttributeId1: String = "07f8dce0-0a5b-476b-9fdd-a7a658eb9214"
-    val verifiedAttributeId2: String = "07f8dce0-0a5b-476b-9fdd-a7a658eb9215"
-    val verifiedAttributeId3: String = "07f8dce0-0a5b-476b-9fdd-a7a658eb9216"
-    val certifiedAttribute: String   = "07f8dce0-0a5b-476b-9fdd-a7a658eb9217"
-    val declaredAttributeId1: String = "17f8dce0-0a5b-476b-9fdd-a7a658eb9213"
-    val declaredAttributeId2: String = "17f8dce0-0a5b-476b-9fdd-a7a658eb9214"
-    val declaredAttributeId3: String = "17f8dce0-0a5b-476b-9fdd-a7a658eb9215"
-    val declaredAttributeId4: String = "27f8dce0-0a5b-476b-9fdd-a7a658eb9213"
+    val bearerToken: String                          = "bearerToken"
+    val consumerId: String                           = "07f8dce0-0a5b-476b-9fdd-a7a658eb9213"
+    val verifiedAttributeId1: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9214"
+    val verifiedAttributeId2: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9215"
+    val verifiedAttributeId3: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9216"
+    val certifiedAttribute: PartyManagementAttribute = PartyManagementAttribute("IPA", "MockCertified", "description")
+    val declaredAttributeId1: String                 = "17f8dce0-0a5b-476b-9fdd-a7a658eb9213"
+    val declaredAttributeId2: String                 = "17f8dce0-0a5b-476b-9fdd-a7a658eb9214"
+    val declaredAttributeId3: String                 = "17f8dce0-0a5b-476b-9fdd-a7a658eb9215"
+    val declaredAttributeId4: String                 = "27f8dce0-0a5b-476b-9fdd-a7a658eb9213"
 
   }
 
@@ -487,7 +488,7 @@ trait SpecHelper {
       creationTime = OffsetDateTime.now()
     )
     val certifiedAttribute: ClientAttribute = ClientAttribute(
-      id = Common.certifiedAttribute,
+      id = UUID.randomUUID().toString,
       code = Some("codeCer"),
       certified = true,
       description = "descriptionCer",
