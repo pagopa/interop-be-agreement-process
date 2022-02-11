@@ -2,16 +2,18 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess.common.system
 
 import com.typesafe.config.{Config, ConfigFactory}
 
+import scala.jdk.CollectionConverters.ListHasAsScala
+
 object ApplicationConfiguration {
   lazy val config: Config = ConfigFactory.load()
 
-  def serverPort: Int = {
-    config.getInt("uservice-agreement-process.port")
-  }
+  lazy val serverPort: Int = config.getInt("agreement-process.port")
 
-  def agreementManagementURL: String         = config.getString("services.agreement-management")
-  def catalogManagementURL: String           = config.getString("services.catalog-management")
-  def partyManagementURL: String             = config.getString("services.party-management")
-  def attributeRegistryManagementURL: String = config.getString("services.attribute-registry-management")
+  lazy val agreementManagementURL: String = config.getString("agreement-process.services.agreement-management")
+  lazy val catalogManagementURL: String   = config.getString("agreement-process.services.catalog-management")
+  lazy val partyManagementURL: String     = config.getString("agreement-process.services.party-management")
+  lazy val attributeRegistryManagementURL: String =
+    config.getString("agreement-process.services.attribute-registry-management")
 
+  lazy val jwtAudience: Set[String] = config.getStringList("agreement-process.jwt.audience").asScala.toSet
 }

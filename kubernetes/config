@@ -16,6 +16,8 @@ attributeRegistryManagementVersion="0.1"
 
 wellKnownURL=$WELL_KNOWN_URL
 
+mainAudience=$MAIN_AUDIENCE
+
 catalogManagementUrl="http://pdnd-interop-uservice-catalog-management.pdnd-interop-uservice-catalog-management.svc.cluster.local:8088/pdnd-interop-uservice-catalog-management/"$catalogManagementVersion
 agreementManagementUrl="http://pdnd-interop-uservice-agreement-management.pdnd-interop-uservice-agreement-management.svc.cluster.local:8088/pdnd-interop-uservice-agreement-management/"$agreementManagementVersion
 partyManagementUrl="http://pdnd-interop-uservice-party-management.pdnd-interop-uservice-party-management.svc.cluster.local:8088/pdnd-interop-uservice-party-management/"$partyManagementVersion

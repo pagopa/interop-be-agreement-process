@@ -36,6 +36,7 @@ trait SpecHelper {
   System.setProperty("PARTY_MANAGEMENT_URL", "http://localhost/")
   System.setProperty("ATTRIBUTE_REGISTRY_MANAGEMENT_URL", "http://localhost/")
   System.setProperty("WELL_KNOWN_URL", "http://localhost/.well-known/jwks.json")
+  System.setProperty("MAIN_AUDIENCE", "audience")
 
   def mockSubject(uuid: String) = Success(new JWTClaimsSet.Builder().subject(uuid).build())
 
@@ -365,7 +366,8 @@ trait SpecHelper {
           voucherLifespan = 1,
           interface = None,
           docs = Seq.empty,
-          state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED
+          state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
+          dailyCallsMaxNumber = 1000
         )
       )
     )
