@@ -12,7 +12,11 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   Agreement => ClientAgreement
 }
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
-import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.model.{Attribute => ClientAttribute}
+import it.pagopa.pdnd.interop.uservice.attributeregistrymanagement.client.model.{
+  Attribute => ClientAttribute,
+  AttributeKind => ClientAttributeKind
+}
+
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.{model => CatalogManagementDependency}
 import it.pagopa.pdnd.interop.uservice.partymanagement.client.model.Organization
@@ -427,7 +431,7 @@ trait SpecHelper {
     val verifiedAttributeId1: ClientAttribute = ClientAttribute(
       id = Common.verifiedAttributeId1,
       code = Some("codeVer1"),
-      certified = false,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionVer1",
       origin = Some("originVer1"),
       name = "nameVer1",
@@ -436,7 +440,7 @@ trait SpecHelper {
     val verifiedAttributeId2: ClientAttribute = ClientAttribute(
       id = Common.verifiedAttributeId2,
       code = Some("codeVer2"),
-      certified = false,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionVer2",
       origin = Some("originVer2"),
       name = "nameVer2",
@@ -445,7 +449,7 @@ trait SpecHelper {
     val verifiedAttributeId3: ClientAttribute = ClientAttribute(
       id = Common.verifiedAttributeId3,
       code = Some("codeVer3"),
-      certified = false,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionVer3",
       origin = Some("originVer3"),
       name = "nameVer3",
@@ -454,7 +458,7 @@ trait SpecHelper {
     val declaredAttributeId1: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId1,
       code = Some("codeDec1"),
-      certified = false,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionDec1",
       origin = Some("originDec1"),
       name = "originDec1",
@@ -463,7 +467,7 @@ trait SpecHelper {
     val declaredAttributeId2: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId2,
       code = Some("codeDec2"),
-      certified = false,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionDec2",
       origin = Some("originDec2"),
       name = "originDec2",
@@ -472,7 +476,7 @@ trait SpecHelper {
     val declaredAttributeId3: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId3,
       code = Some("codeDec3"),
-      certified = false,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionDec3",
       origin = Some("originDec3"),
       name = "originDec3",
@@ -481,7 +485,7 @@ trait SpecHelper {
     val declaredAttributeId4: ClientAttribute = ClientAttribute(
       id = Common.declaredAttributeId3,
       code = Some("codeDec4"),
-      certified = false,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionDec4",
       origin = Some("originDec4"),
       name = "originDec4",
@@ -490,7 +494,7 @@ trait SpecHelper {
     val certifiedAttribute: ClientAttribute = ClientAttribute(
       id = UUID.randomUUID().toString,
       code = Some("codeCer"),
-      certified = true,
+      kind = ClientAttributeKind.CERTIFIED,
       description = "descriptionCer",
       origin = Some("originCer"),
       name = "nameCer",
