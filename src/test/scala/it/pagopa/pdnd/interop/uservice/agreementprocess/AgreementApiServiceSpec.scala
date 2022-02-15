@@ -7,6 +7,7 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
+import it.pagopa.pdnd.interop.uservice.keymanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
@@ -15,6 +16,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.api.impl.{
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.{
   AgreementApi,
   AgreementApiMarshaller,
+  AgreementApiService,
   ConsumerApiMarshaller,
   HealthApi
 }
@@ -23,6 +25,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagem
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
   AttributeManagementService,
+  AuthorizationManagementService,
   CatalogManagementService,
   PartyManagementService
 }
@@ -39,23 +42,25 @@ import it.pagopa.pdnd.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFo
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
-  val consumerApiMarshaller: ConsumerApiMarshaller               = new ConsumerApiMarshallerImpl
-  val agreementApiMarshaller: AgreementApiMarshaller             = new AgreementApiMarshallerImpl
-  val mockHealthApi: HealthApi                                   = mock[HealthApi]
-  val mockAgreementApi: AgreementApi                             = mock[AgreementApi]
-  val mockPartyManagementService: PartyManagementService         = mock[PartyManagementService]
-  val mockAgreementManagementService: AgreementManagementService = mock[AgreementManagementService]
-  val mockCatalogManagementService: CatalogManagementService     = mock[CatalogManagementService]
-  val mockAttributeManagementService: AttributeManagementService = mock[AttributeManagementService]
-  val mockJWTReader: JWTReader                                   = mock[JWTReader]
+  val consumerApiMarshaller: ConsumerApiMarshaller                       = new ConsumerApiMarshallerImpl
+  val agreementApiMarshaller: AgreementApiMarshaller                     = new AgreementApiMarshallerImpl
+  val mockHealthApi: HealthApi                                           = mock[HealthApi]
+  val mockAgreementApi: AgreementApi                                     = mock[AgreementApi]
+  val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
+  val mockAgreementManagementService: AgreementManagementService         = mock[AgreementManagementService]
+  val mockCatalogManagementService: CatalogManagementService             = mock[CatalogManagementService]
+  val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
+  val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
+  val mockJWTReader: JWTReader                                           = mock[JWTReader]
 
   import consumerApiMarshaller._
 
-  val service = new AgreementApiServiceImpl(
+  val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
     mockPartyManagementService,
     mockAttributeManagementService,
+    mockAuthorizationManagementService,
     mockJWTReader
   )(ExecutionContext.global)
 
@@ -135,6 +140,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
         .returns(Future.successful(pendingAgreement))
 
+      (mockAuthorizationManagementService
+        .updateStateOnClients(_: String)(_: UUID, _: AuthorizationManagementDependency.ClientComponentState))
+        .expects(Common.bearerToken, pendingAgreement.id, AuthorizationManagementDependency.ClientComponentState.ACTIVE)
+        .returning(Future.successful(()))
+        .once()
+
       Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent
       }
@@ -213,6 +224,16 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
         .once()
         .returns(Future.successful(suspendedAgreement))
+
+      (mockAuthorizationManagementService
+        .updateStateOnClients(_: String)(_: UUID, _: AuthorizationManagementDependency.ClientComponentState))
+        .expects(
+          Common.bearerToken,
+          suspendedAgreement.id,
+          AuthorizationManagementDependency.ClientComponentState.ACTIVE
+        )
+        .returning(Future.successful(()))
+        .once()
 
       Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent
@@ -441,6 +462,16 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
         .once()
         .returns(Future.successful(activeAgreement))
+
+      (mockAuthorizationManagementService
+        .updateStateOnClients(_: String)(_: UUID, _: AuthorizationManagementDependency.ClientComponentState))
+        .expects(
+          Common.bearerToken,
+          activeAgreement.id,
+          AuthorizationManagementDependency.ClientComponentState.INACTIVE
+        )
+        .returning(Future.successful(()))
+        .once()
 
       Get() ~> service.suspendAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent

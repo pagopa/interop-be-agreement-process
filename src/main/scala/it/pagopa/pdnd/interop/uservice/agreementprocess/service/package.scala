@@ -8,8 +8,10 @@ package object service {
   type PartyManagementInvoker             = partymanagement.client.invoker.ApiInvoker
   type CatalogManagementInvoker           = catalogmanagement.client.invoker.ApiInvoker
   type AttributeRegistryManagementInvoker = attributeregistrymanagement.client.invoker.ApiInvoker
+  type AuthorizationManagementInvoker     = keymanagement.client.invoker.ApiInvoker
 
-  type AgreementManagementApi = agreementmanagement.client.api.AgreementApi
+  type AgreementManagementApi            = agreementmanagement.client.api.AgreementApi
+  type AuthorizationManagementPurposeApi = keymanagement.client.api.PurposeApi
 
   type ClientAttribute = attributeregistrymanagement.client.model.Attribute
 
@@ -21,6 +23,11 @@ package object service {
   object AgreementManagementInvoker {
     def apply()(implicit actorSystem: ActorSystem): AgreementManagementInvoker =
       agreementmanagement.client.invoker.ApiInvoker(agreementmanagement.client.api.EnumsSerializers.all)
+  }
+
+  object AuthorizationManagementInvoker {
+    def apply()(implicit actorSystem: ActorSystem): AuthorizationManagementInvoker =
+      keymanagement.client.invoker.ApiInvoker(keymanagement.client.api.EnumsSerializers.all)
   }
 
   object CatalogManagementInvoker {

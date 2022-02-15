@@ -14,6 +14,7 @@ object ApplicationConfiguration {
   lazy val partyManagementURL: String     = config.getString("agreement-process.services.party-management")
   lazy val attributeRegistryManagementURL: String =
     config.getString("agreement-process.services.attribute-registry-management")
+  lazy val authorizationManagementURL: String = config.getString("agreement-process.services.key-management")
 
   lazy val jwtAudience: Set[String] = config.getStringList("agreement-process.jwt.audience").asScala.toSet
 }
