@@ -138,7 +138,7 @@ object Main
     )
 
     val consumerApi: ConsumerApi = new ConsumerApi(
-      new ConsumerApiServiceImpl(
+      ConsumerApiServiceImpl(
         agreementManagement,
         catalogManagement,
         partyManagement,
