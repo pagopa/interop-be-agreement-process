@@ -10,7 +10,7 @@ import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
-import it.pagopa.pdnd.interop.commons.jwt.{JWTConfiguration, PublicKeysHolder}
+import it.pagopa.pdnd.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, SerializedKey}
 import it.pagopa.pdnd.interop.commons.utils.AkkaUtils.PassThroughAuthenticator
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.TryOps
 import it.pagopa.pdnd.interop.commons.utils.errors.GenericComponentErrors.ValidationRequestError
@@ -35,6 +35,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.impl.{
   AgreementManagementServiceImpl,
   AttributeManagementServiceImpl,
+  AuthorizationManagementServiceImpl,
   CatalogManagementServiceImpl,
   PartyManagementServiceImpl
 }
@@ -81,6 +82,14 @@ trait AttributeRegistryManagementDependency {
     AttributeManagementServiceImpl(attributeRegistryManagementInvoker, attributeApi)
 }
 
+trait AuthorizationManagementDependency {
+  private final val authorizationManagementInvoker: AuthorizationManagementInvoker = AuthorizationManagementInvoker()
+  private final val authorizationPurposeApi: AuthorizationManagementPurposeApi =
+    new AuthorizationManagementPurposeApi(ApplicationConfiguration.authorizationManagementURL)
+  val authorizationManagement: AuthorizationManagementService =
+    AuthorizationManagementServiceImpl(authorizationManagementInvoker, authorizationPurposeApi)
+}
+
 //shuts down the actor system in case of startup errors
 case object StartupErrorShutdown extends CoordinatedShutdown.Reason
 
@@ -90,14 +99,15 @@ object Main
     with AgreementManagementDependency
     with CatalogManagementDependency
     with PartyManagementDependency
-    with AttributeRegistryManagementDependency {
+    with AttributeRegistryManagementDependency
+    with AuthorizationManagementDependency {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  val dependenciesLoaded: Future[(JWTReader)] = for {
+  val dependenciesLoaded: Future[JWTReader] = for {
     keyset <- JWTConfiguration.jwtReader.loadKeyset().toFuture
     jwtValidator = new DefaultJWTReader with PublicKeysHolder {
-      var publicKeyset = keyset
+      var publicKeyset: Map[KID, SerializedKey] = keyset
       override protected val claimsVerifier: DefaultJWTClaimsVerifier[SecurityContext] =
         getClaimsVerifier(audience = ApplicationConfiguration.jwtAudience)
     }
@@ -105,22 +115,22 @@ object Main
 
   dependenciesLoaded.transformWith {
     case Success(jwtValidator) => launchApp(jwtValidator)
-    case Failure(ex) => {
+    case Failure(ex) =>
       logger.error("Startup error", ex)
       logger.error(ex.getStackTrace.mkString("\n"))
       CoordinatedShutdown(classicActorSystem).run(StartupErrorShutdown)
-    }
   }
 
   private def launchApp(jwtReader: JWTReader): Future[Http.ServerBinding] = {
     Kamon.init()
 
     val agreementApi: AgreementApi = new AgreementApi(
-      new AgreementApiServiceImpl(
+      AgreementApiServiceImpl(
         agreementManagement,
         catalogManagement,
         partyManagement,
         attributeRegistryManagement,
+        authorizationManagement,
         jwtReader
       ),
       new AgreementApiMarshallerImpl(),
@@ -128,7 +138,7 @@ object Main
     )
 
     val consumerApi: ConsumerApi = new ConsumerApi(
-      new ConsumerApiServiceImpl(
+      ConsumerApiServiceImpl(
         agreementManagement,
         catalogManagement,
         partyManagement,

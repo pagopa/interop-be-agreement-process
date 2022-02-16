@@ -86,6 +86,8 @@ spec:
               value: "{{partyManagementUrl}}"
             - name: ATTRIBUTE_REGISTRY_MANAGEMENT_URL
               value: "{{attributeRegistryManagementUrl}}"
+            - name: AUTHORIZATION_MANAGEMENT_URL
+              value: "{{authorizationManagementUrl}}"
             - name: WELL_KNOWN_URL
               value: "{{wellKnownURL}}"
             - name: MAIN_AUDIENCE

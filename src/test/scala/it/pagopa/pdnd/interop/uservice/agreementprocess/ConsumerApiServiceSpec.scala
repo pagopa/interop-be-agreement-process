@@ -58,7 +58,7 @@ class ConsumerApiServiceSpec
   override def beforeAll(): Unit = {
 
     val consumerApi = new ConsumerApi(
-      new ConsumerApiServiceImpl(
+      ConsumerApiServiceImpl(
         agreementManagementService = mockAgreementManagementService,
         partyManagementService = mockPartyManagementService,
         catalogManagementService = mockCatalogManagementService,

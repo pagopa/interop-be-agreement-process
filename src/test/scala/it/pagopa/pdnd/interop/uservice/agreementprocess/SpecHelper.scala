@@ -35,14 +35,7 @@ trait SpecHelper {
   final lazy val emptyData: Source[ByteString, Any] = Source.empty
   final val authorization: Seq[Authorization]       = Seq(headers.Authorization(OAuth2BearerToken(Common.bearerToken)))
 
-  System.setProperty("CATALOG_MANAGEMENT_URL", "http://localhost/")
-  System.setProperty("AGREEMENT_MANAGEMENT_URL", "http://localhost/")
-  System.setProperty("PARTY_MANAGEMENT_URL", "http://localhost/")
-  System.setProperty("ATTRIBUTE_REGISTRY_MANAGEMENT_URL", "http://localhost/")
-  System.setProperty("WELL_KNOWN_URL", "http://localhost/.well-known/jwks.json")
-  System.setProperty("MAIN_AUDIENCE", "audience")
-
-  def mockSubject(uuid: String) = Success(new JWTClaimsSet.Builder().subject(uuid).build())
+  def mockSubject(uuid: String): Success[JWTClaimsSet] = Success(new JWTClaimsSet.Builder().subject(uuid).build())
 
   def request(data: Source[ByteString, Any], path: String, verb: HttpMethod)(implicit
     system: ClassicActorSystemProvider

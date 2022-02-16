@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.pdnd.interop.commons.jwt.service.JWTReader
 import it.pagopa.pdnd.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.pdnd.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
@@ -15,6 +15,7 @@ import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{
   VerifiedAttributeSeed
 }
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.{model => AgreementManagementDependency}
+import it.pagopa.pdnd.interop.uservice.keymanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.api.AgreementApiService
 import it.pagopa.pdnd.interop.uservice.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model._
@@ -23,6 +24,7 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.CatalogManagemen
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AgreementManagementService,
   AttributeManagementService,
+  AuthorizationManagementService,
   CatalogManagementService,
   PartyManagementService
 }
@@ -36,15 +38,17 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class AgreementApiServiceImpl(
+final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
   partyManagementService: PartyManagementService,
   attributeManagementService: AttributeManagementService,
+  authorizationManagementService: AuthorizationManagementService,
   jwtReader: JWTReader
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
-  val logger = Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
+  val logger: LoggerTakingImplicit[ContextFieldsToLog] =
+    Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
 
   override def activateAgreement(agreementId: String, partyId: String)(implicit
     contexts: Seq[(String, String)],
@@ -68,6 +72,10 @@ class AgreementApiServiceImpl(
       )
       changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
       _                  <- agreementManagementService.activateById(bearerToken)(agreementId, changeStateDetails)
+      _ <- authorizationManagementService.updateStateOnClients(bearerToken)(
+        agreementId = agreement.id,
+        state = AuthorizationManagementDependency.ClientComponentState.ACTIVE
+      )
     } yield ()
 
     onComplete(result) {
@@ -95,6 +103,10 @@ class AgreementApiServiceImpl(
       _                  <- AgreementManagementService.isActive(agreement)
       changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
       _                  <- agreementManagementService.suspendById(bearerToken)(agreementId, changeStateDetails)
+      _ <- authorizationManagementService.updateStateOnClients(bearerToken)(
+        agreementId = agreement.id,
+        state = AuthorizationManagementDependency.ClientComponentState.INACTIVE
+      )
     } yield ()
 
     onComplete(result) {

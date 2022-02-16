@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class ConsumerApiServiceImpl(
+final case class ConsumerApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
   partyManagementService: PartyManagementService,

@@ -5,7 +5,6 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import it.pagopa.pdnd.interop.uservice.agreementmanagement.client.model.{VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.pdnd.interop.uservice.agreementprocess.SpecHelper
 import it.pagopa.pdnd.interop.uservice.agreementprocess.model.AgreementPayload
-import it.pagopa.pdnd.interop.uservice.agreementprocess.server.impl.AgreementManagementDependency
 import it.pagopa.pdnd.interop.uservice.agreementprocess.service.AgreementManagementService
 import it.pagopa.pdnd.interop.uservice.catalogmanagement.client.model._
 import org.scalatest.concurrent.ScalaFutures
@@ -20,8 +19,7 @@ class AgreementManagementServiceImplSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with SpecHelper
-    with AgreementManagementDependency {
+    with SpecHelper {
 
   implicit val testSystem: ActorSystem                    = system.classicSystem
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
