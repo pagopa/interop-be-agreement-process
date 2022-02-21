@@ -26,7 +26,8 @@ attributeRegistryManagementUrl="http://pdnd-interop-uservice-attribute-registry-
 authorizationManagementUrl="http://pdnd-interop-uservice-key-management.pdnd-interop-uservice-key-management.svc.cluster.local:8088/pdnd-interop-uservice-key-management/"$keyManagementVersion
 
 name=$(cat $SCRIPT_PATH/../build.sbt | grep "name :=" | awk -F:= '{ print $2 }' | sed 's/\"//' | sed 's/\",//' | sed 's/ //' | tr '[:upper:]' '[:lower:]' | grep -v client)
-
+# Temporary solution
+imageName=interop-be-agreement-process
 #getting version from sbt
 cd $SCRIPT_PATH/..
 version=$(sbt -Dsbt.log.noformat=true 'inspect actual version' | grep "Setting: java.lang.String" | cut -d '=' -f2 | tr -d ' ')

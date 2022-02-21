@@ -107,9 +107,11 @@ lazy val root = (project in file("."))
       if (buildVersion == "latest")
         buildVersion
       else
-        s"v$buildVersion"
+        s"$buildVersion"
     }".toLowerCase,
-    Docker / packageName := s"services/${name.value}",
+    // Temporary solution
+//    Docker / packageName := s"${name.value}",
+    Docker / packageName := s"interop-be-agreement-process",
     Docker / dockerExposedPorts := Seq(8080),
     scalafmtOnCompile := true
   )

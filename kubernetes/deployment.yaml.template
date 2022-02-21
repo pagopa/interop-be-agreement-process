@@ -6,7 +6,7 @@ metadata:
   name: {{name}}
   namespace: {{name}}
 spec:
-  replicas: 1
+  replicas: {{replicas}}
   selector:
     matchLabels:
       app: {{name}}
@@ -25,7 +25,7 @@ spec:
             defaultMode: 420
       containers:
         - name: {{name}}
-          image: {{repository}}/services/{{name}}:{{version}}
+          image: {{repository}}/{{imageName}}:{{version}}
           command: ["bin/{{name}}"]
           args: ["-Dconfig.file=etc/application.conf", "-Dconfig.override_with_env_vars=true"]
           imagePullPolicy: Always
@@ -57,21 +57,6 @@ spec:
             runAsUser: 1001
             allowPrivilegeEscalation: false
           env:
-            - name: CASSANDRA_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: cassandra
-                  key: CASSANDRA_HOST
-            - name: CASSANDRA_USER
-              valueFrom:
-                secretKeyRef:
-                  name: cassandra
-                  key: CASSANDRA_USER
-            - name: CASSANDRA_PWD
-              valueFrom:
-                secretKeyRef:
-                  name: cassandra
-                  key: CASSANDRA_PWD
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
