@@ -57,21 +57,6 @@ spec:
             runAsUser: 1001
             allowPrivilegeEscalation: false
           env:
-            - name: CASSANDRA_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: cassandra
-                  key: CASSANDRA_HOST
-            - name: CASSANDRA_USER
-              valueFrom:
-                secretKeyRef:
-                  name: cassandra
-                  key: CASSANDRA_USER
-            - name: CASSANDRA_PWD
-              valueFrom:
-                secretKeyRef:
-                  name: cassandra
-                  key: CASSANDRA_PWD
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
