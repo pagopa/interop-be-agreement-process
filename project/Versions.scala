@@ -21,7 +21,7 @@ object Versions {
   lazy val slickVersion                = "3.3.3"
 }
 
-object PDNDVersions {
+object PagaopaVersion {
   lazy val agreementManagementVersion         = "0.1.1-SNAPSHOT"
   lazy val attributeRegistryManagementVersion = "0.1.1-SNAPSHOT"
   lazy val authorizationManagementVersion     = "0.1.1-SNAPSHOT"
