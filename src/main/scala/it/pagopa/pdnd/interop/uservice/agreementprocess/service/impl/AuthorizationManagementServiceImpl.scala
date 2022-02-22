@@ -5,8 +5,8 @@ import it.pagopa.pdnd.interop.uservice.agreementprocess.service.{
   AuthorizationManagementService,
   AuthorizationManagementPurposeApi
 }
-import it.pagopa.pdnd.interop.uservice.keymanagement.client.invoker.{ApiRequest, BearerToken}
-import it.pagopa.pdnd.interop.uservice.keymanagement.client.model.{ClientAgreementDetailsUpdate, ClientComponentState}
+import it.pagopa.interop.authorizationmanagement.client.invoker.{ApiRequest, BearerToken}
+import it.pagopa.interop.authorizationmanagement.client.model.{ClientAgreementDetailsUpdate, ClientComponentState}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID

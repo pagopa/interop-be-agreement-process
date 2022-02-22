@@ -2,16 +2,17 @@ package it.pagopa.pdnd.interop.uservice.agreementprocess
 
 import akka.actor.ActorSystem
 import it.pagopa.pdnd.interop.uservice._
+import it.pagopa.interop._
 
 package object service {
   type AgreementManagementInvoker         = agreementmanagement.client.invoker.ApiInvoker
   type PartyManagementInvoker             = partymanagement.client.invoker.ApiInvoker
   type CatalogManagementInvoker           = catalogmanagement.client.invoker.ApiInvoker
   type AttributeRegistryManagementInvoker = attributeregistrymanagement.client.invoker.ApiInvoker
-  type AuthorizationManagementInvoker     = keymanagement.client.invoker.ApiInvoker
+  type AuthorizationManagementInvoker     = authorizationmanagement.client.invoker.ApiInvoker
 
   type AgreementManagementApi            = agreementmanagement.client.api.AgreementApi
-  type AuthorizationManagementPurposeApi = keymanagement.client.api.PurposeApi
+  type AuthorizationManagementPurposeApi = authorizationmanagement.client.api.PurposeApi
 
   type ClientAttribute = attributeregistrymanagement.client.model.Attribute
 
@@ -27,7 +28,7 @@ package object service {
 
   object AuthorizationManagementInvoker {
     def apply()(implicit actorSystem: ActorSystem): AuthorizationManagementInvoker =
-      keymanagement.client.invoker.ApiInvoker(keymanagement.client.api.EnumsSerializers.all)
+      authorizationmanagement.client.invoker.ApiInvoker(authorizationmanagement.client.api.EnumsSerializers.all)
   }
 
   object CatalogManagementInvoker {

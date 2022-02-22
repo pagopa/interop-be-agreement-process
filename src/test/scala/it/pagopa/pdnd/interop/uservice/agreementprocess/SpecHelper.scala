@@ -73,6 +73,8 @@ trait SpecHelper {
     val producerId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9212")
     val descriptorId: UUID = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9213")
 
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
+
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
@@ -99,7 +101,9 @@ trait SpecHelper {
           verificationDate = None,
           validityTimespan = None
         )
-      )
+      ),
+      createdAt = createdAt,
+      updatedAt = None
     )
 
     val declaredAttributes: Seq[Attribute] = Seq(
@@ -129,6 +133,8 @@ trait SpecHelper {
     val producerId: UUID   = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9212")
     val descriptorId: UUID = UUID.fromString("27f8dce0-0a5b-476b-9fdd-a7a658eb9213")
 
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
+
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
@@ -149,7 +155,9 @@ trait SpecHelper {
           verificationDate = None,
           validityTimespan = None
         )
-      )
+      ),
+      createdAt = createdAt,
+      updatedAt = None
     )
 
     val eService: EService = EService(
@@ -165,11 +173,11 @@ trait SpecHelper {
   }
 
   object TestDataThree {
-    val id: UUID           = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID   = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID   = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9212")
-    val descriptorId: UUID = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9213")
-
+    val id: UUID                  = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID          = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID          = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID        = UUID.fromString("37f8dce0-0a5b-476b-9fdd-a7a658eb9213")
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
@@ -196,7 +204,9 @@ trait SpecHelper {
           verificationDate = None,
           validityTimespan = None
         )
-      )
+      ),
+      createdAt = createdAt,
+      updatedAt = None
     )
 
     val eService: EService = EService(
@@ -211,11 +221,11 @@ trait SpecHelper {
   }
 
   object TestDataFour {
-    val id: UUID           = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID   = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID   = UUID.fromString("4f8dce0-0a5b-476b-9fdd-a7a658eb9212")
-    val descriptorId: UUID = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9213")
-
+    val id: UUID                  = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID          = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID          = UUID.fromString("4f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID        = UUID.fromString("47f8dce0-0a5b-476b-9fdd-a7a658eb9213")
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
@@ -242,7 +252,9 @@ trait SpecHelper {
           verificationDate = None,
           validityTimespan = None
         )
-      )
+      ),
+      createdAt = createdAt,
+      updatedAt = None
     )
 
     val eService: EService = EService(
@@ -257,11 +269,11 @@ trait SpecHelper {
   }
 
   object TestDataFive {
-    val id: UUID           = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID   = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID   = UUID.fromString("5f8dce0-0a5b-476b-9fdd-a7a658eb9212")
-    val descriptorId: UUID = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9213")
-
+    val id: UUID                  = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID          = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID          = UUID.fromString("5f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID        = UUID.fromString("57f8dce0-0a5b-476b-9fdd-a7a658eb9213")
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
@@ -288,16 +300,18 @@ trait SpecHelper {
           verificationDate = None,
           validityTimespan = None
         )
-      )
+      ),
+      createdAt = createdAt,
+      updatedAt = None
     )
   }
 
   object TestDataSix {
-    val id: UUID           = UUID.fromString("67f8dce0-0a5b-476b-9fdd-a7a658eb9210")
-    val eserviceId: UUID   = UUID.fromString("67f8dce0-0a5b-476b-9fdd-a7a658eb9211")
-    val producerId: UUID   = UUID.fromString("6f8dce0-0a5b-476b-9fdd-a7a658eb9212")
-    val descriptorId: UUID = UUID.fromString("67f8dce0-0a5b-476b-9fdd-a7a658eb9213")
-
+    val id: UUID                  = UUID.fromString("67f8dce0-0a5b-476b-9fdd-a7a658eb9210")
+    val eserviceId: UUID          = UUID.fromString("67f8dce0-0a5b-476b-9fdd-a7a658eb9211")
+    val producerId: UUID          = UUID.fromString("6f8dce0-0a5b-476b-9fdd-a7a658eb9212")
+    val descriptorId: UUID        = UUID.fromString("67f8dce0-0a5b-476b-9fdd-a7a658eb9213")
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
     val agreement: ClientAgreement = ClientAgreement(
       id = id,
       eserviceId = eserviceId,
@@ -305,24 +319,28 @@ trait SpecHelper {
       producerId = producerId,
       consumerId = UUID.fromString(Common.consumerId),
       state = AgreementManagementDependency.AgreementState.SUSPENDED,
-      verifiedAttributes = Seq.empty
+      verifiedAttributes = Seq.empty,
+      createdAt = createdAt,
+      updatedAt = None
     )
   }
 
   object TestDataSeven {
-    val agreementId: UUID  = UUID.randomUUID()
-    val eserviceId: UUID   = UUID.randomUUID()
-    val descriptorId: UUID = UUID.randomUUID()
-    val producerId: UUID   = UUID.randomUUID()
-    val consumerId: UUID   = UUID.randomUUID()
-
+    val agreementId: UUID         = UUID.randomUUID()
+    val eserviceId: UUID          = UUID.randomUUID()
+    val descriptorId: UUID        = UUID.randomUUID()
+    val producerId: UUID          = UUID.randomUUID()
+    val consumerId: UUID          = UUID.randomUUID()
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
     val consumer = Organization(
       institutionId = "institutionIdC",
       description = "Consumer",
       digitalAddress = "digitalAddress",
       id = consumerId,
       attributes = Seq.empty,
-      taxCode = "code"
+      taxCode = "code",
+      address = "address",
+      zipCode = "zipCode"
     )
 
     val producer = Organization(
@@ -331,7 +349,9 @@ trait SpecHelper {
       digitalAddress = "digitalAddress",
       id = producerId,
       attributes = Seq.empty,
-      taxCode = "code"
+      taxCode = "code",
+      address = "address",
+      zipCode = "zipCode"
     )
 
     val eservice: EService = EService(
@@ -389,7 +409,9 @@ trait SpecHelper {
           verificationDate = None,
           validityTimespan = None
         )
-      )
+      ),
+      createdAt = createdAt,
+      updatedAt = None
     )
 
   }

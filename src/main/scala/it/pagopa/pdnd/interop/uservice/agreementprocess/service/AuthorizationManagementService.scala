@@ -1,6 +1,6 @@
 package it.pagopa.pdnd.interop.uservice.agreementprocess.service
 
-import it.pagopa.pdnd.interop.uservice.keymanagement.client.model.ClientComponentState
+import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 
 import java.util.UUID
 import scala.concurrent.Future
