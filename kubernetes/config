@@ -19,16 +19,14 @@ wellKnownURL=$WELL_KNOWN_URL
 
 mainAudience=$MAIN_AUDIENCE
 
-catalogManagementUrl="http://pdnd-interop-uservice-catalog-management.pdnd-interop-uservice-catalog-management.svc.cluster.local:8088/pdnd-interop-uservice-catalog-management/"$catalogManagementVersion
-agreementManagementUrl="http://pdnd-interop-uservice-agreement-management.pdnd-interop-uservice-agreement-management.svc.cluster.local:8088/pdnd-interop-uservice-agreement-management/"$agreementManagementVersion
-partyManagementUrl="http://pdnd-interop-uservice-party-management.pdnd-interop-uservice-party-management.svc.cluster.local:8088/pdnd-interop-uservice-party-management/"$partyManagementVersion
-attributeRegistryManagementUrl="http://pdnd-interop-uservice-attribute-registry-management.pdnd-interop-uservice-attribute-registry-management.svc.cluster.local:8088/pdnd-interop-uservice-attribute-registry-management/"$attributeRegistryManagementVersion
-authorizationManagementUrl="http://pdnd-interop-uservice-key-management.pdnd-interop-uservice-key-management.svc.cluster.local:8088/pdnd-interop-uservice-key-management/"$keyManagementVersion
+catalogManagementUrl="http://interop-be-catalog-management.interop-be-catalog-management.svc.cluster.local:8088/catalog-management/"$catalogManagementVersion
+agreementManagementUrl="http://interop-be-agreement-management.interop-be-agreement-management.svc.cluster.local:8088/agreement-management/"$agreementManagementVersion
+partyManagementUrl="http://interop-be-party-management.interop-be-party-management.svc.cluster.local:8088/party-management/"$partyManagementVersion
+attributeRegistryManagementUrl="http://interop-be-attribute-registry-management.interop-be-attribute-registry-management.svc.cluster.local:8088/attribute-registry-management/"$attributeRegistryManagementVersion
+authorizationManagementUrl="http://interop-be-key-management.interop-be-key-management.svc.cluster.local:8088/key-management/"$keyManagementVersion
 
 name=$(cat $SCRIPT_PATH/../build.sbt | grep "name :=" | awk -F:= '{ print $2 }' | sed 's/\"//' | sed 's/\",//' | sed 's/ //' | tr '[:upper:]' '[:lower:]' | grep -v client)
-# Temporary solution
-imageName=interop-be-agreement-process
-#getting version from sbt
+
 cd $SCRIPT_PATH/..
 version=$(sbt -Dsbt.log.noformat=true 'inspect actual version' | grep "Setting: java.lang.String" | cut -d '=' -f2 | tr -d ' ')
 cd $SCRIPT_PATH
