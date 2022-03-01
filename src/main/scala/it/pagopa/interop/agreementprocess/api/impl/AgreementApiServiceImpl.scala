@@ -77,7 +77,7 @@ final case class AgreementApiServiceImpl(
     onComplete(result) {
       case Success(_) => activateAgreement204
       case Failure(ex) =>
-        logger.error(s"Error while activating agreement $agreementId", ex)
+        logger.error(s"Error while activating agreement $agreementId", ex.getMessage())
         activateAgreement400(problemOf(StatusCodes.BadRequest, ActivateAgreementError(agreementId)))
     }
   }
