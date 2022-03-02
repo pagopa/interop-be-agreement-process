@@ -112,7 +112,7 @@ object Main
   dependenciesLoaded.transformWith {
     case Success(jwtValidator) => launchApp(jwtValidator)
     case Failure(ex) =>
-      logger.error("Startup error", ex)
+      logger.error(s"Startup error - ${ex.getMessage}")
       logger.error(ex.getStackTrace.mkString("\n"))
       CoordinatedShutdown(classicActorSystem).run(StartupErrorShutdown)
   }
