@@ -75,7 +75,7 @@ final case class ConsumerApiServiceImpl(
     onComplete(result) {
       case Success(res) => getAttributesByConsumerId200(res)
       case Failure(ex) =>
-        logger.error("Error while getting consumer {} attributes", consumerId, ex)
+        logger.error(s"Error while getting consumer $consumerId attributes - ${ex.getMessage}")
         val errorResponse: Problem = {
           problemOf(StatusCodes.BadRequest, RetrieveAttributesError(consumerId))
         }
