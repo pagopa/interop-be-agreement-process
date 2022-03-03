@@ -93,7 +93,6 @@ final case class AgreementApiServiceImpl(
     val result = for {
       bearerToken        <- validateBearer(contexts, jwtReader)
       agreement          <- agreementManagementService.getAgreementById(bearerToken)(agreementId)
-      _                  <- AgreementManagementService.isActive(agreement)
       changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
       _                  <- agreementManagementService.suspendById(bearerToken)(agreementId, changeStateDetails)
       _ <- authorizationManagementService.updateStateOnClients(bearerToken)(

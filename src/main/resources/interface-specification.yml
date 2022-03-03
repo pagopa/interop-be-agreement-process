@@ -69,7 +69,7 @@ paths:
         in: path
         required: true
         description: identifier of the party doing the operation
-    patch:
+    post:
       summary: Agreement Activation
       operationId: activateAgreement
       responses:
@@ -100,7 +100,7 @@ paths:
         in: path
         required: true
         description: identifier of the party doing the operation
-    patch:
+    post:
       summary: Suspend Agreement
       operationId: suspendAgreement
       responses:
@@ -272,7 +272,7 @@ paths:
         in: path
         description: verified attribute identifier
         required: true
-    patch:
+    post:
       summary: Verify agreement attribute
       operationId: verifyAgreementAttribute
       responses:
