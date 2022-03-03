@@ -4,33 +4,22 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
-import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
   ConsumerApiMarshallerImpl
 }
-import it.pagopa.interop.agreementprocess.api.{
-  AgreementApi,
-  AgreementApiMarshaller,
-  AgreementApiService,
-  ConsumerApiMarshaller,
-  HealthApi
-}
+import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
-import it.pagopa.interop.agreementprocess.service.{
-  AgreementManagementService,
-  AttributeManagementService,
-  AuthorizationManagementService,
-  CatalogManagementService,
-  PartyManagementService
-}
+import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
+import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -38,7 +27,6 @@ import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
@@ -92,14 +80,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(pendingAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -108,7 +96,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           Some(TestDataOne.producerId.toString),
           Some(pendingAgreement.consumerId.toString),
           Some(eService.id.toString),
@@ -131,9 +119,9 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: String)(_: String, _: StateChangeDetails))
+        .activateById(_: Map[String, String])(_: String, _: StateChangeDetails))
         .expects(
-          Common.bearerToken,
+          *,
           TestDataOne.id.toString,
           StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
         )
@@ -177,14 +165,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(suspendedAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -193,7 +181,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           Some(TestDataOne.producerId.toString),
           Some(suspendedAgreement.consumerId.toString),
           Some(eService.id.toString),
@@ -216,9 +204,9 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: String)(_: String, _: StateChangeDetails))
+        .activateById(_: Map[String, String])(_: String, _: StateChangeDetails))
         .expects(
-          Common.bearerToken,
+          *,
           TestDataOne.id.toString,
           StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
         )
@@ -278,14 +266,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -294,7 +282,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
@@ -335,14 +323,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -351,7 +339,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
@@ -392,14 +380,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -408,7 +396,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
@@ -448,18 +436,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(activeAgreement))
 
       (mockAgreementManagementService
-        .suspendById(_: String)(_: String, _: StateChangeDetails))
-        .expects(
-          Common.bearerToken,
-          TestDataOne.id.toString,
-          StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER))
-        )
+        .suspendById(_: Map[String, String])(_: String, _: StateChangeDetails))
+        .expects(*, TestDataOne.id.toString, StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER)))
         .once()
         .returns(Future.successful(activeAgreement))
 
@@ -498,8 +482,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataOne.id.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
 
@@ -519,8 +503,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: String)(_: String))
-        .expects(Common.bearerToken, TestDataSeven.agreementId.toString)
+        .getAgreementById(_: Map[String, String])(_: String))
+        .expects(*, TestDataSeven.agreementId.toString)
         .once()
         .returns(Future.successful(TestDataSeven.agreement))
 

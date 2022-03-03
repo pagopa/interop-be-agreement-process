@@ -10,15 +10,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait AgreementManagementService {
 
-  def createAgreement(bearerToken: String)(
+  def createAgreement(headers: Map[String, String])(
     producerId: UUID,
     agreementPayload: AgreementProcess.AgreementPayload,
     verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
   ): Future[Agreement]
 
-  def getAgreementById(bearerToken: String)(agreementId: String): Future[Agreement]
+  def getAgreementById(headers: Map[String, String])(agreementId: String): Future[Agreement]
 
-  def getAgreements(bearerToken: String)(
+  def getAgreements(headers: Map[String, String])(
     producerId: Option[String] = None,
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
@@ -26,14 +26,18 @@ trait AgreementManagementService {
     state: Option[AgreementState] = None
   ): Future[Seq[Agreement]]
 
-  def activateById(bearerToken: String)(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
-  def suspendById(bearerToken: String)(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
+  def activateById(
+    headers: Map[String, String]
+  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
+  def suspendById(
+    headers: Map[String, String]
+  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
 
   def markVerifiedAttribute(
-    bearerToken: String
+    headers: Map[String, String]
   )(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed): Future[Agreement]
 
-  def upgradeById(bearerToken: String)(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement]
+  def upgradeById(headers: Map[String, String])(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement]
 }
 
 object AgreementManagementService {

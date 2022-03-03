@@ -7,16 +7,16 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.impl.{ConsumerApiMarshallerImpl, ConsumerApiServiceImpl}
-import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
-import it.pagopa.interop.commons.utils.AkkaUtils.Authenticator
 import it.pagopa.interop.agreementprocess.api.{AgreementApi, ConsumerApi, ConsumerApiMarshaller, HealthApi}
 import it.pagopa.interop.agreementprocess.common.system.executionContext
 import it.pagopa.interop.agreementprocess.model.{Attribute, Attributes}
 import it.pagopa.interop.agreementprocess.server.Controller
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.utils.AkkaUtils.Authenticator
+import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
@@ -93,7 +93,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -102,7 +102,7 @@ class ConsumerApiServiceSpec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           None,
           Some(Common.consumerId),
           None,
@@ -201,7 +201,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -210,7 +210,7 @@ class ConsumerApiServiceSpec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           None,
           Some(Common.consumerId),
           None,
@@ -290,7 +290,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Map[String, String])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -299,7 +299,7 @@ class ConsumerApiServiceSpec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           None,
           Some(Common.consumerId),
           None,

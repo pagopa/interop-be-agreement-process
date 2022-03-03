@@ -43,5 +43,8 @@ object AgreementProcessErrors {
       extends ComponentError("0011", s"Descriptor $descriptorId not found in eservice $eserviceId")
 
   final case class RetrieveAttributesError(consumerId: String)
-      extends ComponentError("00012", s"Error while retrieving attributes for consumer $consumerId")
+      extends ComponentError("0012", s"Error while retrieving attributes for consumer $consumerId")
+
+  final case object BearerNotFound
+      extends ComponentError("0013", "No authorization bearer has been provided for this request")
 }

@@ -11,6 +11,7 @@ import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLo
 import it.pagopa.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.ConsumerApiService
+import it.pagopa.interop.agreementprocess.common.system.gettingHeaders
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.RetrieveAttributesError
 import it.pagopa.interop.agreementprocess.model.{Attributes, Problem}
 import it.pagopa.interop.agreementprocess.service.{
@@ -47,7 +48,8 @@ final case class ConsumerApiServiceImpl(
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
       bearerToken <- validateBearer(contexts, jwtReader)
-      agreements <- agreementManagementService.getAgreements(bearerToken)(
+      headers = gettingHeaders(contexts)
+      agreements <- agreementManagementService.getAgreements(headers)(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
