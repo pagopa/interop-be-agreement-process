@@ -69,7 +69,8 @@ final case class AgreementApiServiceImpl(
       changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
       _                  <- agreementManagementService.activateById(bearerToken)(agreementId, changeStateDetails)
       _ <- authorizationManagementService.updateStateOnClients(bearerToken)(
-        agreementId = agreement.id,
+        eServiceId = agreement.eserviceId,
+        consumerId = agreement.consumerId,
         state = AuthorizationManagementDependency.ClientComponentState.ACTIVE
       )
     } yield ()
@@ -96,7 +97,8 @@ final case class AgreementApiServiceImpl(
       changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
       _                  <- agreementManagementService.suspendById(bearerToken)(agreementId, changeStateDetails)
       _ <- authorizationManagementService.updateStateOnClients(bearerToken)(
-        agreementId = agreement.id,
+        eServiceId = agreement.eserviceId,
+        consumerId = agreement.consumerId,
         state = AuthorizationManagementDependency.ClientComponentState.INACTIVE
       )
     } yield ()
