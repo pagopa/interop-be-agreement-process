@@ -22,12 +22,14 @@ final case class AuthorizationManagementServiceImpl(
 
   override def updateStateOnClients(
     bearerToken: String
-  )(agreementId: UUID, state: ClientComponentState): Future[Unit] = {
+  )(eServiceId: UUID, consumerId: UUID, state: ClientComponentState): Future[Unit] = {
     val payload: ClientAgreementDetailsUpdate = ClientAgreementDetailsUpdate(state = state)
     val request: ApiRequest[Unit] =
-      api.updateAgreementState(agreementId = agreementId, clientAgreementDetailsUpdate = payload)(
-        BearerToken(bearerToken)
-      )
+      api.updateAgreementState(
+        eserviceId = eServiceId,
+        consumerId = consumerId,
+        clientAgreementDetailsUpdate = payload
+      )(BearerToken(bearerToken))
     invoker
       .invoke(request, s"Update Agreement state on all clients")
       .recoverWith { case _ =>

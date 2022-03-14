@@ -129,8 +129,13 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(pendingAgreement))
 
       (mockAuthorizationManagementService
-        .updateStateOnClients(_: String)(_: UUID, _: AuthorizationManagementDependency.ClientComponentState))
-        .expects(Common.bearerToken, pendingAgreement.id, AuthorizationManagementDependency.ClientComponentState.ACTIVE)
+        .updateStateOnClients(_: String)(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState))
+        .expects(
+          Common.bearerToken,
+          pendingAgreement.eserviceId,
+          pendingAgreement.consumerId,
+          AuthorizationManagementDependency.ClientComponentState.ACTIVE
+        )
         .returning(Future.successful(()))
         .once()
 
@@ -214,10 +219,11 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(suspendedAgreement))
 
       (mockAuthorizationManagementService
-        .updateStateOnClients(_: String)(_: UUID, _: AuthorizationManagementDependency.ClientComponentState))
+        .updateStateOnClients(_: String)(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState))
         .expects(
           Common.bearerToken,
-          suspendedAgreement.id,
+          suspendedAgreement.eserviceId,
+          suspendedAgreement.consumerId,
           AuthorizationManagementDependency.ClientComponentState.ACTIVE
         )
         .returning(Future.successful(()))
@@ -448,10 +454,11 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(activeAgreement))
 
       (mockAuthorizationManagementService
-        .updateStateOnClients(_: String)(_: UUID, _: AuthorizationManagementDependency.ClientComponentState))
+        .updateStateOnClients(_: String)(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState))
         .expects(
           Common.bearerToken,
-          activeAgreement.id,
+          activeAgreement.eserviceId,
+          activeAgreement.consumerId,
           AuthorizationManagementDependency.ClientComponentState.INACTIVE
         )
         .returning(Future.successful(()))

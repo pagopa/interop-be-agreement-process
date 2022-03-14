@@ -83,14 +83,6 @@ object AgreementManagementService {
     }
   }
 
-  def isActive(agreement: Agreement): Future[Agreement] =
-    agreement.state match {
-      case AgreementState.ACTIVE =>
-        Future.successful(agreement)
-      case _ =>
-        Future.failed(new RuntimeException(s"Agreement ${agreement.id} state is ${agreement.state}"))
-    }
-
   def isPending(agreement: Agreement): Future[Agreement] =
     agreement.state match {
       case AgreementState.PENDING =>

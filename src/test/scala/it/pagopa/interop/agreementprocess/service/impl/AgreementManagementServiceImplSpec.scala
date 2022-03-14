@@ -884,21 +884,6 @@ class AgreementManagementServiceImplSpec
 
   }
 
-  "agreement status active check" should {
-    "work if agreement is in active status" in {
-
-      val result = AgreementManagementService.isActive(TestDataOne.agreement)
-      result.futureValue shouldBe TestDataOne.agreement
-    }
-
-    "not work if agreement is not in active status" in {
-
-      val result = AgreementManagementService.isActive(TestDataFive.agreement)
-      result.failed.futureValue shouldBe a[RuntimeException]
-    }
-
-  }
-
   "agreement status pending check" should {
     "work if agreement is in pending status" in {
 
