@@ -381,7 +381,8 @@ trait SpecHelper {
           interface = None,
           docs = Seq.empty,
           state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
-          dailyCallsMaxNumber = 1000
+          dailyCallsTotal = 1000,
+          dailyCallsPerConsumer = 1000
         )
       )
     )
