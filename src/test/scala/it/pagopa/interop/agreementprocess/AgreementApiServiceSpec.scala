@@ -81,14 +81,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(pendingAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -120,7 +120,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: Map[String, String])(_: String, _: StateChangeDetails))
+        .activateById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
         .expects(
           *,
           TestDataOne.id.toString,
@@ -172,14 +172,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(suspendedAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -211,7 +211,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: Map[String, String])(_: String, _: StateChangeDetails))
+        .activateById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
         .expects(
           *,
           TestDataOne.id.toString,
@@ -275,14 +275,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -333,14 +333,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -391,14 +391,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -447,13 +447,13 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(activeAgreement))
 
       (mockAgreementManagementService
-        .suspendById(_: Map[String, String])(_: String, _: StateChangeDetails))
+        .suspendById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
         .expects(*, TestDataOne.id.toString, StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER)))
         .once()
         .returns(Future.successful(activeAgreement))
@@ -494,7 +494,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(currentAgreement))
@@ -515,7 +515,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Map[String, String])(_: String))
+        .getAgreementById(_: Seq[(String, String)])(_: String))
         .expects(*, TestDataSeven.agreementId.toString)
         .once()
         .returns(Future.successful(TestDataSeven.agreement))

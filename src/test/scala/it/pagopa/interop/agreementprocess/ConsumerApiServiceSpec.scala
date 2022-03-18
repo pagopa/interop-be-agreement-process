@@ -93,7 +93,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -201,7 +201,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -290,7 +290,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Map[String, String])(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],

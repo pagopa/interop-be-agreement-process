@@ -25,10 +25,6 @@ package object system {
 
   implicit val scheduler: Scheduler = actorSystem.scheduler
 
-  // TODO this may contain invalid header names, e.g.: callerIP and bearer
-  def gettingHeaders(contexts: Seq[(String, String)]): Map[String, String] =
-    contexts.toMap
-
   def getBearerHeader(headers: Map[String, String]): Either[ComponentError, String] =
     headers.get(BEARER).toRight(BearerNotFound)
 }

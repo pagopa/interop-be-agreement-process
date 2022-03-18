@@ -6,12 +6,8 @@ import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.Logger
-import it.pagopa.interop.commons.jwt.service.JWTReader
-import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
-import it.pagopa.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.ConsumerApiService
-import it.pagopa.interop.agreementprocess.common.system.gettingHeaders
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.RetrieveAttributesError
 import it.pagopa.interop.agreementprocess.model.{Attributes, Problem}
 import it.pagopa.interop.agreementprocess.service.{
@@ -20,6 +16,9 @@ import it.pagopa.interop.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
+import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
+import it.pagopa.interop.commons.utils.TypeConversions.StringOps
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,8 +47,7 @@ final case class ConsumerApiServiceImpl(
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
       bearerToken <- validateBearer(contexts, jwtReader)
-      headers = gettingHeaders(contexts)
-      agreements <- agreementManagementService.getAgreements(headers)(
+      agreements <- agreementManagementService.getAgreements(contexts)(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
