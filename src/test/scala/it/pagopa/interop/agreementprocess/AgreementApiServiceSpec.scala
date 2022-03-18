@@ -68,7 +68,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             interface = None,
             docs = Seq.empty,
             state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
-            dailyCallsMaxNumber = 1000
+            dailyCallsPerConsumer = 1000,
+            dailyCallsTotal = 10
           )
         )
       )
@@ -158,7 +159,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             interface = None,
             docs = Seq.empty,
             state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
-            dailyCallsMaxNumber = 1000
+            dailyCallsPerConsumer = 1000,
+            dailyCallsTotal = 10
           )
         )
       )
@@ -260,7 +262,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             interface = None,
             docs = Seq.empty,
             state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
-            dailyCallsMaxNumber = 1000
+            dailyCallsPerConsumer = 1000,
+            dailyCallsTotal = 10
           )
         )
       )
@@ -317,7 +320,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             interface = None,
             docs = Seq.empty,
             state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
-            dailyCallsMaxNumber = 1000
+            dailyCallsPerConsumer = 1000,
+            dailyCallsTotal = 10
           )
         )
       )
@@ -374,7 +378,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
             interface = None,
             docs = Seq.empty,
             state = CatalogManagementDependency.EServiceDescriptorState.DEPRECATED,
-            dailyCallsMaxNumber = 1000
+            dailyCallsPerConsumer = 1000,
+            dailyCallsTotal = 10
           )
         )
       )
