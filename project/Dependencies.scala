@@ -81,11 +81,6 @@ object Dependencies {
     lazy val core      = namespace %% "scalatest" % scalatestVersion
   }
 
-  private[this] object mockito {
-    lazy val namespace = "org.mockito"
-    lazy val core      = namespace % "mockito-core" % mockitoVersion
-  }
-
   private[this] object scalamock {
     lazy val namespace = "org.scalamock"
     lazy val core      = namespace %% "scalamock" % scalaMockVersion
@@ -127,7 +122,6 @@ object Dependencies {
       akka.httpTestkit                         % Test,
       akka.testkit                             % Test,
       akka.untypedTestkit                      % Test,
-      mockito.core                             % Test,
       scalamock.core                           % Test,
       scalapact.core                           % Test,
       scalatest.core                           % Test
