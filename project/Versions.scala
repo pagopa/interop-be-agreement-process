@@ -14,7 +14,7 @@ object Versions {
   lazy val openapi4jVersion       = "1.0.7"
   lazy val projectionVersion      = "1.2.1"
   lazy val s3Persistence          = "1.0.27"
-  lazy val scalaMockVersion       = "5.1.0"
+  lazy val scalaMockVersion       = "5.2.0"
   lazy val scalaPactVersion       = "3.3.2-RC2"
   lazy val scalapbVersion         = "0.11.1"
   lazy val scalatestVersion       = "3.2.11"
