@@ -125,7 +125,7 @@ lazy val root = (project in file("."))
 
 ProjectSettings.addContractTestCommandAlias
 
-javaAgents += "io.kamon" % "kanela-agent" % "1.0.11"
+javaAgents += "io.kamon" % "kanela-agent" % "1.0.14"
 
 Test / fork := true
 Test / javaOptions += "-Dconfig.file=src/test/resources/application-test.conf"
