@@ -6,12 +6,12 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import it.pagopa.interop.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
+import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
   ConsumerApiMarshallerImpl
 }
-import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
 import it.pagopa.interop.agreementprocess.service._
@@ -19,6 +19,7 @@ import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationM
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
 import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.utils.CORRELATION_ID_HEADER
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers._
@@ -56,6 +57,10 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Activation" should {
     "succeed on pending agreement" in {
+      val correlationId = UUID.randomUUID().toString
+      implicit val context: Seq[(String, String)] =
+        Seq("bearer" -> Common.bearerToken, (CORRELATION_ID_HEADER, correlationId))
+
       val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
       val eService = TestDataOne.eService.copy(descriptors =
         Seq(
@@ -82,7 +87,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       (mockAgreementManagementService
         .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(*, TestDataOne.id.toString)
+        .expects(context, TestDataOne.id.toString)
         .once()
         .returns(Future.successful(pendingAgreement))
 
