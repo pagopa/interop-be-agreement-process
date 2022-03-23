@@ -554,7 +554,7 @@ class AgreementManagementServiceImplSpec
         val consumerAttributesIds: Seq[String] =
           Seq(attribute1, attribute2, attribute3).map(_.toString)
 
-        val eserviceAttributes: Attributes =
+        val eserviceAttributes: Attributes                      =
           Attributes(certified = Seq.empty, declared = Seq.empty, verified = Seq.empty)
         val agreementVerifiedAttributes: Seq[VerifiedAttribute] = Seq.empty
 
@@ -871,7 +871,7 @@ class AgreementManagementServiceImplSpec
 
     "not work if there are agreements related to payload information" in {
 
-      val payload = AgreementPayload(
+      val payload    = AgreementPayload(
         eserviceId = TestDataOne.eserviceId,
         descriptorId = TestDataOne.descriptorId,
         consumerId = UUID.fromString(Common.consumerId)

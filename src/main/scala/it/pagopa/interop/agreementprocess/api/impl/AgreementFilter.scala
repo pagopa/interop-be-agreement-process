@@ -34,7 +34,7 @@ object AgreementFilter {
             .toSeq
 
         Future.successful[Seq[Agreement]](currentAgreements)
-      case _ => Future.successful(agreements)
+      case _          => Future.successful(agreements)
     }
   }
 }

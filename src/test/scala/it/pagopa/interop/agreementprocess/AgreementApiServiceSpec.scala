@@ -69,7 +69,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
   "Agreement Activation" should {
     "succeed on pending agreement" in {
       val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
-      val eService = TestDataOne.eService.copy(descriptors =
+      val eService         = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
             id = pendingAgreement.descriptorId,
@@ -160,7 +160,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "succeed on suspended agreement" in {
       val suspendedAgreement =
         TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
-      val eService = TestDataOne.eService.copy(descriptors =
+      val eService           = TestDataOne.eService.copy(descriptors =
         Seq(
           EServiceDescriptor(
             id = suspendedAgreement.descriptorId,
@@ -260,7 +260,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
     "fail if an active agreement already exists" in {
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
-      val activeAgreement =
+      val activeAgreement  =
         TestDataOne.agreement.copy(id = UUID.randomUUID(), state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       val eService = TestDataOne.eService.copy(descriptors =

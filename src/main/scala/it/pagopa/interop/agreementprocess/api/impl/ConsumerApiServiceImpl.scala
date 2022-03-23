@@ -47,22 +47,22 @@ final case class ConsumerApiServiceImpl(
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
       bearerToken <- validateBearer(contexts, jwtReader)
-      agreements <- agreementManagementService.getAgreements(bearerToken)(
+      agreements  <- agreementManagementService.getAgreements(bearerToken)(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
       eserviceIds = agreements.map(_.eserviceId)
-      eservices       <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken))
-      consumerUuid    <- consumerId.toFutureUUID
-      partyAttributes <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
-      eserviceAttributes <- eservices
+      eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken))
+      consumerUuid        <- consumerId.toFutureUUID
+      partyAttributes     <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
+      eserviceAttributes  <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)
-      certified <- Future.traverse(partyAttributes)(a =>
+      certified           <- Future.traverse(partyAttributes)(a =>
         attributeManagementService.getAttributeByOriginAndCode(bearerToken)(a.origin, a.code)
       )
-      declared <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute(bearerToken))
-      verified <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(
+      declared   <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute(bearerToken))
+      verified   <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(
         attributeManagementService.getAttribute(bearerToken)
       )
       attributes <- AttributeManagementService.getAttributes(
@@ -74,7 +74,7 @@ final case class ConsumerApiServiceImpl(
 
     onComplete(result) {
       case Success(res) => getAttributesByConsumerId200(res)
-      case Failure(ex) =>
+      case Failure(ex)  =>
         logger.error(s"Error while getting consumer $consumerId attributes - ${ex.getMessage}")
         val errorResponse: Problem = {
           problemOf(StatusCodes.BadRequest, RetrieveAttributesError(consumerId))

@@ -60,9 +60,9 @@ object AgreementManagementService {
 
   private def existsAgreement(payload: AgreementProcess.AgreementPayload): Agreement => Boolean = agreement => {
     agreement.consumerId == payload.consumerId &&
-      agreement.eserviceId == payload.eserviceId &&
-      agreement.descriptorId == payload.descriptorId &&
-      agreement.state == AgreementState.ACTIVE
+    agreement.eserviceId == payload.eserviceId &&
+    agreement.descriptorId == payload.descriptorId &&
+    agreement.state == AgreementState.ACTIVE
   }
 
   def getStateChangeDetails(agreement: Agreement, partyId: String): Future[StateChangeDetails] = {
@@ -74,7 +74,7 @@ object AgreementManagementService {
         Future.successful(StateChangeDetails(changedBy = Some(ChangedBy.CONSUMER)))
       case `producerId` =>
         Future.successful(StateChangeDetails(changedBy = Some(ChangedBy.PRODUCER)))
-      case _ =>
+      case _            =>
         Future.failed(new RuntimeException("the party doing the operation is neither consumer nor producer"))
     }
   }
@@ -83,7 +83,7 @@ object AgreementManagementService {
     agreement.state match {
       case AgreementState.PENDING =>
         Future.successful(agreement)
-      case _ =>
+      case _                      =>
         Future.failed(new RuntimeException(s"Agreement ${agreement.id} state is ${agreement.state}"))
     }
 
@@ -91,7 +91,7 @@ object AgreementManagementService {
     agreement.state match {
       case AgreementState.SUSPENDED =>
         Future.successful(agreement)
-      case _ =>
+      case _                        =>
         Future.failed(new RuntimeException(s"Agreement ${agreement.id} state is ${agreement.state}"))
     }
 
@@ -135,7 +135,7 @@ object AgreementManagementService {
     hasSingleAttribute && hasGroupAttributes
   }
 
-  //TODO this function must be improve with
+  // TODO this function must be improve with
   // - check attribute validityTimespan
   // - a specific behaviour when the same attribute has a different verified value (e.g. send notification)
   def extractVerifiedAttribute(agreements: Seq[Agreement]): Future[Set[UUID]] = Future.successful {
