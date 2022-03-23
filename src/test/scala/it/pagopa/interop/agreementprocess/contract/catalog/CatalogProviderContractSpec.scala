@@ -33,14 +33,14 @@ class CatalogProviderContractSpec
   import com.itv.scalapact.http._
   import com.itv.scalapact.json._
 
-  //defining json4s serialization formats for Catalog Management data types
+  // defining json4s serialization formats for Catalog Management data types
   implicit val formats: Formats = DefaultFormats ++ Serializers.all ++ catalogmanagement.client.api.EnumsSerializers.all
 
-  //defining names of the interactions
+  // defining names of the interactions
   val CONSUMER = "agreement-process-consumer"
   val PROVIDER = "catalog-management-provider"
 
-  //given the following mock request payload...
+  // given the following mock request payload...
   val eserviceId = "24772a3d-e6f2-47f2-96e5-4cbd1e4e8c84"
 
   val mockDescriptor = EServiceDescriptor(
@@ -79,7 +79,7 @@ class CatalogProviderContractSpec
     .addInteraction(
       interaction
         .description("Fetching e-service by id")
-        .given("e-service id")
+        .provided("e-service id")
         .uponReceiving(
           method = GET,
           path = s"/catalog-management/0.0.1/eservices/$eserviceId",
@@ -90,11 +90,11 @@ class CatalogProviderContractSpec
           status = 200,
           headers = Map("Content-Type" -> "application/json"),
           body = Some(objectBody),
-          matchingRules = bodyTypeRule("name") //service name should be a string
-            ~> bodyTypeRule("description")     //description should be a string
+          matchingRules = bodyTypeRule("name") // service name should be a string
+            ~> bodyTypeRule("description")     // description should be a string
             ~> bodyTypeRule("id")
             ~> bodyArrayMinimumLengthRule("descriptors", 1)
-            ~> bodyRegexRule("descriptors[*].status", "draft|active") //status should be either draft or active
+            ~> bodyRegexRule("descriptors[*].status", "draft|active") // status should be either draft or active
         )
     )
 
@@ -112,13 +112,13 @@ class CatalogProviderContractSpec
     server.stop()
   }
 
-  //it launches a mock server and tests the interaction and the expected outcome
+  // it launches a mock server and tests the interaction and the expected outcome
   "Connecting to Catalog Management service" should {
     "be able to get the eservice by id" in {
       val results =
         catalogManagement(EServiceApi(s"${config.baseUrl}/catalog-management/0.0.1"))
           .getEServiceById("1234")(UUID.fromString(eserviceId))
-      val value = results.futureValue
+      val value   = results.futureValue
       value.producerId.toString shouldBe "24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"
       value.descriptors(0).audience(0) shouldBe "pippo"
     }

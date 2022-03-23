@@ -55,7 +55,7 @@ object CatalogManagementService {
           eservice,
           new RuntimeException(
             s"Descriptor ${descriptorId.toString} of Eservice ${eservice.id} has not status in ${allowedStatus
-              .mkString("[", ",", "]")}"
+                .mkString("[", ",", "]")}"
           )
         )
         .toTry
@@ -67,7 +67,7 @@ object CatalogManagementService {
 
     audience match {
       case Some(aud) => Future.successful[Seq[String]](aud)
-      case None =>
+      case None      =>
         Future.failed[Seq[String]](DescriptorNotFound(eservice.id.toString, descriptorId.toString))
     }
   }
@@ -85,7 +85,7 @@ object CatalogManagementService {
     (latestVersion, currentVersion) match {
       case (Some(l), Some(c)) if l > c => Future.successful(true)
       case (Some(_), None)             => Future.successful(true)
-      case _                           => Future.failed[Boolean](new RuntimeException("No new versions exist for this agreement!"))
+      case _ => Future.failed[Boolean](new RuntimeException("No new versions exist for this agreement!"))
     }
 
   def descriptorStateToApi(state: EServiceDescriptorState): AgreementProcess.EServiceDescriptorState =

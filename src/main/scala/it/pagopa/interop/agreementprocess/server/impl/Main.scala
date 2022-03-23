@@ -46,7 +46,7 @@ import scala.util.{Failure, Success}
 
 trait AgreementManagementDependency {
   private final val agreementManagementInvoker: AgreementManagementInvoker = AgreementManagementInvoker()
-  private final val agreementManagementApi: AgreementManagementApi = AgreementManagementApi(
+  private final val agreementManagementApi: AgreementManagementApi         = AgreementManagementApi(
     ApplicationConfiguration.agreementManagementURL
   )
 
@@ -56,7 +56,7 @@ trait AgreementManagementDependency {
 
 trait CatalogManagementDependency {
   private final val catalogManagementInvoker: CatalogManagementInvoker = CatalogManagementInvoker()
-  private final val catalogApi: EServiceApi                            = EServiceApi(ApplicationConfiguration.catalogManagementURL)
+  private final val catalogApi: EServiceApi       = EServiceApi(ApplicationConfiguration.catalogManagementURL)
   val catalogManagement: CatalogManagementService =
     CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)
   def catalogManagement(catalogApi: EServiceApi): CatalogManagementService =
@@ -65,7 +65,7 @@ trait CatalogManagementDependency {
 
 trait PartyManagementDependency {
   private final val partyManagementInvoker: PartyManagementInvoker = PartyManagementInvoker()
-  private final val partyApi: PartyApi                             = PartyApi(ApplicationConfiguration.partyManagementURL)
+  private final val partyApi: PartyApi        = PartyApi(ApplicationConfiguration.partyManagementURL)
   val partyManagement: PartyManagementService =
     PartyManagementServiceImpl(partyManagementInvoker, partyApi)
 }
@@ -80,9 +80,9 @@ trait AttributeRegistryManagementDependency {
 
 trait AuthorizationManagementDependency {
   private final val authorizationManagementInvoker: AuthorizationManagementInvoker = AuthorizationManagementInvoker()
-  private final val authorizationPurposeApi: AuthorizationManagementPurposeApi =
+  private final val authorizationPurposeApi: AuthorizationManagementPurposeApi     =
     new AuthorizationManagementPurposeApi(ApplicationConfiguration.authorizationManagementURL)
-  val authorizationManagement: AuthorizationManagementService =
+  val authorizationManagement: AuthorizationManagementService                      =
     AuthorizationManagementServiceImpl(authorizationManagementInvoker, authorizationPurposeApi)
 }
 
@@ -103,7 +103,7 @@ object Main
   val dependenciesLoaded: Future[JWTReader] = for {
     keyset <- JWTConfiguration.jwtReader.loadKeyset().toFuture
     jwtValidator = new DefaultJWTReader with PublicKeysHolder {
-      var publicKeyset: Map[KID, SerializedKey] = keyset
+      var publicKeyset: Map[KID, SerializedKey]                                        = keyset
       override protected val claimsVerifier: DefaultJWTClaimsVerifier[SecurityContext] =
         getClaimsVerifier(audience = ApplicationConfiguration.jwtAudience)
     }
@@ -111,7 +111,7 @@ object Main
 
   dependenciesLoaded.transformWith {
     case Success(jwtValidator) => launchApp(jwtValidator)
-    case Failure(ex) =>
+    case Failure(ex)           =>
       logger.error(s"Startup error - ${ex.getMessage}")
       logger.error(ex.getStackTrace.mkString("\n"))
       CoordinatedShutdown(classicActorSystem).run(StartupErrorShutdown)

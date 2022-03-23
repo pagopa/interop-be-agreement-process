@@ -340,7 +340,7 @@ class ConsumerApiServiceSpec
         .expects(Common.bearerToken, Common.verifiedAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
 
-      val response =
+      val response                                                =
         request(data = emptyData, path = s"consumers/${Common.consumerId}/attributes", verb = HttpMethods.GET)
       implicit def attributeJsonFormat: RootJsonFormat[Attribute] = jsonFormat9(Attribute)
 

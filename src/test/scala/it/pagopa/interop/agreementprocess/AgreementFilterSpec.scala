@@ -81,25 +81,25 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
 
   "an Agreement filter" should {
     "return the same sequence when no latest filter is applied" in {
-      //given
+      // given
       val agreements = getTestData
 
-      //when
+      // when
       val filtered = AgreementFilter.filterAgreementsByLatestVersion(None, agreements)
 
-      //then
+      // then
       val expectedId = agreements.map(_.id)
       filtered.futureValue.map(_.id) should contain only (expectedId: _*)
     }
 
     "return the same sequence when FALSE latest filter is applied" in {
-      //given
+      // given
       val agreements = getTestData
 
-      //when
+      // when
       val filtered = AgreementFilter.filterAgreementsByLatestVersion(Some(false), agreements)
 
-      //then
+      // then
       val expectedId = agreements.map(_.id)
       filtered.futureValue.map(_.id) should contain only (expectedId: _*)
     }
@@ -175,10 +175,10 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
       )
     )
 
-    //when
+    // when
     val filtered = AgreementFilter.filterAgreementsByLatestVersion(Some(true), agreementsToFilter)
 
-    //then
+    // then
     filtered.futureValue.map(_.id) should contain only (uuid1, uuid3)
   }
 
@@ -252,10 +252,10 @@ class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFuture
       )
     )
 
-    //when
+    // when
     val filtered = AgreementFilter.filterAgreementsByLatestVersion(Some(true), agreementsToFilter)
 
-    //then
+    // then
     filtered.futureValue.map(_.id) should contain only (uuid1, uuid4)
   }
 }

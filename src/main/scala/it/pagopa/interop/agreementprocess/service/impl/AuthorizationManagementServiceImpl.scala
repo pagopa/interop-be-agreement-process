@@ -24,7 +24,7 @@ final case class AuthorizationManagementServiceImpl(
     bearerToken: String
   )(eServiceId: UUID, consumerId: UUID, state: ClientComponentState): Future[Unit] = {
     val payload: ClientAgreementDetailsUpdate = ClientAgreementDetailsUpdate(state = state)
-    val request: ApiRequest[Unit] =
+    val request: ApiRequest[Unit]             =
       api.updateAgreementState(
         eserviceId = eServiceId,
         consumerId = consumerId,

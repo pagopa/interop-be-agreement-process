@@ -14,7 +14,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
 
     "return the next published version" in {
 
-      val eservice: EService = EService(
+      val eservice: EService                    = EService(
         id = UUID.randomUUID(),
         producerId = UUID.randomUUID(),
         name = "name",
@@ -122,7 +122,7 @@ class CatalogManagementServiceSpec extends AnyWordSpecLike with Matchers with Sc
 
     "return NO next published version when no published next descriptors exist" in {
 
-      val eservice: EService = EService(
+      val eservice: EService                    = EService(
         id = UUID.randomUUID(),
         producerId = UUID.randomUUID(),
         name = "name",
