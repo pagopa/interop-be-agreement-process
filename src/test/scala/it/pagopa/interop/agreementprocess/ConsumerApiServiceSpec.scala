@@ -93,7 +93,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -102,7 +102,7 @@ class ConsumerApiServiceSpec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           None,
           Some(Common.consumerId),
           None,
@@ -112,14 +112,14 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
 
       (mockCatalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataOne.eserviceId)
+        .getEServiceById(_: Seq[(String, String)])(_: UUID))
+        .expects(*, TestDataOne.eserviceId)
         .returns(Future.successful(TestDataOne.eService))
         .once()
 
       (mockCatalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataTwo.eserviceId)
+        .getEServiceById(_: Seq[(String, String)])(_: UUID))
+        .expects(*, TestDataTwo.eserviceId)
         .returns(Future.successful(TestDataTwo.eService))
         .once()
 
@@ -129,38 +129,38 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
-        .getAttributeByOriginAndCode(_: String)(_: String, _: String))
-        .expects(Common.bearerToken, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
+        .getAttributeByOriginAndCode(_: Seq[(String, String)])(_: String, _: String))
+        .expects(*, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.verifiedAttributeId1)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.verifiedAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId1))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.verifiedAttributeId2)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.verifiedAttributeId2)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId2))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.verifiedAttributeId3)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.verifiedAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.declaredAttributeId1)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.declaredAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId1))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.declaredAttributeId2)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.declaredAttributeId2)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId2))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.declaredAttributeId3)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.declaredAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
 
       val response =
@@ -201,7 +201,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -210,7 +210,7 @@ class ConsumerApiServiceSpec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           None,
           Some(Common.consumerId),
           None,
@@ -220,14 +220,14 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
 
       (mockCatalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataOne.eserviceId)
+        .getEServiceById(_: Seq[(String, String)])(_: UUID))
+        .expects(*, TestDataOne.eserviceId)
         .returns(Future.successful(TestDataOne.eService))
         .once()
 
       (mockCatalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataThree.eserviceId)
+        .getEServiceById(_: Seq[(String, String)])(_: UUID))
+        .expects(*, TestDataThree.eserviceId)
         .returns(Future.successful(TestDataThree.eService))
         .once()
 
@@ -237,23 +237,23 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
-        .getAttributeByOriginAndCode(_: String)(_: String, _: String))
-        .expects(Common.bearerToken, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
+        .getAttributeByOriginAndCode(_: Seq[(String, String)])(_: String, _: String))
+        .expects(*, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.declaredAttributeId1)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.declaredAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId1))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.declaredAttributeId2)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.declaredAttributeId2)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId2))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.declaredAttributeId3)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.declaredAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.declaredAttributeId3))
 
       val response =
@@ -290,7 +290,7 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: String)(
+          .getAgreements(_: Seq[(String, String)])(
             _: Option[String],
             _: Option[String],
             _: Option[String],
@@ -299,7 +299,7 @@ class ConsumerApiServiceSpec
           )
         )
         .expects(
-          Common.bearerToken,
+          *,
           None,
           Some(Common.consumerId),
           None,
@@ -309,14 +309,14 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
 
       (mockCatalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataTwo.eserviceId)
+        .getEServiceById(_: Seq[(String, String)])(_: UUID))
+        .expects(*, TestDataTwo.eserviceId)
         .returns(Future.successful(TestDataTwo.eService))
         .once()
 
       (mockCatalogManagementService
-        .getEServiceById(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataFour.eserviceId)
+        .getEServiceById(_: Seq[(String, String)])(_: UUID))
+        .expects(*, TestDataFour.eserviceId)
         .returns(Future.successful(TestDataFour.eService))
         .once()
 
@@ -326,18 +326,18 @@ class ConsumerApiServiceSpec
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
-        .getAttributeByOriginAndCode(_: String)(_: String, _: String))
-        .expects(Common.bearerToken, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
+        .getAttributeByOriginAndCode(_: Seq[(String, String)])(_: String, _: String))
+        .expects(*, Common.certifiedAttribute.origin, Common.certifiedAttribute.code)
         .returns(Future.successful[ClientAttribute](ClientAttributes.certifiedAttribute))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.verifiedAttributeId1)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.verifiedAttributeId1)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId1))
 
       (mockAttributeManagementService
-        .getAttribute(_: String)(_: String))
-        .expects(Common.bearerToken, Common.verifiedAttributeId3)
+        .getAttribute(_: Seq[(String, String)])(_: String))
+        .expects(*, Common.verifiedAttributeId3)
         .returns(Future.successful[ClientAttribute](ClientAttributes.verifiedAttributeId3))
 
       val response                                                =

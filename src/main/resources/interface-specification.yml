@@ -55,6 +55,8 @@ paths:
                 $ref: '#/components/schemas/Problem'
   '/agreements/{agreementId}/parties/{partyId}/activate':
     parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
       - schema:
           type: string
           format: uuid
@@ -86,6 +88,8 @@ paths:
       description: Activates the pending agreement if all the pre-requisites are met.
   '/agreements/{agreementId}/parties/{partyId}/suspend':
     parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
       - schema:
           type: string
           format: uuid
@@ -116,6 +120,9 @@ paths:
         - agreement
       description: Suspends the active agreement if all the pre-requisites are met.
   /agreements:
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
     post:
       summary: Agreement Creation
       operationId: createAgreement
@@ -186,6 +193,9 @@ paths:
           schema:
             type: boolean
   '/agreements/{agreementId}':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
     get:
       security:
         - bearerAuth: [ ]
@@ -221,6 +231,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
   '/agreements/{agreementId}/upgrade':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
     post:
       security:
         - bearerAuth: [ ]
@@ -258,6 +271,8 @@ paths:
                 $ref: '#/components/schemas/Problem'
   '/agreements/{agreementId}/attributes/{attributeId}/verify':
     parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
       - schema:
           type: string
           format: uuid
@@ -288,6 +303,9 @@ paths:
         - agreement
       description: set the agreement attribute as verified.
   '/consumers/{consumerId}/attributes':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
     get:
       security:
         - bearerAuth: [ ]
@@ -318,6 +336,18 @@ paths:
                 $ref: '#/components/schemas/Problem'
 
 components:
+  parameters:
+    CorrelationIdHeader:
+      in: header
+      name: X-Correlation-Id
+      required: true
+      schema:
+        type: string
+    IpAddress:
+      in: header
+      name: X-Forwarded-For
+      schema:
+        type: string
   schemas:
     AgreementPayload:
       type: object

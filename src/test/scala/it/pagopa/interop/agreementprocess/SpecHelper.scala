@@ -3,7 +3,7 @@ package it.pagopa.interop.agreementprocess
 import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.nimbusds.jwt.JWTClaimsSet
@@ -13,12 +13,11 @@ import it.pagopa.interop.attributeregistrymanagement.client.model.{
   Attribute => ClientAttribute,
   AttributeKind => ClientAttributeKind
 }
-
 import it.pagopa.interop.catalogmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
-import it.pagopa.interop.partymanagement.client.model.Organization
-import it.pagopa.interop.partymanagement.client.model.{Attribute => PartyManagementAttribute}
+import it.pagopa.interop.partymanagement.client.model.{Organization, Attribute => PartyManagementAttribute}
 
+import java.net.InetAddress
 import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.Await
@@ -30,7 +29,12 @@ trait SpecHelper {
   final lazy val url: String                        =
     s"http://localhost:8088/agreement-process/${buildinfo.BuildInfo.interfaceVersion}"
   final lazy val emptyData: Source[ByteString, Any] = Source.empty
-  final val authorization: Seq[Authorization]       = Seq(headers.Authorization(OAuth2BearerToken(Common.bearerToken)))
+  final val requestHeaders: Seq[HttpHeader]         =
+    Seq(
+      headers.Authorization(OAuth2BearerToken(Common.bearerToken)),
+      headers.RawHeader("X-Correlation-Id", "test-id"),
+      headers.`X-Forwarded-For`(RemoteAddress(InetAddress.getByName("127.0.0.1")))
+    )
 
   def mockSubject(uuid: String): Success[JWTClaimsSet] = Success(new JWTClaimsSet.Builder().subject(uuid).build())
 
@@ -43,7 +47,7 @@ trait SpecHelper {
           uri = s"$url/$path",
           method = verb,
           entity = HttpEntity(ContentTypes.`application/json`, data),
-          headers = authorization
+          headers = requestHeaders
         )
       ),
       Duration.Inf
@@ -52,6 +56,7 @@ trait SpecHelper {
 
   object Common {
     val bearerToken: String                          = "bearerToken"
+    val requestContexts: Seq[(String, String)]       = Seq("bearer" -> "bearerToken")
     val consumerId: String                           = "07f8dce0-0a5b-476b-9fdd-a7a658eb9213"
     val verifiedAttributeId1: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9214"
     val verifiedAttributeId2: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9215"
