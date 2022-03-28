@@ -6,9 +6,6 @@ import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.Logger
-import it.pagopa.interop.commons.jwt.service.JWTReader
-import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
-import it.pagopa.interop.commons.utils.TypeConversions.StringOps
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.ConsumerApiService
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.RetrieveAttributesError
@@ -19,6 +16,9 @@ import it.pagopa.interop.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
+import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
+import it.pagopa.interop.commons.utils.TypeConversions.StringOps
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,23 +47,23 @@ final case class ConsumerApiServiceImpl(
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
       bearerToken <- validateBearer(contexts, jwtReader)
-      agreements  <- agreementManagementService.getAgreements(bearerToken)(
+      agreements  <- agreementManagementService.getAgreements(contexts)(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
       eserviceIds = agreements.map(_.eserviceId)
-      eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(bearerToken))
+      eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(contexts))
       consumerUuid        <- consumerId.toFutureUUID
       partyAttributes     <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
       eserviceAttributes  <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)
       certified           <- Future.traverse(partyAttributes)(a =>
-        attributeManagementService.getAttributeByOriginAndCode(bearerToken)(a.origin, a.code)
+        attributeManagementService.getAttributeByOriginAndCode(contexts)(a.origin, a.code)
       )
-      declared   <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute(bearerToken))
+      declared   <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute(contexts))
       verified   <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(
-        attributeManagementService.getAttribute(bearerToken)
+        attributeManagementService.getAttribute(contexts)
       )
       attributes <- AttributeManagementService.getAttributes(
         verified = verified,
