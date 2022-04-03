@@ -5,15 +5,15 @@ import sbt._
 object Dependencies {
 
   private[this] object akka {
-    lazy val namespace   = "com.typesafe.akka"
-    lazy val actorTyped  = namespace                       %% "akka-actor-typed"       % akkaVersion
-    lazy val actor       = namespace                       %% "akka-actor"             % akkaVersion
-    lazy val persistence = namespace                       %% "akka-persistence-typed" % akkaVersion
-    lazy val stream      = namespace                       %% "akka-stream"            % akkaVersion
-    lazy val http        = namespace                       %% "akka-http"              % akkaHttpVersion
-    lazy val httpJson    = namespace                       %% "akka-http-spray-json"   % akkaHttpVersion
-    lazy val httpJson4s  = "de.heikoseeberger"             %% "akka-http-json4s"       % "1.38.2"
-    lazy val management  = "com.lightbend.akka.management" %% "akka-management"        % akkaManagementVersion
+    lazy val namespace           = "com.typesafe.akka"
+    lazy val actorTyped          = namespace                       %% "akka-actor-typed"       % akkaVersion
+    lazy val actor               = namespace                       %% "akka-actor"             % akkaVersion
+    lazy val persistence         = namespace                       %% "akka-persistence-typed" % akkaVersion
+    lazy val stream              = namespace                       %% "akka-stream"            % akkaVersion
+    lazy val http                = namespace                       %% "akka-http"              % akkaHttpVersion
+    lazy val httpJson            = namespace                       %% "akka-http-spray-json"   % akkaHttpVersion
+    lazy val httpJson4s          = "de.heikoseeberger"             %% "akka-http-json4s"       % "1.38.2"
+    lazy val management          = "com.lightbend.akka.management" %% "akka-management"        % akkaManagementVersion
     lazy val managementLogLevels =
       "com.lightbend.akka.management" %% "akka-management-loglevels-logback" % akkaManagementVersion
     lazy val slf4j          = namespace %% "akka-slf4j"               % akkaVersion
@@ -24,7 +24,7 @@ object Dependencies {
   }
 
   private[this] object pagopa {
-    lazy val namespace = "it.pagopa"
+    lazy val namespace                 = "it.pagopa"
     lazy val agreementManagementClient =
       namespace %% "interop-be-agreement-management-client" % agreementManagementVersion
     lazy val authorizationManagementClient =
@@ -94,9 +94,9 @@ object Dependencies {
   object Jars {
     lazy val overrides: Seq[ModuleID] =
       Seq(jackson.annotations % Compile, jackson.core % Compile, jackson.databind % Compile)
-    lazy val `server`: Seq[ModuleID] = Seq(
+    lazy val `server`: Seq[ModuleID]  = Seq(
       // For making Java 12 happy
-      "javax.annotation" % "javax.annotation-api" % "1.3.2" % "compile",
+      "javax.annotation"                       % "javax.annotation-api" % "1.3.2" % "compile",
       //
       akka.actor                               % Compile,
       akka.actorTyped                          % Compile,
@@ -126,7 +126,7 @@ object Dependencies {
       scalapact.core                           % Test,
       scalatest.core                           % Test
     )
-    lazy val client: Seq[ModuleID] = Seq(
+    lazy val client: Seq[ModuleID]    = Seq(
       akka.stream     % Compile,
       akka.http       % Compile,
       akka.httpJson4s % Compile,
