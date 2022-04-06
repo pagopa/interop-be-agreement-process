@@ -542,13 +542,13 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataSeven.eservice))
 
       (mockPartyManagementService
-        .getOrganization(_: String)(_: UUID))
+        .getInstitution(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataSeven.producerId)
         .once()
         .returns(Future.successful(TestDataSeven.producer))
 
       (mockPartyManagementService
-        .getOrganization(_: String)(_: UUID))
+        .getInstitution(_: String)(_: UUID))
         .expects(Common.bearerToken, TestDataSeven.consumerId)
         .once()
         .returns(Future.successful(TestDataSeven.consumer))

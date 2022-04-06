@@ -123,7 +123,7 @@ final case class AgreementApiServiceImpl(
       validPayload       <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
       eservice           <- catalogManagementService.getEServiceById(contexts)(validPayload.eserviceId)
       activeEservice <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
-      consumer       <- partyManagementService.getOrganization(bearerToken)(agreementPayload.consumerId)
+      consumer       <- partyManagementService.getInstitution(bearerToken)(agreementPayload.consumerId)
       consumerAttributeIdentifiers <- consumer.attributes.traverse(a =>
         attributeManagementService.getAttributeByOriginAndCode(contexts)(a.origin, a.code).map(_.id)
       )
@@ -246,8 +246,8 @@ final case class AgreementApiServiceImpl(
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
       activeDescriptorOption <- CatalogManagementService.getActiveDescriptorOption(eservice, descriptor)
-      producer               <- partyManagementService.getOrganization(bearerToken)(agreement.producerId)
-      consumer               <- partyManagementService.getOrganization(bearerToken)(agreement.consumerId)
+      producer               <- partyManagementService.getInstitution(bearerToken)(agreement.producerId)
+      consumer               <- partyManagementService.getInstitution(bearerToken)(agreement.consumerId)
       attributes             <- getApiAgreementAttributes(contexts)(agreement.verifiedAttributes, eservice)
     } yield Agreement(
       id = agreement.id,
