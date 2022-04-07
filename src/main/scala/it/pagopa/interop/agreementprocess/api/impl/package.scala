@@ -15,10 +15,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
 
-  type ManagementEService     = catalogmanagement.client.model.EService
-  type ManagementOrganization = partymanagement.client.model.Organization
-  type ManagementAgreement    = agreementmanagement.client.model.Agreement
-  type ManagementAttributes   = catalogmanagement.client.model.Attributes
+  type ManagementEService    = catalogmanagement.client.model.EService
+  type ManagementInstitution = partymanagement.client.model.Institution
+  type ManagementAgreement   = agreementmanagement.client.model.Agreement
+  type ManagementAttributes  = catalogmanagement.client.model.Attributes
 
   implicit def organizationJsonFormat: RootJsonFormat[Organization]               = jsonFormat2(Organization)
   implicit def activeDescriptorJsonFormat: RootJsonFormat[ActiveDescriptor]       = jsonFormat3(ActiveDescriptor)

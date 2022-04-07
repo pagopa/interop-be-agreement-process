@@ -15,7 +15,7 @@ import it.pagopa.interop.attributeregistrymanagement.client.model.{
 }
 import it.pagopa.interop.catalogmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
-import it.pagopa.interop.partymanagement.client.model.{Organization, Attribute => PartyManagementAttribute}
+import it.pagopa.interop.partymanagement.client.model.{Institution, Attribute => PartyManagementAttribute}
 
 import java.net.InetAddress
 import java.time.OffsetDateTime
@@ -334,7 +334,7 @@ trait SpecHelper {
     val producerId: UUID          = UUID.randomUUID()
     val consumerId: UUID          = UUID.randomUUID()
     val createdAt: OffsetDateTime = OffsetDateTime.now()
-    val consumer                  = Organization(
+    val consumer                  = Institution(
       institutionId = "institutionIdC",
       description = "Consumer",
       digitalAddress = "digitalAddress",
@@ -345,7 +345,7 @@ trait SpecHelper {
       zipCode = "zipCode"
     )
 
-    val producer = Organization(
+    val producer = Institution(
       institutionId = "institutionIdP",
       description = "Producer",
       digitalAddress = "digitalAddress",
