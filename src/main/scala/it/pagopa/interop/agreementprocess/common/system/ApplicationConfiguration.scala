@@ -2,8 +2,6 @@ package it.pagopa.interop.agreementprocess.common.system
 
 import com.typesafe.config.{Config, ConfigFactory}
 
-import scala.jdk.CollectionConverters.ListHasAsScala
-
 object ApplicationConfiguration {
   lazy val config: Config = ConfigFactory.load()
 
@@ -16,5 +14,5 @@ object ApplicationConfiguration {
     config.getString("agreement-process.services.attribute-registry-management")
   lazy val authorizationManagementURL: String = config.getString("agreement-process.services.authorization-management")
 
-  lazy val jwtAudience: Set[String] = config.getStringList("agreement-process.jwt.audience").asScala.toSet
+  lazy val jwtAudience: Set[String] = config.getString("agreement-process.jwt.audience").split(",").toSet
 }
