@@ -12,9 +12,9 @@ object ApplicationConfiguration {
   val partyManagementURL: String             = config.getString("agreement-process.services.party-management")
   val attributeRegistryManagementURL: String =
     config.getString("agreement-process.services.attribute-registry-management")
-  val authorizationManagementURL: String = config.getString("agreement-process.services.authorization-management")
+  val authorizationManagementURL: String     = config.getString("agreement-process.services.authorization-management")
 
-  val jwtAudience: Set[String] = config.getString("agreement-process.jwt.audience").split(",").toSet
+  val jwtAudience: Set[String] = config.getString("agreement-process.jwt.audience").split(",").toSet.filter(_.nonEmpty)
 
-  require(jwtAudience.nonEmpty, "Cannot have an empty audience")
+  require(jwtAudience.nonEmpty, "Audience cannot be empty")
 }
