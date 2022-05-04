@@ -13,7 +13,6 @@ import it.pagopa.interop.agreementprocess.api.impl.{ConsumerApiMarshallerImpl, C
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.AkkaUtils.Authenticator
 import it.pagopa.interop.agreementprocess.api.{AgreementApi, ConsumerApi, ConsumerApiMarshaller, HealthApi}
-import it.pagopa.interop.agreementprocess.common.system.executionContext
 import it.pagopa.interop.agreementprocess.model.{Attribute, Attributes}
 import it.pagopa.interop.agreementprocess.server.Controller
 import it.pagopa.interop.agreementprocess.service._
@@ -24,6 +23,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import java.util.UUID
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 class ConsumerApiServiceSpec
     extends ScalaTestWithActorTestKit
@@ -33,7 +33,8 @@ class ConsumerApiServiceSpec
     with DefaultJsonProtocol
     with SpecHelper {
 
-  implicit val testSystem: ActorSystem = system.classicSystem
+  implicit val testSystem: ActorSystem      = system.classicSystem
+  implicit val ec: ExecutionContextExecutor = system.executionContext
 
   val consumerApiMarshaller: ConsumerApiMarshaller               = new ConsumerApiMarshallerImpl
   val mockHealthApi: HealthApi                                   = mock[HealthApi]

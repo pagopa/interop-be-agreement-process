@@ -90,6 +90,8 @@ lazy val client = project
     }
   )
 
+ThisBuild / scalacOptions -= "-Xfatal-warnings"
+
 lazy val root = (project in file("."))
   .settings(
     name                        := "interop-be-agreement-process",

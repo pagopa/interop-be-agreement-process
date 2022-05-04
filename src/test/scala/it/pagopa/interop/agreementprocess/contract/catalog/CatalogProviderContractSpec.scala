@@ -2,7 +2,6 @@ package it.pagopa.interop.agreementprocess.contract.catalog
 
 import com.itv.scalapact.model.ScalaPactDescription
 import com.itv.scalapact.{ScalaPactMockConfig, ScalaPactMockServer}
-import it.pagopa.interop.agreementprocess.server.impl.CatalogManagementDependency
 import it.pagopa.interop.catalogmanagement
 import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
 import it.pagopa.interop.catalogmanagement.client.invoker.Serializers
@@ -15,13 +14,16 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.agreementprocess.service.impl.CatalogManagementServiceImpl
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 
 /** Tests the integration with Catalog Management service, creating a corresponding pact interaction file */
 class CatalogProviderContractSpec
-    extends AnyWordSpecLike
+    extends ScalaTestWithActorTestKit
+    with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with CatalogManagementDependency
     with BeforeAndAfterAll {
 
   // The import contains two things:
@@ -115,9 +117,12 @@ class CatalogProviderContractSpec
   // it launches a mock server and tests the interaction and the expected outcome
   "Connecting to Catalog Management service" should {
     "be able to get the eservice by id" in {
-      val results =
-        catalogManagement(EServiceApi(s"${config.baseUrl}/catalog-management/0.0.1"))
-          .getEServiceById(Seq("bearer" -> "1234"))(UUID.fromString(eserviceId))
+      val catalogManagementInvoker = CatalogManagementInvoker()(system.classicSystem)
+      def catalogManagement(catalogApi: EServiceApi): CatalogManagementService =
+        CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)(system.executionContext)
+
+      val results = catalogManagement(EServiceApi(s"${config.baseUrl}/catalog-management/0.0.1"))
+        .getEServiceById(Seq("bearer" -> "1234"))(UUID.fromString(eserviceId))
       val value   = results.futureValue
       value.producerId.toString shouldBe "24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"
       value.descriptors(0).audience(0) shouldBe "pippo"
