@@ -16,7 +16,6 @@ import it.pagopa.interop.commons.jwt.{KID, PublicKeysHolder, SerializedKey}
 
 trait Dependencies {
 
-  // it should
   implicit val actorSystem: akka.actor.typed.ActorSystem[Nothing]
   implicit lazy val ec: ExecutionContext = actorSystem.executionContext
 
