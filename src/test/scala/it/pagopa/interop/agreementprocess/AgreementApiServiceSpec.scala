@@ -581,8 +581,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       val expected = Agreement(
         id = TestDataSeven.agreementId,
-        producer = Organization(id = TestDataSeven.producer.institutionId, name = TestDataSeven.producer.description),
-        consumer = Organization(id = TestDataSeven.consumer.institutionId, name = TestDataSeven.consumer.description),
+        producer = Organization(id = TestDataSeven.producer.originId, name = TestDataSeven.producer.description),
+        consumer = Organization(id = TestDataSeven.consumer.originId, name = TestDataSeven.consumer.description),
         eservice = EService(
           id = TestDataSeven.eservice.id,
           name = TestDataSeven.eservice.name,

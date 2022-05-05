@@ -26,7 +26,6 @@ final case class AuthorizationManagementServiceImpl(
     contexts: Seq[(String, String)]
   )(eServiceId: UUID, consumerId: UUID, state: ClientComponentState): Future[Unit] = {
     val payload: ClientAgreementDetailsUpdate = ClientAgreementDetailsUpdate(state = state)
-
     for {
       (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
       request = api.updateAgreementState(
@@ -42,6 +41,5 @@ final case class AuthorizationManagementServiceImpl(
           Future.successful(())
         } // Do not fail because this service should not be blocked by this update
     } yield result
-
   }
 }

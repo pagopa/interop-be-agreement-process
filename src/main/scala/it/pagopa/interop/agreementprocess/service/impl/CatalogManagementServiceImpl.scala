@@ -17,11 +17,10 @@ final case class CatalogManagementServiceImpl(invoker: CatalogManagementInvoker,
 
   implicit val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def getEServiceById(contexts: Seq[(String, String)])(eserviceId: UUID): Future[EService] = {
-    for {
-      (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-      request = api.getEService(correlationId, eserviceId.toString, ip)(BearerToken(bearerToken))
-      result <- invoker.invoke(request, s"Getting e-service by id ${eserviceId}")
-    } yield result
-  }
+  override def getEServiceById(contexts: Seq[(String, String)])(eserviceId: UUID): Future[EService] = for {
+    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
+    request = api.getEService(correlationId, eserviceId.toString, ip)(BearerToken(bearerToken))
+    result <- invoker.invoke(request, s"Getting e-service by id ${eserviceId}")
+  } yield result
+
 }

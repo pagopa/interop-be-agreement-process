@@ -19,7 +19,6 @@ import it.pagopa.interop.agreementprocess.service.{
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.TypeConversions.StringOps
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -33,7 +32,7 @@ final case class ConsumerApiServiceImpl(
 )(implicit ec: ExecutionContext)
     extends ConsumerApiService {
 
-  val logger = Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
+  val logger = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 
   /** Code: 200, Message: attributes found, DataType: Attributes
     * Code: 404, Message: Consumer not found, DataType: Problem
@@ -75,10 +74,8 @@ final case class ConsumerApiServiceImpl(
     onComplete(result) {
       case Success(res) => getAttributesByConsumerId200(res)
       case Failure(ex)  =>
-        logger.error(s"Error while getting consumer $consumerId attributes - ${ex.getMessage}")
-        val errorResponse: Problem = {
-          problemOf(StatusCodes.BadRequest, RetrieveAttributesError(consumerId))
-        }
+        logger.error(s"Error while getting consumer $consumerId attributes", ex)
+        val errorResponse: Problem = problemOf(StatusCodes.BadRequest, RetrieveAttributesError(consumerId))
         getAttributesByConsumerId400(errorResponse)
     }
   }

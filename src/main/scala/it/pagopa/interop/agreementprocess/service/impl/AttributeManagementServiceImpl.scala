@@ -25,26 +25,22 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
     attribute <- attributeByUUID(contexts)(uuid)
   } yield attribute
 
-  private def attributeByUUID(contexts: Seq[(String, String)])(attributeId: UUID): Future[ClientAttribute] = {
-    for {
-      (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-      request = api.getAttributeById(correlationId, attributeId, ip)(
-        BearerToken(bearerToken)
-      ) // TODO maybe a batch request is better
-      result <- invoker.invoke(request, s"Retrieving attribute by id = $attributeId")
-    } yield result
-  }
+  private def attributeByUUID(contexts: Seq[(String, String)])(attributeId: UUID): Future[ClientAttribute] = for {
+    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
+    request = api.getAttributeById(correlationId, attributeId, ip)(
+      BearerToken(bearerToken)
+    ) // TODO maybe a batch request is better
+    result <- invoker.invoke(request, s"Retrieving attribute by id = $attributeId")
+  } yield result
 
   override def getAttributeByOriginAndCode(
     contexts: Seq[(String, String)]
-  )(origin: String, code: String): Future[ClientAttribute] = {
-    for {
-      (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-      request = api.getAttributeByOriginAndCode(correlationId, origin, code, ip)(
-        BearerToken(bearerToken)
-      ) // TODO maybe a batch request is better
-      result <- invoker.invoke(request, s"Retrieving attribute by origin = $origin and code = $code")
-    } yield result
-  }
+  )(origin: String, code: String): Future[ClientAttribute] = for {
+    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
+    request = api.getAttributeByOriginAndCode(correlationId, origin, code, ip)(
+      BearerToken(bearerToken)
+    ) // TODO maybe a batch request is better
+    result <- invoker.invoke(request, s"Retrieving attribute by origin = $origin and code = $code")
+  } yield result
 
 }

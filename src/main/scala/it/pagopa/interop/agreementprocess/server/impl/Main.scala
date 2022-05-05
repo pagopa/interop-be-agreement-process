@@ -1,5 +1,6 @@
 package it.pagopa.interop.agreementprocess.server.impl
 
+import buildinfo.BuildInfo
 import akka.actor.CoordinatedShutdown
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
@@ -23,9 +24,10 @@ import it.pagopa.interop.agreementprocess.api.impl.{
 }
 import it.pagopa.interop.agreementprocess.api.{AgreementApi, ConsumerApi, HealthApi}
 import it.pagopa.interop.agreementprocess.server.Controller
+import it.pagopa.interop.commons.logging.renderBuildInfo
 
 import kamon.Kamon
-import org.slf4j.LoggerFactory
+import com.typesafe.scalalogging.Logger
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import akka.actor.typed.ActorSystem
@@ -37,7 +39,7 @@ case object StartupErrorShutdown extends CoordinatedShutdown.Reason
 
 object Main extends App with CORSSupport with Dependencies {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger: Logger = Logger(this.getClass)
 
   implicit val actorSystem: ActorSystem[Nothing] =
     ActorSystem[Nothing](Behaviors.empty[Nothing], "interop-be-agreement-process")
@@ -45,18 +47,17 @@ object Main extends App with CORSSupport with Dependencies {
   val jwtReader: Future[JWTReader] = JWTConfiguration.jwtReader.loadKeyset().toFuture.map(jwtReader)
 
   jwtReader.flatMap(launchApp).onComplete {
-    case Success(serverBinding) =>
-      logger.info(s"Started server at ${serverBinding.localAddress.getHostString()}:${serverBinding.localAddress
-          .getPort()} Build info = ${buildinfo.BuildInfo.toString}")
+    case Success(binding) =>
+      logger.info(renderBuildInfo(BuildInfo))
+      logger.info(s"Started server at ${binding.localAddress.getHostString()}:${binding.localAddress.getPort()}")
 
     case Failure(ex) =>
       actorSystem.terminate()
       Kamon.stop()
-      logger.error("Startup error - ", ex)
+      logger.error("Startup error: ", ex)
   }
 
   private def launchApp(jwtReader: JWTReader): Future[Http.ServerBinding] = {
-
     Kamon.init()
     AkkaManagement.get(actorSystem.toClassic).start()
 
