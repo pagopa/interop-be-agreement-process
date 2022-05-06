@@ -41,10 +41,10 @@ object Main extends App with CORSSupport with Dependencies {
 
   private val logger: Logger = Logger(this.getClass)
 
-  implicit val actorSystem: ActorSystem[Nothing] =
+  override implicit val actorSystem: ActorSystem[Nothing] =
     ActorSystem[Nothing](Behaviors.empty[Nothing], "interop-be-agreement-process")
 
-  val jwtReader: Future[JWTReader] = JWTConfiguration.jwtReader.loadKeyset().toFuture.map(jwtReader)
+  val jwtReader: Future[JWTReader] = JWTConfiguration.jwtReader.loadKeyset().toFuture.map(createJwtReader)
 
   jwtReader.flatMap(launchApp).onComplete {
     case Success(binding) =>

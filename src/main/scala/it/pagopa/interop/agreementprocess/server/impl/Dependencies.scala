@@ -55,7 +55,7 @@ trait Dependencies {
   lazy val authorizationManagement: AuthorizationManagementService            =
     AuthorizationManagementServiceImpl(authorizationManagementInvoker, authorizationPurposeApi)
 
-  def jwtReader(keyset: Map[KID, SerializedKey]): JWTReader = new DefaultJWTReader with PublicKeysHolder {
+  def createJwtReader(keyset: Map[KID, SerializedKey]): JWTReader = new DefaultJWTReader with PublicKeysHolder {
     var publicKeyset: Map[KID, SerializedKey] = keyset
 
     override protected val claimsVerifier: DefaultJWTClaimsVerifier[SecurityContext] =
