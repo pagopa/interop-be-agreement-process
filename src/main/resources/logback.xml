@@ -2,10 +2,15 @@
 <configuration debug="false">
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <target>System.out</target>
+        <!-- <target>System.out</target>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="it.pagopa.interop.commons.logging.LoggerLayout"/>
-        </encoder>
+        </encoder> -->
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
     </appender>
 
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
