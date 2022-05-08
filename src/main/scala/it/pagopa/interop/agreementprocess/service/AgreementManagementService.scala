@@ -10,35 +10,37 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait AgreementManagementService {
 
-  def createAgreement(contexts: Seq[(String, String)])(
+  def createAgreement(
     producerId: UUID,
     agreementPayload: AgreementProcess.AgreementPayload,
     verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
-  ): Future[Agreement]
+  )(implicit contexts: Seq[(String, String)]): Future[Agreement]
 
-  def getAgreementById(contexts: Seq[(String, String)])(agreementId: String): Future[Agreement]
+  def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement]
 
-  def getAgreements(contexts: Seq[(String, String)])(
+  def getAgreements(
     producerId: Option[String] = None,
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
     descriptorId: Option[String] = None,
     state: Option[AgreementState] = None
-  ): Future[Seq[Agreement]]
+  )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]]
 
-  def activateById(
+  def activateById(agreementId: String, stateChangeDetails: StateChangeDetails)(implicit
     contexts: Seq[(String, String)]
-  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
+  ): Future[Agreement]
 
-  def suspendById(
+  def suspendById(agreementId: String, stateChangeDetails: StateChangeDetails)(implicit
     contexts: Seq[(String, String)]
-  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
+  ): Future[Agreement]
 
-  def markVerifiedAttribute(
+  def markVerifiedAttribute(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed)(implicit
     contexts: Seq[(String, String)]
-  )(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed): Future[Agreement]
+  ): Future[Agreement]
 
-  def upgradeById(contexts: Seq[(String, String)])(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement]
+  def upgradeById(agreementId: UUID, agreementSeed: AgreementSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Agreement]
 }
 
 object AgreementManagementService {

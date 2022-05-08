@@ -1,7 +1,6 @@
 package it.pagopa.interop.agreementprocess.server.impl
 
 import buildinfo.BuildInfo
-import akka.actor.CoordinatedShutdown
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.complete
@@ -32,17 +31,14 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-
-case object StartupErrorShutdown extends CoordinatedShutdown.Reason
 
 object Main extends App with CORSSupport with Dependencies {
 
   private val logger: Logger = Logger(this.getClass)
 
   override implicit val actorSystem: ActorSystem[Nothing] =
-    ActorSystem[Nothing](Behaviors.empty[Nothing], "interop-be-agreement-process")
+    ActorSystem[Nothing](Behaviors.empty[Nothing], BuildInfo.name)
 
   val jwtReader: Future[JWTReader] = JWTConfiguration.jwtReader.loadKeyset().toFuture.map(createJwtReader)
 
@@ -59,7 +55,7 @@ object Main extends App with CORSSupport with Dependencies {
 
   private def launchApp(jwtReader: JWTReader): Future[Http.ServerBinding] = {
     Kamon.init()
-    AkkaManagement.get(actorSystem.toClassic).start()
+    AkkaManagement.get(actorSystem.classicSystem).start()
 
     val agreementApi: AgreementApi = new AgreementApi(
       AgreementApiServiceImpl(
@@ -104,9 +100,9 @@ object Main extends App with CORSSupport with Dependencies {
           )
         complete(error.status, error)(HealthApiMarshallerImpl.toEntityMarshallerProblem)
       })
-    )(actorSystem.toClassic)
+    )(actorSystem.classicSystem)
 
-    Http()(actorSystem.toClassic)
+    Http()(actorSystem.classicSystem)
       .newServerAt("0.0.0.0", ApplicationConfiguration.serverPort)
       .bind(corsHandler(controller.routes))
   }

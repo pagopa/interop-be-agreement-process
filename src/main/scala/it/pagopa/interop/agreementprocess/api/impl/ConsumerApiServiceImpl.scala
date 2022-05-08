@@ -46,7 +46,7 @@ final case class ConsumerApiServiceImpl(
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
       bearerToken <- validateBearer(contexts, jwtReader)
-      agreements  <- agreementManagementService.getAgreements(contexts)(
+      agreements  <- agreementManagementService.getAgreements(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
