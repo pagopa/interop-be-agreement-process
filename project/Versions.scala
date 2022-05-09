@@ -26,5 +26,5 @@ object PagopaVersion {
   lazy val authorizationManagementVersion     = "0.1.4"
   lazy val catalogManagementVersion           = "0.1.4"
   lazy val commonsVersion                     = "0.1.5"
-  lazy val partyManagementVersion             = "0.1.11"
+  lazy val partyManagementVersion             = "0.1.11-uat-SNAPSHOT"
 }
