@@ -94,21 +94,21 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          *,
           None,
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          *
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataTwo.agreement)))
 
@@ -202,21 +202,21 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          *,
           None,
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          *
         )
         .returns(Future.successful(Seq(TestDataOne.agreement, TestDataThree.agreement)))
 
@@ -291,21 +291,21 @@ class ConsumerApiServiceSpec
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          *,
           None,
           Some(Common.consumerId),
           None,
           None,
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          *
         )
         .returns(Future.successful(Seq(TestDataTwo.agreement, TestDataFour.agreement)))
 
