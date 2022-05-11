@@ -13,15 +13,19 @@
         <appender-ref ref="CONSOLE"/>
     </appender>
 
-    <logger name="kamon" level="WARN" />
-    <logger name="akka.actor" level="WARN" />
+    <logger name="kamon" level="ERROR" />
     <logger name="akka.event" level="WARN" />
     <logger name="akka.remote" level="WARN" />
     <logger name="akka.cluster" level="WARN" />
     <logger name="akka.management" level="WARN" />
+    <logger name="akka.projection" level="WARN" />
+    <logger name="akka.persistence" level="WARN" />
+    <logger name="akka.discovery.kubernetes" level="WARN" />
+    <logger name="com.zaxxer.hikari" level="WARN" />
+    
     <logger name="it.pagopa.interop" level="INFO" />
 
-    <root name="application" level="ERROR">
+    <root name="application" level="INFO">
         <appender-ref ref="ASYNC"/>
     </root>
 
