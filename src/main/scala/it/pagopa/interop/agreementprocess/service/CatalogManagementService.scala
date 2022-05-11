@@ -10,7 +10,7 @@ import scala.util.Try
 
 trait CatalogManagementService {
 
-  def getEServiceById(contexts: Seq[(String, String)])(eServiceId: UUID): Future[EService]
+  def getEServiceById(eServiceId: UUID)(implicit contexts: Seq[(String, String)]): Future[EService]
 
 }
 

@@ -122,7 +122,7 @@ class CatalogProviderContractSpec
         CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)(system.executionContext)
 
       val results = catalogManagement(EServiceApi(s"${config.baseUrl}/catalog-management/0.0.1"))
-        .getEServiceById(Seq("bearer" -> "1234"))(UUID.fromString(eserviceId))
+        .getEServiceById(UUID.fromString(eserviceId))(Seq("bearer" -> "1234"))
       val value   = results.futureValue
       value.producerId.toString shouldBe "24772a3d-e6f2-47f2-96e5-4cbd1e4e9999"
       value.descriptors(0).audience(0) shouldBe "pippo"

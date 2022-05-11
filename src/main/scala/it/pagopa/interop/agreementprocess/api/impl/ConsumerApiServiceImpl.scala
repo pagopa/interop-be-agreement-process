@@ -51,19 +51,17 @@ final case class ConsumerApiServiceImpl(
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
       eserviceIds = agreements.map(_.eserviceId)
-      eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(contexts))
+      eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById)
       consumerUuid        <- consumerId.toFutureUUID
       partyAttributes     <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
       eserviceAttributes  <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)
       certified           <- Future.traverse(partyAttributes)(a =>
-        attributeManagementService.getAttributeByOriginAndCode(contexts)(a.origin, a.code)
+        attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code)
       )
-      declared   <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute(contexts))
-      verified   <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(
-        attributeManagementService.getAttribute(contexts)
-      )
+      declared            <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute)
+      verified   <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(attributeManagementService.getAttribute)
       attributes <- AttributeManagementService.getAttributes(
         verified = verified,
         declared = declared,
