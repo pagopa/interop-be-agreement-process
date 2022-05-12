@@ -3,6 +3,7 @@ package it.pagopa.interop.agreementprocess.common.system
 import com.typesafe.config.{Config, ConfigFactory}
 
 object ApplicationConfiguration {
+  System.setProperty("kanela.show-banner", "false")
   val config: Config = ConfigFactory.load()
 
   val serverPort: Int = config.getInt("agreement-process.port")

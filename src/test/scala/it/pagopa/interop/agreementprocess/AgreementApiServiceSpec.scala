@@ -92,28 +92,28 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(pendingAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(pendingAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -125,34 +125,32 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, eService.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(eService.id, Common.requestContexts)
         .once()
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
+        .activateById(_: String, _: StateChangeDetails)(_: Seq[(String, String)]))
         .expects(
-          Common.requestContexts,
           TestDataOne.id.toString,
-          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
+          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER)),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(pendingAgreement))
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: Seq[(String, String)])(
-            _: UUID,
-            _: UUID,
-            _: AuthorizationManagementDependency.ClientComponentState
+          .updateStateOnClients(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+            _: Seq[(String, String)]
           )
         )
         .expects(
-          Common.requestContexts,
           pendingAgreement.eserviceId,
           pendingAgreement.consumerId,
-          AuthorizationManagementDependency.ClientComponentState.ACTIVE
+          AuthorizationManagementDependency.ClientComponentState.ACTIVE,
+          Common.requestContexts
         )
         .returning(Future.successful(()))
         .once()
@@ -190,28 +188,28 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(suspendedAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(suspendedAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -223,34 +221,32 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, eService.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(eService.id, Common.requestContexts)
         .once()
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
+        .activateById(_: String, _: StateChangeDetails)(_: Seq[(String, String)]))
         .expects(
-          Common.requestContexts,
           TestDataOne.id.toString,
-          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
+          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER)),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(suspendedAgreement))
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: Seq[(String, String)])(
-            _: UUID,
-            _: UUID,
-            _: AuthorizationManagementDependency.ClientComponentState
+          .updateStateOnClients(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+            _: Seq[(String, String)]
           )
         )
         .expects(
-          Common.requestContexts,
           suspendedAgreement.eserviceId,
           suspendedAgreement.consumerId,
-          AuthorizationManagementDependency.ClientComponentState.ACTIVE
+          AuthorizationManagementDependency.ClientComponentState.ACTIVE,
+          Common.requestContexts
         )
         .returning(Future.successful(()))
         .once()
@@ -297,28 +293,28 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq(activeAgreement)))
@@ -356,28 +352,28 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -415,28 +411,28 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -448,8 +444,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, eService.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(eService.id, Common.requestContexts)
         .once()
         .returns(Future.successful(eService))
 
@@ -466,34 +462,32 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       val activeAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(activeAgreement))
 
       (mockAgreementManagementService
-        .suspendById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
+        .suspendById(_: String, _: StateChangeDetails)(_: Seq[(String, String)]))
         .expects(
-          Common.requestContexts,
           TestDataOne.id.toString,
-          StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER))
+          StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER)),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(activeAgreement))
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: Seq[(String, String)])(
-            _: UUID,
-            _: UUID,
-            _: AuthorizationManagementDependency.ClientComponentState
+          .updateStateOnClients(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+            _: Seq[(String, String)]
           )
         )
         .expects(
-          Common.requestContexts,
           activeAgreement.eserviceId,
           activeAgreement.consumerId,
-          AuthorizationManagementDependency.ClientComponentState.INACTIVE
+          AuthorizationManagementDependency.ClientComponentState.INACTIVE,
+          Common.requestContexts
         )
         .returning(Future.successful(()))
         .once()
@@ -508,8 +502,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
@@ -530,14 +524,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .once()
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataSeven.agreementId.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.agreementId.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(TestDataSeven.agreement))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, TestDataSeven.eservice.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.eservice.id, Common.requestContexts)
         .once()
         .returns(Future.successful(TestDataSeven.eservice))
 
@@ -554,14 +548,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataSeven.consumer))
 
       (mockAttributeManagementService
-        .getAttribute(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataSeven.eservice.attributes.verified(0).single.get.id)
+        .getAttribute(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.eservice.attributes.verified(0).single.get.id, Common.requestContexts)
         .once()
         .returns(Future.successful(ClientAttributes.verifiedAttributeId1))
 
       (mockAttributeManagementService
-        .getAttribute(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataSeven.eservice.attributes.verified(1).single.get.id)
+        .getAttribute(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.eservice.attributes.verified(1).single.get.id, Common.requestContexts)
         .once()
         .returns(Future.successful(ClientAttributes.verifiedAttributeId2))
 
@@ -581,8 +575,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       val expected = Agreement(
         id = TestDataSeven.agreementId,
-        producer = Organization(id = TestDataSeven.producer.institutionId, name = TestDataSeven.producer.description),
-        consumer = Organization(id = TestDataSeven.consumer.institutionId, name = TestDataSeven.consumer.description),
+        producer = Organization(id = TestDataSeven.producer.originId, name = TestDataSeven.producer.description),
+        consumer = Organization(id = TestDataSeven.consumer.originId, name = TestDataSeven.consumer.description),
         eservice = EService(
           id = TestDataSeven.eservice.id,
           name = TestDataSeven.eservice.name,

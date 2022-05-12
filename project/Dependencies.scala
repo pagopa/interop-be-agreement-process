@@ -126,13 +126,9 @@ object Dependencies {
       scalapact.core                           % Test,
       scalatest.core                           % Test
     )
-    lazy val client: Seq[ModuleID]    = Seq(
-      akka.stream     % Compile,
-      akka.http       % Compile,
-      akka.httpJson4s % Compile,
-      akka.slf4j      % Compile,
-      json4s.jackson  % Compile,
-      json4s.ext      % Compile
-    )
+    lazy val client: Seq[ModuleID]    =
+      Seq(akka.stream, akka.http, akka.httpJson4s, akka.slf4j, json4s.jackson, json4s.ext, pagopa.commons).map(
+        _ % Compile
+      )
   }
 }

@@ -335,10 +335,12 @@ trait SpecHelper {
     val consumerId: UUID          = UUID.randomUUID()
     val createdAt: OffsetDateTime = OffsetDateTime.now()
     val consumer                  = Institution(
-      institutionId = "institutionIdC",
       description = "Consumer",
       digitalAddress = "digitalAddress",
       id = consumerId,
+      origin = "origin",
+      originId = "originId",
+      externalId = "externalId",
       attributes = Seq.empty,
       taxCode = "code",
       address = "address",
@@ -346,10 +348,12 @@ trait SpecHelper {
     )
 
     val producer = Institution(
-      institutionId = "institutionIdP",
       description = "Producer",
       digitalAddress = "digitalAddress",
       id = producerId,
+      origin = "origin",
+      originId = "originId",
+      externalId = "externalId",
       attributes = Seq.empty,
       taxCode = "code",
       address = "address",
