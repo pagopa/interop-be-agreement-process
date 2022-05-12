@@ -126,8 +126,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, UUID.fromString(Common.consumerId))
+        .getPartyAttributes(_: String)(_: UUID)(_: Seq[(String, String)]))
+        .expects(Common.bearerToken, UUID.fromString(Common.consumerId), *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
@@ -234,8 +234,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, UUID.fromString(Common.consumerId))
+        .getPartyAttributes(_: String)(_: UUID)(_: Seq[(String, String)]))
+        .expects(Common.bearerToken, UUID.fromString(Common.consumerId), *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
@@ -323,8 +323,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, UUID.fromString(Common.consumerId))
+        .getPartyAttributes(_: String)(_: UUID)(_: Seq[(String, String)]))
+        .expects(Common.bearerToken, UUID.fromString(Common.consumerId), *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
