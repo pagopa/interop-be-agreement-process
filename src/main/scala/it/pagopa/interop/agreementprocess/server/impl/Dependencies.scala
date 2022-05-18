@@ -3,7 +3,7 @@ package it.pagopa.interop.agreementprocess.server.impl
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
 import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
-import it.pagopa.interop.partymanagement.client.api.PartyApi
+import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
 import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
 
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
@@ -33,6 +33,8 @@ import akka.http.scaladsl.server.Directives.complete
 
 trait Dependencies {
 
+  implicit val partyManagementApiKeyValue: PartyManagementApiKeyValue = PartyManagementApiKeyValue()
+
   def agreementManagement()(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AgreementManagementService =
     AgreementManagementServiceImpl(
       AgreementManagementInvoker()(actorSystem.classicSystem),
@@ -45,7 +47,7 @@ trait Dependencies {
       EServiceApi(ApplicationConfiguration.catalogManagementURL)
     )
 
-  def partyManagement(implicit actorSystem: ActorSystem[_]): PartyManagementService =
+  def partyManagement(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): PartyManagementService =
     PartyManagementServiceImpl(
       PartyManagementInvoker()(actorSystem.classicSystem),
       PartyApi(ApplicationConfiguration.partyManagementURL)

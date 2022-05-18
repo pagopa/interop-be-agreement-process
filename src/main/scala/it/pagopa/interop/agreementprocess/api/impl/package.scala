@@ -8,6 +8,7 @@ import it.pagopa.interop.commons.utils.TypeConversions.TryOps
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.errors.ComponentError
 import it.pagopa.interop._
+import it.pagopa.interop.selfcare._
 import it.pagopa.interop.agreementprocess.model._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 

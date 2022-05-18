@@ -46,10 +46,9 @@ final case class AgreementApiServiceImpl(
   ): Route = {
     logger.info("Activating agreement {}", agreementId)
     val result = for {
-      bearerToken           <- validateBearer(contexts, jwtReader)
       agreement             <- agreementManagementService.getAgreementById(agreementId)
       _                     <- verifyAgreementActivationEligibility(agreement)
-      consumerAttributes    <- partyManagementService.getPartyAttributes(bearerToken)(agreement.consumerId)
+      consumerAttributes    <- partyManagementService.getPartyAttributes(agreement.consumerId)
       consumerAttributesIds <- consumerAttributes.traverse(a =>
         attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code).map(_.id)
       )
@@ -116,14 +115,13 @@ final case class AgreementApiServiceImpl(
   ): Route = {
     logger.info("Creating agreement {}", agreementPayload)
     val result = for {
-      bearerToken        <- validateBearer(contexts, jwtReader)
       consumerAgreements <- agreementManagementService.getAgreements(consumerId =
         Some(agreementPayload.consumerId.toString)
       )
       validPayload       <- AgreementManagementService.validatePayload(agreementPayload, consumerAgreements)
       eservice           <- catalogManagementService.getEServiceById(validPayload.eserviceId)
       activeEservice <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
-      consumer       <- partyManagementService.getInstitution(bearerToken)(agreementPayload.consumerId)
+      consumer       <- partyManagementService.getInstitution(agreementPayload.consumerId)
       consumerAttributeIdentifiers <- consumer.attributes.traverse(a =>
         attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code).map(_.id)
       )
@@ -142,7 +140,7 @@ final case class AgreementApiServiceImpl(
         validPayload,
         verifiedAttributeSeeds
       )
-      apiAgreement           <- getApiAgreement(bearerToken)(agreement)
+      apiAgreement           <- getApiAgreement(agreement)
     } yield apiAgreement
 
     onComplete(result) {
@@ -180,7 +178,6 @@ final case class AgreementApiServiceImpl(
       latest
     )
     val result: Future[Seq[Agreement]] = for {
-      bearerToken              <- validateBearer(contexts, jwtReader)
       stateEnum                <- state.traverse(AgreementManagementDependency.AgreementState.fromValue).toFuture
       agreements               <- agreementManagementService.getAgreements(
         producerId = producerId,
@@ -189,7 +186,7 @@ final case class AgreementApiServiceImpl(
         descriptorId = descriptorId,
         state = stateEnum
       )
-      apiAgreementsWithVersion <- Future.traverse(agreements)(getApiAgreement(bearerToken))
+      apiAgreementsWithVersion <- Future.traverse(agreements)(getApiAgreement)
       apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
     } yield apiAgreements
 
@@ -216,9 +213,8 @@ final case class AgreementApiServiceImpl(
   ): Route = {
     logger.info("Getting agreement by id {}", agreementId)
     val result: Future[Agreement] = for {
-      bearerToken  <- validateBearer(contexts, jwtReader)
       agreement    <- agreementManagementService.getAgreementById(agreementId)
-      apiAgreement <- getApiAgreement(bearerToken)(agreement)
+      apiAgreement <- getApiAgreement(agreement)
     } yield apiAgreement
 
     onComplete(result) {
@@ -239,16 +235,16 @@ final case class AgreementApiServiceImpl(
   }
 
   private def getApiAgreement(
-    bearerToken: String
-  )(agreement: ManagementAgreement)(implicit contexts: Seq[(String, String)]): Future[Agreement] = {
+    agreement: ManagementAgreement
+  )(implicit contexts: Seq[(String, String)]): Future[Agreement] = {
     for {
       eservice               <- catalogManagementService.getEServiceById(agreement.eserviceId)
       descriptor             <- eservice.descriptors
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
       activeDescriptorOption <- CatalogManagementService.getActiveDescriptorOption(eservice, descriptor)
-      producer               <- partyManagementService.getInstitution(bearerToken)(agreement.producerId)
-      consumer               <- partyManagementService.getInstitution(bearerToken)(agreement.consumerId)
+      producer               <- partyManagementService.getInstitution(agreement.producerId)
+      consumer               <- partyManagementService.getInstitution(agreement.consumerId)
       attributes             <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
     } yield Agreement(
       id = agreement.id,
@@ -352,7 +348,6 @@ final case class AgreementApiServiceImpl(
     * Checks performed:
     * - no other active agreement exists for the same combination of Producer, Consumer, EService, Descriptor
     * - the given agreement is in state Pending (first activation) or Suspended (re-activation)
-    * @param bearerToken auth token
     * @param agreement to be activated
     * @return
     */
@@ -385,7 +380,6 @@ final case class AgreementApiServiceImpl(
   ): Route = {
     logger.info("Updating agreement {}", agreementId)
     val result = for {
-      bearerToken                    <- validateBearer(contexts, jwtReader)
       agreement                      <- agreementManagementService.getAgreementById(agreementId)
       eservice                       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       latestActiveEserviceDescriptor <- eservice.descriptors
@@ -404,7 +398,7 @@ final case class AgreementApiServiceImpl(
         )
       )
       newAgreement <- agreementManagementService.upgradeById(agreement.id, agreementSeed)
-      apiAgreement <- getApiAgreement(bearerToken)(newAgreement)
+      apiAgreement <- getApiAgreement(newAgreement)
     } yield apiAgreement
 
     onComplete(result) {

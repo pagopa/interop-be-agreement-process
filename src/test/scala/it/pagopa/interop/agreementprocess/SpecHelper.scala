@@ -15,7 +15,7 @@ import it.pagopa.interop.attributeregistrymanagement.client.model.{
 }
 import it.pagopa.interop.catalogmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
-import it.pagopa.interop.partymanagement.client.model.{Institution, Attribute => PartyManagementAttribute}
+import it.pagopa.interop.selfcare.partymanagement.client.model.{Institution, Attribute => PartyManagementAttribute}
 
 import java.net.InetAddress
 import java.time.OffsetDateTime
@@ -344,7 +344,8 @@ trait SpecHelper {
       attributes = Seq.empty,
       taxCode = "code",
       address = "address",
-      zipCode = "zipCode"
+      zipCode = "zipCode",
+      institutionType = "PUBLIC"
     )
 
     val producer = Institution(
@@ -357,7 +358,8 @@ trait SpecHelper {
       attributes = Seq.empty,
       taxCode = "code",
       address = "address",
-      zipCode = "zipCode"
+      zipCode = "zipCode",
+      institutionType = "PUBLIC"
     )
 
     val eservice: EService = EService(

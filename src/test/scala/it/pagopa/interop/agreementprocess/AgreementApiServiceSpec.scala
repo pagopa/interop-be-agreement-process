@@ -7,6 +7,8 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
+import it.pagopa.interop.agreementmanagement.client.{invoker => AgreementManagementInvoker}
+import it.pagopa.interop.agreementmanagement.client.{api => AgreementManagementApi}
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
@@ -22,6 +24,7 @@ import it.pagopa.interop.agreementprocess.api.{
 }
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
+import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServiceImpl
 import it.pagopa.interop.agreementprocess.service.{
   AgreementManagementService,
   AttributeManagementService,
@@ -85,12 +88,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: Seq[(String, String)]))
         .expects(TestDataOne.id.toString, Common.requestContexts)
@@ -119,8 +116,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, pendingAgreement.consumerId)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
+        .expects(pendingAgreement.consumerId, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -181,12 +178,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: Seq[(String, String)]))
         .expects(TestDataOne.id.toString, Common.requestContexts)
@@ -215,8 +206,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, suspendedAgreement.consumerId)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
+        .expects(suspendedAgreement.consumerId, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -258,6 +249,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
     "fail if missing authorization header" in {
       implicit val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
+      val service: AgreementApiService             = AgreementApiServiceImpl(
+        AgreementManagementServiceImpl(AgreementManagementInvoker.ApiInvoker(), AgreementManagementApi.AgreementApi()),
+        mockCatalogManagementService,
+        mockPartyManagementService,
+        mockAttributeManagementService,
+        mockAuthorizationManagementService,
+        mockJWTReader
+      )(ExecutionContext.global)
       Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
@@ -285,12 +284,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           )
         )
       )
-
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
 
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: Seq[(String, String)]))
@@ -345,12 +338,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: Seq[(String, String)]))
         .expects(TestDataOne.id.toString, Common.requestContexts)
@@ -404,12 +391,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: Seq[(String, String)]))
         .expects(TestDataOne.id.toString, Common.requestContexts)
@@ -438,8 +419,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, currentAgreement.consumerId)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
+        .expects(currentAgreement.consumerId, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -517,12 +498,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "retrieves an agreement" in {
       implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
         .getAgreementById(_: String)(_: Seq[(String, String)]))
         .expects(TestDataSeven.agreementId.toString, Common.requestContexts)
@@ -536,20 +511,20 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataSeven.eservice))
 
       (mockPartyManagementService
-        .getInstitution(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataSeven.producerId)
+        .getInstitution(_: UUID)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.producerId, *)
         .once()
         .returns(Future.successful(TestDataSeven.producer))
 
       (mockPartyManagementService
-        .getInstitution(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataSeven.consumerId)
+        .getInstitution(_: UUID)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.consumerId, *)
         .once()
         .returns(Future.successful(TestDataSeven.consumer))
 
       (mockAttributeManagementService
         .getAttribute(_: String)(_: Seq[(String, String)]))
-        .expects(TestDataSeven.eservice.attributes.verified(0).single.get.id, Common.requestContexts)
+        .expects(TestDataSeven.eservice.attributes.verified.head.single.get.id, Common.requestContexts)
         .once()
         .returns(Future.successful(ClientAttributes.verifiedAttributeId1))
 
@@ -580,10 +555,10 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         eservice = EService(
           id = TestDataSeven.eservice.id,
           name = TestDataSeven.eservice.name,
-          version = TestDataSeven.eservice.descriptors(0).version,
+          version = TestDataSeven.eservice.descriptors.head.version,
           activeDescriptor = None
         ),
-        eserviceDescriptorId = TestDataSeven.eservice.descriptors(0).id,
+        eserviceDescriptorId = TestDataSeven.eservice.descriptors.head.id,
         state = agreementStateToApi(TestDataSeven.agreement.state),
         suspendedByConsumer = None,
         suspendedByProducer = None,
@@ -597,10 +572,10 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
                 origin = ClientAttributes.verifiedAttributeId1.origin,
                 name = ClientAttributes.verifiedAttributeId1.name,
                 explicitAttributeVerification =
-                  Some(TestDataSeven.eservice.attributes.verified(0).single.get.explicitAttributeVerification),
-                verified = TestDataSeven.agreement.verifiedAttributes(0).verified,
-                verificationDate = TestDataSeven.agreement.verifiedAttributes(0).verificationDate,
-                validityTimespan = TestDataSeven.agreement.verifiedAttributes(0).validityTimespan
+                  Some(TestDataSeven.eservice.attributes.verified.head.single.get.explicitAttributeVerification),
+                verified = TestDataSeven.agreement.verifiedAttributes.head.verified,
+                verificationDate = TestDataSeven.agreement.verifiedAttributes.head.verificationDate,
+                validityTimespan = TestDataSeven.agreement.verifiedAttributes.head.validityTimespan
               )
             ),
             group = None
