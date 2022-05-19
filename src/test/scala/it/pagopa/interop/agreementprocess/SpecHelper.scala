@@ -344,7 +344,9 @@ trait SpecHelper {
       attributes = Seq.empty,
       taxCode = "code",
       address = "address",
-      zipCode = "zipCode"
+      zipCode = "zipCode",
+      institutionType = Some("PUBLIC"),
+      products = Map.empty
     )
 
     val producer = Institution(
@@ -357,7 +359,9 @@ trait SpecHelper {
       attributes = Seq.empty,
       taxCode = "code",
       address = "address",
-      zipCode = "zipCode"
+      zipCode = "zipCode",
+      institutionType = Some("PUBLIC"),
+      products = Map.empty
     )
 
     val eservice: EService = EService(
