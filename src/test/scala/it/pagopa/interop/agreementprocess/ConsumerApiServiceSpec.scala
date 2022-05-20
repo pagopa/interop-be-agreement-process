@@ -22,8 +22,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import java.util.UUID
 import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 
 class ConsumerApiServiceSpec
     extends ScalaTestWithActorTestKit
@@ -120,8 +119,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
-        .expects(UUID.fromString(Common.consumerId), *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(UUID.fromString(Common.consumerId), *, *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
@@ -222,8 +221,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
-        .expects(UUID.fromString(Common.consumerId), *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(UUID.fromString(Common.consumerId), *, *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
@@ -305,8 +304,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
-        .expects(UUID.fromString(Common.consumerId), *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(UUID.fromString(Common.consumerId), *, *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService

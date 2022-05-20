@@ -116,8 +116,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
-        .expects(pendingAgreement.consumerId, *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(pendingAgreement.consumerId, *, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -206,8 +206,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
-        .expects(suspendedAgreement.consumerId, *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(suspendedAgreement.consumerId, *, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -419,8 +419,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: UUID)(_: Seq[(String, String)]))
-        .expects(currentAgreement.consumerId, *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(currentAgreement.consumerId, *, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
@@ -511,14 +511,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataSeven.eservice))
 
       (mockPartyManagementService
-        .getInstitution(_: UUID)(_: Seq[(String, String)]))
-        .expects(TestDataSeven.producerId, *)
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(TestDataSeven.producerId, *, *)
         .once()
         .returns(Future.successful(TestDataSeven.producer))
 
       (mockPartyManagementService
-        .getInstitution(_: UUID)(_: Seq[(String, String)]))
-        .expects(TestDataSeven.consumerId, *)
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(TestDataSeven.consumerId, *, *)
         .once()
         .returns(Future.successful(TestDataSeven.consumer))
 
