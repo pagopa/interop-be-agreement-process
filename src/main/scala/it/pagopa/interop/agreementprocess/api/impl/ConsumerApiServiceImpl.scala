@@ -16,6 +16,7 @@ import it.pagopa.interop.agreementprocess.service.{
   CatalogManagementService,
   PartyManagementService
 }
+import it.pagopa.interop.commons.jwt.M2M_ROLE
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.TypeConversions.StringOps
@@ -42,7 +43,7 @@ final case class ConsumerApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerAttributes: ToEntityMarshaller[Attributes],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = {
+  ): Route = authorize(M2M_ROLE) {
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
       bearerToken <- validateBearer(contexts, jwtReader)

@@ -4,33 +4,23 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
-import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
   ConsumerApiMarshallerImpl
 }
-import it.pagopa.interop.agreementprocess.api.{
-  AgreementApi,
-  AgreementApiMarshaller,
-  AgreementApiService,
-  ConsumerApiMarshaller,
-  HealthApi
-}
+import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
-import it.pagopa.interop.agreementprocess.service.{
-  AgreementManagementService,
-  AttributeManagementService,
-  AuthorizationManagementService,
-  CatalogManagementService,
-  PartyManagementService
-}
+import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
+import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
+import it.pagopa.interop.commons.utils.USER_ROLES
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -38,7 +28,6 @@ import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
@@ -54,7 +43,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
   val mockJWTReader: JWTReader                                           = mock[JWTReader]
 
   import consumerApiMarshaller._
-
   val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
@@ -66,7 +54,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Activation" should {
     "succeed on pending agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
       val eService         = TestDataOne.eService.copy(descriptors =
         Seq(
@@ -161,7 +149,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "succeed on suspended agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val suspendedAgreement                      =
         TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
       val eService                                = TestDataOne.eService.copy(descriptors =
@@ -259,12 +247,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "fail if missing authorization header" in {
       implicit val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
       Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+        status shouldEqual StatusCodes.Forbidden
       }
     }
 
     "fail if an active agreement already exists" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
       val activeAgreement  =
         TestDataOne.agreement.copy(id = UUID.randomUUID(), state = AgreementManagementDependency.AgreementState.ACTIVE)
@@ -325,7 +313,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if agreement is not Pending or Suspended" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       val eService = TestDataOne.eService.copy(descriptors =
@@ -384,7 +372,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if descriptor is not Published" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
       val eService = TestDataOne.eService.copy(descriptors =
@@ -458,7 +446,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Suspension" should {
     "succeed on active agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val activeAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       (mockAgreementManagementService
@@ -498,7 +486,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if agreement is not Active" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
       (mockAgreementManagementService
@@ -515,7 +503,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement GET" should {
     "retrieves an agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
 
       (mockJWTReader
         .getClaims(_: String))
