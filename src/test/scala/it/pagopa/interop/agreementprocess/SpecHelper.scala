@@ -4,6 +4,9 @@ import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.server.Directives.Authenticator
+import akka.http.scaladsl.server.directives.Credentials
+import akka.http.scaladsl.server.directives.Credentials.{Missing, Provided}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.nimbusds.jwt.JWTClaimsSet
@@ -15,6 +18,7 @@ import it.pagopa.interop.attributeregistrymanagement.client.model.{
 }
 import it.pagopa.interop.catalogmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
+import it.pagopa.interop.commons.utils.{BEARER, USER_ROLES}
 import it.pagopa.interop.partymanagement.client.model.{Institution, Attribute => PartyManagementAttribute}
 
 import java.net.InetAddress
@@ -56,7 +60,7 @@ trait SpecHelper {
 
   object Common {
     val bearerToken: String                          = "bearerToken"
-    val requestContexts: Seq[(String, String)]       = Seq("bearer" -> "bearerToken")
+    val requestContexts: Seq[(String, String)]       = Seq("bearer" -> "bearerToken", USER_ROLES -> "admin")
     val consumerId: String                           = "07f8dce0-0a5b-476b-9fdd-a7a658eb9213"
     val verifiedAttributeId1: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9214"
     val verifiedAttributeId2: String                 = "07f8dce0-0a5b-476b-9fdd-a7a658eb9215"
@@ -528,4 +532,14 @@ trait SpecHelper {
     )
   }
 
+}
+
+//mocks admin user role rights for every call
+object AdminMockAuthenticator extends Authenticator[Seq[(String, String)]] {
+  override def apply(credentials: Credentials): Option[Seq[(String, String)]] = {
+    credentials match {
+      case Provided(identifier) => Some(Seq(BEARER -> identifier, USER_ROLES -> "admin,m2m"))
+      case Missing              => None
+    }
+  }
 }

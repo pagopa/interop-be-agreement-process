@@ -7,23 +7,21 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, SecurityDirectives}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.impl.{ConsumerApiMarshallerImpl, ConsumerApiServiceImpl}
-import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
-import it.pagopa.interop.commons.utils.AkkaUtils.Authenticator
 import it.pagopa.interop.agreementprocess.api.{AgreementApi, ConsumerApi, ConsumerApiMarshaller, HealthApi}
 import it.pagopa.interop.agreementprocess.model.{Attribute, Attributes}
 import it.pagopa.interop.agreementprocess.server.Controller
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import java.util.UUID
 import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 class ConsumerApiServiceSpec
     extends ScalaTestWithActorTestKit
@@ -50,7 +48,7 @@ class ConsumerApiServiceSpec
   var bindServer: Option[Future[Http.ServerBinding]] = None
 
   val wrappingDirective: AuthenticationDirective[Seq[(String, String)]] =
-    SecurityDirectives.authenticateOAuth2("SecurityRealm", Authenticator)
+    SecurityDirectives.authenticateOAuth2("SecurityRealm", AdminMockAuthenticator)
 
   override def beforeAll(): Unit = {
 
