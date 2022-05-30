@@ -20,6 +20,7 @@ import it.pagopa.interop.catalogmanagement.client.model.{
   EService => CatalogEService
 }
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
+import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
@@ -43,7 +44,7 @@ final case class AgreementApiServiceImpl(
   override def activateAgreement(agreementId: String, partyId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE) {
     logger.info("Activating agreement {}", agreementId)
     val result = for {
       agreement             <- agreementManagementService.getAgreementById(agreementId)
@@ -82,7 +83,7 @@ final case class AgreementApiServiceImpl(
   override def suspendAgreement(agreementId: String, partyId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE) {
     logger.info("Suspending agreement {}", agreementId)
     val result = for {
       agreement          <- agreementManagementService.getAgreementById(agreementId)
@@ -112,7 +113,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE) {
     logger.info("Creating agreement {}", agreementPayload)
     val result = for {
       consumerAgreements <- agreementManagementService.getAgreements(consumerId =
@@ -167,7 +168,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
     logger.info(
       "Getting agreements by producer = {}, consumer = {}, eservice = {}, descriptor = {}, state = {}, latest = {}",
       producerId,
@@ -210,7 +211,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
     logger.info("Getting agreement by id {}", agreementId)
     val result: Future[Agreement] = for {
       agreement    <- agreementManagementService.getAgreementById(agreementId)
@@ -324,7 +325,7 @@ final case class AgreementApiServiceImpl(
   override def verifyAgreementAttribute(agreementId: String, attributeId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE) {
     logger.info("Verifying agreement {} attribute {}", agreementId, attributeId)
     val result = for {
       attributeUUID <- attributeId.toFutureUUID
@@ -377,7 +378,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE) {
     logger.info("Updating agreement {}", agreementId)
     val result = for {
       agreement                      <- agreementManagementService.getAgreementById(agreementId)
