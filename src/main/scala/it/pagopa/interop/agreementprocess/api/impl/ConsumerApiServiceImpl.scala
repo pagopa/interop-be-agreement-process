@@ -5,17 +5,12 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.ConsumerApiService
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.RetrieveAttributesError
 import it.pagopa.interop.agreementprocess.model.{Attributes, Problem}
-import it.pagopa.interop.agreementprocess.service.{
-  AgreementManagementService,
-  AttributeManagementService,
-  CatalogManagementService,
-  PartyManagementService
-}
+import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.TypeConversions.StringOps
@@ -32,7 +27,7 @@ final case class ConsumerApiServiceImpl(
 )(implicit ec: ExecutionContext)
     extends ConsumerApiService {
 
-  val logger = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
+  val logger: LoggerTakingImplicit[ContextFieldsToLog] = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 
   /** Code: 200, Message: attributes found, DataType: Attributes
     * Code: 404, Message: Consumer not found, DataType: Problem
@@ -45,15 +40,14 @@ final case class ConsumerApiServiceImpl(
   ): Route = {
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
-      bearerToken <- validateBearer(contexts, jwtReader)
-      agreements  <- agreementManagementService.getAgreements(
+      agreements <- agreementManagementService.getAgreements(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
       eserviceIds = agreements.map(_.eserviceId)
       eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById)
       consumerUuid        <- consumerId.toFutureUUID
-      partyAttributes     <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
+      partyAttributes     <- partyManagementService.getPartyAttributes(consumerUuid)
       eserviceAttributes  <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)

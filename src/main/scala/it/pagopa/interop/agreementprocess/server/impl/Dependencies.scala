@@ -1,37 +1,33 @@
 package it.pagopa.interop.agreementprocess.server.impl
 
-import it.pagopa.interop.agreementprocess.service._
-import it.pagopa.interop.agreementprocess.service.impl._
-import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
-import it.pagopa.interop.partymanagement.client.api.PartyApi
-import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
-
-import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
+import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives.complete
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.directives.SecurityDirectives
+import com.atlassian.oai.validator.report.ValidationReport
 import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
+import it.pagopa.interop.agreementprocess.api._
+import it.pagopa.interop.agreementprocess.api.impl.{HealthApiMarshallerImpl, HealthServiceApiImpl, _}
+import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
+import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.agreementprocess.service.impl._
+import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
+import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
-import it.pagopa.interop.commons.jwt.{KID, PublicKeysHolder, SerializedKey}
-import akka.actor.typed.ActorSystem
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import it.pagopa.interop.commons.jwt.JWTConfiguration
+import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, SerializedKey}
+import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
 import it.pagopa.interop.commons.utils.TypeConversions._
-import it.pagopa.interop.agreementprocess.api.HealthApi
-import it.pagopa.interop.agreementprocess.api.impl.HealthServiceApiImpl
-import it.pagopa.interop.agreementprocess.api.impl.HealthApiMarshallerImpl
-import it.pagopa.interop.commons.utils.AkkaUtils
-import akka.http.scaladsl.server.directives.SecurityDirectives
-import it.pagopa.interop.agreementprocess.api._
-import it.pagopa.interop.agreementprocess.api.impl._
-import com.atlassian.oai.validator.report.ValidationReport
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.model.StatusCodes
-import it.pagopa.interop.commons.utils.OpenapiUtils
 import it.pagopa.interop.commons.utils.errors.GenericComponentErrors
-import akka.http.scaladsl.server.Directives.complete
+import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
+
+import scala.concurrent.{ExecutionContext, Future}
 
 trait Dependencies {
+
+  implicit val partyManagementApiKeyValue: PartyManagementApiKeyValue = PartyManagementApiKeyValue()
 
   def agreementManagement()(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AgreementManagementService =
     AgreementManagementServiceImpl(

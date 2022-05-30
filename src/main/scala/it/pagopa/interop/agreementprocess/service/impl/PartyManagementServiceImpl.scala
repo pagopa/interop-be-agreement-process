@@ -1,32 +1,41 @@
 package it.pagopa.interop.agreementprocess.service.impl
 
-import it.pagopa.interop.agreementprocess.service.{PartyManagementInvoker, PartyManagementService}
-import it.pagopa.interop.partymanagement.client.api.PartyApi
-import it.pagopa.interop.partymanagement.client.invoker.{ApiRequest, BearerToken}
-import it.pagopa.interop.partymanagement.client.model.{Attribute, Institution}
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
+import it.pagopa.interop.agreementprocess.service.{
+  PartyManagementApiKeyValue,
+  PartyManagementInvoker,
+  PartyManagementService
+}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
+import it.pagopa.interop.commons.utils.AkkaUtils.getUidFuture
+import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
+import it.pagopa.interop.selfcare.partymanagement.client.model.{Attribute, Institution}
 
 import java.util.UUID
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, partyApi: PartyApi)
-    extends PartyManagementService {
+final case class PartyManagementServiceImpl(invoker: PartyManagementInvoker, partyApi: PartyApi)(implicit
+  partyManagementApiKeyValue: PartyManagementApiKeyValue
+) extends PartyManagementService {
 
-  implicit val logger = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
+  implicit val logger: LoggerTakingImplicit[ContextFieldsToLog] =
+    Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 
   override def getPartyAttributes(
-    bearerToken: String
-  )(partyId: UUID)(implicit contexts: Seq[(String, String)]): Future[Seq[Attribute]] = {
-    val request: ApiRequest[Seq[Attribute]] = partyApi.getPartyAttributes(partyId)(BearerToken(bearerToken))
-    invoker.invoke(request, s"Retrieving Attributes of party $partyId")
-  }
+    partyId: UUID
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Seq[Attribute]] =
+    for {
+      uid <- getUidFuture(contexts)
+      request = partyApi.getPartyAttributes(partyId)(uid)
+      result <- invoker.invoke(request, s"Retrieving Attributes of party $partyId")
+    } yield result
 
   override def getInstitution(
-    bearerToken: String
-  )(partyId: UUID)(implicit contexts: Seq[(String, String)]): Future[Institution] = {
-    val request: ApiRequest[Institution] = partyApi.getInstitutionById(partyId)(BearerToken(bearerToken))
-    invoker.invoke(request, s"Retrieving Institution of party $partyId")
-  }
+    partyId: UUID
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution] = for {
+    uid <- getUidFuture(contexts)
+    request = partyApi.getInstitutionById(partyId)(uid)
+    result <- invoker.invoke(request, s"Retrieving Institution of party $partyId")
+  } yield result
 
 }

@@ -18,4 +18,6 @@ object ApplicationConfiguration {
   val jwtAudience: Set[String] = config.getString("agreement-process.jwt.audience").split(",").toSet.filter(_.nonEmpty)
 
   require(jwtAudience.nonEmpty, "Audience cannot be empty")
+
+  val partyManagementApiKey: String = config.getString("agreement-process.api-keys.party-management")
 }

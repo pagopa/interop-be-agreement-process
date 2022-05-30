@@ -21,7 +21,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import java.util.UUID
 import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 
 class ConsumerApiServiceSpec
     extends ScalaTestWithActorTestKit
@@ -85,12 +85,6 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer with all kind attributes)" in {
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (
         mockAgreementManagementService
           .getAgreements(
@@ -124,8 +118,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID)(_: Seq[(String, String)]))
-        .expects(Common.bearerToken, UUID.fromString(Common.consumerId), *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(UUID.fromString(Common.consumerId), *, *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
@@ -193,12 +187,6 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer without verified attributes)" in {
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (
         mockAgreementManagementService
           .getAgreements(
@@ -232,8 +220,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID)(_: Seq[(String, String)]))
-        .expects(Common.bearerToken, UUID.fromString(Common.consumerId), *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(UUID.fromString(Common.consumerId), *, *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
@@ -282,12 +270,6 @@ class ConsumerApiServiceSpec
 
     "retrieve all attributes owned by a customer (customer without declared attributes)" in {
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (
         mockAgreementManagementService
           .getAgreements(
@@ -321,8 +303,8 @@ class ConsumerApiServiceSpec
         .once()
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID)(_: Seq[(String, String)]))
-        .expects(Common.bearerToken, UUID.fromString(Common.consumerId), *)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(UUID.fromString(Common.consumerId), *, *)
         .returns(Future.successful(Seq(Common.certifiedAttribute)))
 
       (mockAttributeManagementService
