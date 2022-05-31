@@ -39,8 +39,7 @@ tags:
 paths:
   /status:
     get:
-      security:
-        - bearerAuth: [ ]
+      security: [ ]
       tags:
         - health
       summary: Health status endpoint
