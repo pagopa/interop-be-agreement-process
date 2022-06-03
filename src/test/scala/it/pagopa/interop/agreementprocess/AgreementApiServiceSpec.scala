@@ -33,7 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
   val consumerApiMarshaller: ConsumerApiMarshaller                       = new ConsumerApiMarshallerImpl
-  val agreementApiMarshaller: AgreementApiMarshaller                     = new AgreementApiMarshallerImpl
+  val agreementApiMarshaller: AgreementApiMarshaller                     = AgreementApiMarshallerImpl
   val mockHealthApi: HealthApi                                           = mock[HealthApi]
   val mockAgreementApi: AgreementApi                                     = mock[AgreementApi]
   val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
