@@ -63,18 +63,7 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with Scalat
     }
   }
 
-  /*
-  Untitled-3
-  4,7:       "route": "activateAgreement",
-  9,7:       "route": "",
-  13,7:       "route": "",
-  18,7:       "route": "",
-  23,7:       "route": "",
-  28,7:       "route": "",
-  33,7:       "route": "",
-   */
-
-  "Client operation authorization spec" should {
+  "Agreement api operation authorization spec" should {
     "accept authorized roles for activateAgreement" in {
       @nowarn
       val routeName = nameOf[AgreementApiServiceImpl](_.activateAgreement(???, ???)(???, ???))
