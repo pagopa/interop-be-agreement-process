@@ -65,6 +65,7 @@ final case class AgreementApiServiceImpl(
       _                     <- authorizationManagementService.updateStateOnClients(
         eServiceId = agreement.eserviceId,
         consumerId = agreement.consumerId,
+        agreementId = agreement.id,
         state = AuthorizationManagementDependency.ClientComponentState.ACTIVE
       )
     } yield ()
@@ -92,6 +93,7 @@ final case class AgreementApiServiceImpl(
       _                  <- authorizationManagementService.updateStateOnClients(
         eServiceId = agreement.eserviceId,
         consumerId = agreement.consumerId,
+        agreementId = agreement.id,
         state = AuthorizationManagementDependency.ClientComponentState.INACTIVE
       )
     } yield ()

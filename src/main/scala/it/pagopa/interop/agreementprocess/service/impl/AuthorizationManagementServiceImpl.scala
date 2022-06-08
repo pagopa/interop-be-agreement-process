@@ -23,10 +23,10 @@ final case class AuthorizationManagementServiceImpl(
 
   implicit val logger = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 
-  override def updateStateOnClients(eServiceId: UUID, consumerId: UUID, state: ClientComponentState)(implicit
-    contexts: Seq[(String, String)]
+  override def updateStateOnClients(eServiceId: UUID, consumerId: UUID, agreementId: UUID, state: ClientComponentState)(
+    implicit contexts: Seq[(String, String)]
   ): Future[Unit] = {
-    val payload: ClientAgreementDetailsUpdate = ClientAgreementDetailsUpdate(state = state)
+    val payload: ClientAgreementDetailsUpdate = ClientAgreementDetailsUpdate(agreementId = agreementId, state = state)
     for {
       (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
       request = api.updateAgreementState(
