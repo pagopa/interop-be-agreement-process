@@ -1,4 +1,4 @@
-package it.pagopa.interop.agreementprocess.service.impl.util
+package it.pagopa.interop.agreementprocess.util
 
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
 import akka.http.scaladsl.server.Route

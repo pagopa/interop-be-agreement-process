@@ -91,11 +91,6 @@ object Dependencies {
     lazy val core      = namespace %% "scalapact-scalatest-suite" % scalaPactVersion
   }
 
-  private[this] object nameOf {
-    lazy val namespace = "com.github.dwickern"
-    lazy val nameOf    = namespace %% "scala-nameof" % nameOfVersion
-  }
-
   object Jars {
     lazy val overrides: Seq[ModuleID] =
       Seq(jackson.annotations % Compile, jackson.core % Compile, jackson.databind % Compile)
@@ -127,7 +122,6 @@ object Dependencies {
       akka.httpTestkit                         % Test,
       akka.testkit                             % Test,
       akka.untypedTestkit                      % Test,
-      nameOf.nameOf                            % Test,
       scalamock.core                           % Test,
       scalapact.core                           % Test,
       scalatest.core                           % Test

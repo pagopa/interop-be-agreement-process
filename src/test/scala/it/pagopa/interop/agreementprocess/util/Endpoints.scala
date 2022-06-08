@@ -1,4 +1,4 @@
-package it.pagopa.interop.agreementprocess.service.impl.util
+package it.pagopa.interop.agreementprocess.util
 
 import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post, Put}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -9,7 +9,6 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import java.util.UUID
-import scala.util.Random
 
 /**
  * Holds a set of the authz details for all the endpoints behind authorization layer
@@ -22,11 +21,13 @@ case class Endpoints(endpoints: Set[Endpoint]) {
 case class Endpoint(route: String, verb: String, roles: Seq[String]) {
 
   /**
-   * returns a request context with a fake role in it
+   * returns the sequence of invalid roles
    * @return
    */
-  def contextsWithInvalidRole: Seq[(String, String)] = {
-    Seq("bearer" -> "token", "uid" -> UUID.randomUUID().toString, USER_ROLES -> s"FakeRole-${Random.nextString(10)}")
+  def invalidRoles: Seq[Seq[(String, String)]] = {
+    existingRoles
+      .diff(roles)
+      .map(role => Seq("bearer" -> "token", "uid" -> UUID.randomUUID().toString, USER_ROLES -> role))
   }
 
   /**

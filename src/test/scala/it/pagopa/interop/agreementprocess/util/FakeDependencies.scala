@@ -1,4 +1,4 @@
-package it.pagopa.interop.agreementprocess.service.impl.util
+package it.pagopa.interop.agreementprocess.util
 
 import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.model.AgreementPayload
