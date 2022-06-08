@@ -50,7 +50,7 @@ final case class AgreementApiServiceImpl(
       agreement             <- agreementManagementService.getAgreementById(agreementId)
       _                     <- verifyAgreementActivationEligibility(agreement)
       consumerAttributes    <- partyManagementService.getPartyAttributes(agreement.consumerId)
-      consumerAttributesIds <- consumerAttributes.traverse(a =>
+      consumerAttributesIds <- Future.traverse(consumerAttributes)(a =>
         attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code).map(_.id)
       )
       eservice              <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -123,7 +123,7 @@ final case class AgreementApiServiceImpl(
       eservice           <- catalogManagementService.getEServiceById(validPayload.eserviceId)
       activeEservice <- CatalogManagementService.validateOperationOnDescriptor(eservice, agreementPayload.descriptorId)
       consumer       <- partyManagementService.getInstitution(agreementPayload.consumerId)
-      consumerAttributeIdentifiers <- consumer.attributes.traverse(a =>
+      consumerAttributeIdentifiers <- Future.traverse(consumer.attributes)(a =>
         attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code).map(_.id)
       )
       activatableEservice          <- AgreementManagementService.verifyCertifiedAttributes(
@@ -274,6 +274,7 @@ final case class AgreementApiServiceImpl(
       attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
       eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
       eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
+      // This traverse over Future are ok since eServiceToAgreementAttribute is sync
       agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
       agreementGroupAttributes  <- eServiceGroupAttributes.traverse(
         _.traverse(eServiceToAgreementAttribute(_, attributes))
