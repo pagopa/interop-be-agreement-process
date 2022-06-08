@@ -274,7 +274,7 @@ final case class AgreementApiServiceImpl(
       attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
       eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
       eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
-      // This traverse over Future are ok since eServiceToAgreementAttribute is sync
+      // This traverse over Future is ok since eServiceToAgreementAttribute is sync
       agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
       agreementGroupAttributes  <- eServiceGroupAttributes.traverse(
         _.traverse(eServiceToAgreementAttribute(_, attributes))
