@@ -1,14 +1,16 @@
 package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.directives.FileInfo
 import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.model.{AgreementSeed, VerifiedAttribute, VerifiedAttributeSeed}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
+import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
@@ -20,13 +22,17 @@ import it.pagopa.interop.catalogmanagement.client.model.{
   EService => CatalogEService
 }
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
-import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps, TryOps}
+import it.pagopa.interop.commons.utils.service.UUIDSupplier
 
+import java.nio.charset.StandardCharsets
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
@@ -34,9 +40,17 @@ final case class AgreementApiServiceImpl(
   partyManagementService: PartyManagementService,
   attributeManagementService: AttributeManagementService,
   authorizationManagementService: AuthorizationManagementService,
-  jwtReader: JWTReader
+  jwtReader: JWTReader,
+  fileManager: FileManager,
+  pdfCreator: PDFCreator,
+  uuidSupplier: UUIDSupplier
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
+
+  private[this] val agreementTemplate = Source
+    .fromResource("agreementTemplate.html")
+    .getLines()
+    .mkString(System.lineSeparator())
 
   val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
@@ -67,6 +81,20 @@ final case class AgreementApiServiceImpl(
         consumerId = agreement.consumerId,
         agreementId = agreement.id,
         state = AuthorizationManagementDependency.ClientComponentState.ACTIVE
+      )
+      producer              <- partyManagementService.getInstitution(agreement.producerId)
+      consumer              <- partyManagementService.getInstitution(agreement.consumerId)
+      document              <- pdfCreator.create(
+        agreementTemplate,
+        eservice.name,
+        producer.description,
+        consumer.description,
+        List.empty
+      )
+      fileInfo = FileInfo("agreementDocument", document.getName, MediaTypes.`application/pdf`)
+      path <- fileManager.store(ApplicationConfiguration.storageContainer, ApplicationConfiguration.storagePath)(
+        uuidSupplier.get,
+        (fileInfo, document)
       )
     } yield ()
 

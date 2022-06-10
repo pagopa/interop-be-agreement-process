@@ -21,7 +21,7 @@ object Versions {
 }
 
 object PagopaVersion {
-  lazy val agreementManagementVersion         = "0.1.x-SNAPSHOT"
+  lazy val agreementManagementVersion         = "PIN-1517-SNAPSHOT"
   lazy val attributeRegistryManagementVersion = "0.1.x-SNAPSHOT"
   lazy val authorizationManagementVersion     = "0.1.x-SNAPSHOT"
   lazy val catalogManagementVersion           = "0.1.x-SNAPSHOT"
