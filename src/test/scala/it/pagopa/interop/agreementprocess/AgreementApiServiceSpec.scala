@@ -125,13 +125,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+          .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
             _: Seq[(String, String)]
           )
         )
         .expects(
           pendingAgreement.eserviceId,
           pendingAgreement.consumerId,
+          pendingAgreement.id,
           AuthorizationManagementDependency.ClientComponentState.ACTIVE,
           Common.requestContexts
         )
@@ -215,13 +216,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+          .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
             _: Seq[(String, String)]
           )
         )
         .expects(
           suspendedAgreement.eserviceId,
           suspendedAgreement.consumerId,
+          suspendedAgreement.id,
           AuthorizationManagementDependency.ClientComponentState.ACTIVE,
           Common.requestContexts
         )
@@ -446,13 +448,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+          .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
             _: Seq[(String, String)]
           )
         )
         .expects(
           activeAgreement.eserviceId,
           activeAgreement.consumerId,
+          activeAgreement.id,
           AuthorizationManagementDependency.ClientComponentState.INACTIVE,
           Common.requestContexts
         )
