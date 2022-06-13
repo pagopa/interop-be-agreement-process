@@ -205,9 +205,12 @@ object FakeDependencies {
       )
   }
   class FakeAuthorizationManagementService extends AuthorizationManagementService {
-    def updateStateOnClients(eServiceId: UUID, consumerId: UUID, state: ClientComponentState)(implicit
-      contexts: Seq[(String, String)]
-    ): Future[Unit] = Future.successful(())
+    override def updateStateOnClients(
+      eServiceId: UUID,
+      consumerId: UUID,
+      agreementId: UUID,
+      state: ClientComponentState
+    )(implicit contexts: Seq[(String, String)]): Future[Unit] = Future.successful(())
   }
 
 }
