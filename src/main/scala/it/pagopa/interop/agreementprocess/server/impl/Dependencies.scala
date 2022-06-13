@@ -87,7 +87,7 @@ trait Dependencies {
         authorizationManagement,
         jwtReader
       ),
-      new AgreementApiMarshallerImpl(),
+      AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts
     )
 

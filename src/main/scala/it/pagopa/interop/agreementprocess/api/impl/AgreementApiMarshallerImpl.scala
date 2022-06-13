@@ -7,7 +7,7 @@ import it.pagopa.interop.agreementprocess.api.AgreementApiMarshaller
 import it.pagopa.interop.agreementprocess.model._
 import spray.json._
 
-class AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
+case object AgreementApiMarshallerImpl extends AgreementApiMarshaller with SprayJsonSupport with DefaultJsonProtocol {
 
   override implicit def toEntityMarshallerProblem: ToEntityMarshaller[Problem] = sprayJsonMarshaller[Problem]
 
