@@ -58,10 +58,10 @@ trait Dependencies {
 
   def authorizationManagement(implicit
     actorSystem: ActorSystem[_],
-    ec: ExecutionContext
+    blockingEc: ExecutionContext
   ): AuthorizationManagementService =
     AuthorizationManagementServiceImpl(
-      AuthorizationManagementInvoker()(actorSystem.classicSystem),
+      AuthorizationManagementInvoker()(actorSystem.classicSystem, blockingEc),
       new AuthorizationManagementPurposeApi(ApplicationConfiguration.authorizationManagementURL)
     )
 
