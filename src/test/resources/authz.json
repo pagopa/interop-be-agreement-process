@@ -1,0 +1,39 @@
+{
+  "endpoints": [
+    {
+      "route": "activateAgreement",
+      "verb": "POST",
+      "roles": ["admin"]
+    },
+    {
+      "route": "suspendAgreement",
+      "verb": "POST",
+      "roles": ["admin"]
+    },{
+      "route": "createAgreement",
+      "verb": "POST",
+      "roles": ["admin"]
+    },
+    {
+      "route": "getAgreements",
+      "verb": "GET",
+      "roles": ["admin", "m2m"]
+    },
+    {
+      "route": "getAgreementById",
+      "verb": "GET",
+      "roles": ["admin", "m2m"]
+    },
+    {
+      "route": "verifyAgreementAttribute",
+      "verb": "POST",
+      "roles": ["admin"]
+    },
+    {
+      "route": "upgradeAgreementById",
+      "verb": "POST",
+      "roles": ["admin"]
+    }
+  ]
+}
+

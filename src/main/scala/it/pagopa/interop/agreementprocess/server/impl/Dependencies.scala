@@ -58,10 +58,10 @@ trait Dependencies {
 
   def authorizationManagement(implicit
     actorSystem: ActorSystem[_],
-    ec: ExecutionContext
+    blockingEc: ExecutionContext
   ): AuthorizationManagementService =
     AuthorizationManagementServiceImpl(
-      AuthorizationManagementInvoker()(actorSystem.classicSystem),
+      AuthorizationManagementInvoker()(actorSystem.classicSystem, blockingEc),
       new AuthorizationManagementPurposeApi(ApplicationConfiguration.authorizationManagementURL)
     )
 
@@ -87,7 +87,7 @@ trait Dependencies {
         authorizationManagement,
         jwtReader
       ),
-      new AgreementApiMarshallerImpl(),
+      AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts
     )
 
@@ -107,7 +107,8 @@ trait Dependencies {
   val healthApi: HealthApi = new HealthApi(
     new HealthServiceApiImpl(),
     HealthApiMarshallerImpl,
-    SecurityDirectives.authenticateOAuth2("SecurityRealm", AkkaUtils.PassThroughAuthenticator)
+    SecurityDirectives.authenticateOAuth2("SecurityRealm", AkkaUtils.PassThroughAuthenticator),
+    loggingEnabled = false
   )
 
   val validationExceptionToRoute: ValidationReport => Route = report => {
