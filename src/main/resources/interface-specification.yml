@@ -301,6 +301,47 @@ paths:
       tags:
         - agreement
       description: set the agreement attribute as verified.
+  '/agreements/{agreementId}/documents/{documentId}':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - agreement
+      summary: get agreement document
+      description: download the agreement document
+      operationId: getAgreementDocument
+      parameters:
+        - name: agreementId
+          in: path
+          description: The identifier of the agreement
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: documentId
+          in: path
+          description: The identifier of the document
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agreement document retrieved
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   '/consumers/{consumerId}/attributes':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'

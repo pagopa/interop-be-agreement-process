@@ -44,4 +44,7 @@ object AgreementProcessErrors {
 
   final case class RetrieveAttributesError(consumerId: String)
       extends ComponentError("00012", s"Error while retrieving attributes for consumer $consumerId")
+
+  final case class DocumentNotFound(agreementId: String, documentId: String)
+      extends ComponentError("0013", s"Document $documentId not found by agreement $documentId")
 }
