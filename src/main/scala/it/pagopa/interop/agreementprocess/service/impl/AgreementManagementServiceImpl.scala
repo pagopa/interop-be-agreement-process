@@ -29,6 +29,14 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     result <- invoker.invoke(request, s"Verifying attributes for agreement $agreementId")
   } yield result
 
+  override def addAgreementDocument(agreementId: String, agreementDocumentSeed: AgreementDocumentSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Unit] = for {
+    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
+    request = api.addAgreementDocument(correlationId, agreementId, agreementDocumentSeed, ip)(BearerToken(bearerToken))
+    result <- invoker.invoke(request, s"Adding document to agreement id $agreementId")
+  } yield result
+
   override def activateById(agreementId: String, stateChangeDetails: StateChangeDetails)(implicit
     contexts: Seq[(String, String)]
   ): Future[Agreement] = for {

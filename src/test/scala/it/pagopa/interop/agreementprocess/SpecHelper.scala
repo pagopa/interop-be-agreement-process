@@ -10,7 +10,11 @@ import akka.http.scaladsl.server.directives.Credentials.{Missing, Provided}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.nimbusds.jwt.JWTClaimsSet
-import it.pagopa.interop.agreementmanagement.client.model.{VerifiedAttribute, Agreement => ClientAgreement}
+import it.pagopa.interop.agreementmanagement.client.model.{
+  AgreementDocumentSeed,
+  VerifiedAttribute,
+  Agreement => ClientAgreement
+}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.attributeregistrymanagement.client.model.{
   Attribute => ClientAttribute,
@@ -21,7 +25,9 @@ import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDep
 import it.pagopa.interop.commons.utils.{BEARER, USER_ROLES}
 import it.pagopa.interop.selfcare.partymanagement.client.model.{Institution, Attribute => PartyManagementAttribute}
 
+import java.io.File
 import java.net.InetAddress
+import java.nio.file.Files
 import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.Await
@@ -77,9 +83,43 @@ trait SpecHelper {
     val id: UUID           = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9210")
     val eserviceId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9211")
     val producerId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9212")
-    val descriptorId: UUID = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9213")
+    val consumerId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9213")
+    val descriptorId: UUID = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9214")
+    val documentId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9215")
+
+    val file: File = Files.createTempFile("document", "").toFile
+
+    val agreementDocumentSeed: AgreementDocumentSeed = AgreementDocumentSeed("application/pdf", "path")
 
     val createdAt: OffsetDateTime = OffsetDateTime.now()
+
+    val producer: Institution = Institution(
+      id = producerId,
+      externalId = "",
+      originId = "",
+      description = "",
+      digitalAddress = "",
+      address = "",
+      zipCode = "",
+      taxCode = "",
+      origin = "",
+      institutionType = "",
+      attributes = Seq.empty
+    )
+
+    val consumer: Institution = Institution(
+      id = consumerId,
+      externalId = "",
+      originId = "",
+      description = "",
+      digitalAddress = "",
+      address = "",
+      zipCode = "",
+      taxCode = "",
+      origin = "",
+      institutionType = "",
+      attributes = Seq.empty
+    )
 
     val agreement: ClientAgreement = ClientAgreement(
       id = id,

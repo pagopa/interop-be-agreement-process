@@ -34,8 +34,9 @@ object Main extends App with CORSSupport with Dependencies {
       logger.info(renderBuildInfo(BuildInfo))
 
       val serverBinding = for {
-        jwtReader <- getJwtValidator()
-        agreement  = agreementApi(jwtReader)
+        jwtReader   <- getJwtValidator()
+        fileManager <- getFileManager()
+        agreement  = agreementApi(jwtReader, fileManager)
         consumer   = consumerApi(jwtReader)
         controller = new Controller(agreement, consumer, healthApi, validationExceptionToRoute.some)(
           actorSystem.classicSystem
