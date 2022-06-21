@@ -124,8 +124,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataOne.consumer))
 
       (mockPDFCreator
-        .create(_: String, _: String, _: String, _: String, _: List[(String, String)]))
-        .expects(*, *, *, *, List.empty)
+        .create(_: String, _: String, _: String, _: String))
+        .expects(*, *, *, *)
         .once()
         .returns(Future.successful(TestDataOne.file))
 
@@ -250,8 +250,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataOne.consumer))
 
       (mockPDFCreator
-        .create(_: String, _: String, _: String, _: String, _: List[(String, String)]))
-        .expects(*, *, *, *, List.empty)
+        .create(_: String, _: String, _: String, _: String))
+        .expects(*, *, *, *)
         .once()
         .returns(Future.successful(TestDataOne.file))
 

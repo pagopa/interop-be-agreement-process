@@ -54,7 +54,7 @@ final case class AgreementApiServiceImpl(
     extends AgreementApiService {
 
   private[this] val agreementTemplate = Source
-    .fromResource("agreementTemplate.html")
+    .fromResource(ApplicationConfiguration.agreementDocTemplatePath)
     .getLines()
     .mkString(System.lineSeparator())
 
@@ -111,13 +111,7 @@ final case class AgreementApiServiceImpl(
   )(implicit contexts: Seq[(String, String)]) = for {
     producer <- partyManagementService.getInstitution(agreement.producerId)
     consumer <- partyManagementService.getInstitution(agreement.consumerId)
-    document <- pdfCreator.create(
-      agreementTemplate,
-      eservice.name,
-      producer.description,
-      consumer.description,
-      List.empty
-    )
+    document <- pdfCreator.create(agreementTemplate, eservice.name, producer.description, consumer.description)
     fileInfo = FileInfo("agreementDocument", document.getName, MediaTypes.`application/pdf`)
     path <- fileManager.store(ApplicationConfiguration.storageContainer, ApplicationConfiguration.storagePath)(
       uuidSupplier.get,

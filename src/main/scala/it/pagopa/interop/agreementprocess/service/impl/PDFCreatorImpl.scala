@@ -19,17 +19,11 @@ object PDFCreatorImpl extends PDFCreator with PDFManager {
     XRLog.setLevel(logger, java.util.logging.Level.SEVERE)
   )
 
-  override def create(
-    template: String,
-    eservice: String,
-    producer: String,
-    consumer: String,
-    attributes: List[(String, String)]
-  ): Future[File] =
+  override def create(template: String, eservice: String, producer: String, consumer: String): Future[File] =
     Future.fromTry {
       for {
         file <- createTempFile
-        data = setupData(eservice, producer, consumer, attributes)
+        data = setupData(eservice, producer, consumer)
         pdf <- getPDFAsFile(file.toPath, template, data)
       } yield pdf
 
@@ -42,34 +36,7 @@ object PDFCreatorImpl extends PDFCreator with PDFManager {
     }
   }
 
-  private def setupData(
-    eservice: String,
-    producer: String,
-    consumer: String,
-    attributes: List[(String, String)]
-  ): Map[String, String] = {
-    Map(
-      "eservice.name" -> eservice,
-      "producer.name" -> producer,
-      "consumer.name" -> consumer,
-      "attribute"     -> attributeToText(attributes)
-    )
+  private def setupData(eservice: String, producer: String, consumer: String): Map[String, String] =
+    Map("eservice.name" -> eservice, "producer.name" -> producer, "consumer.name" -> consumer)
 
-  }
-
-  private def attributeToText(attributes: List[(String, String)]): String = {
-    attributes
-      .map { attribute =>
-        s"""
-           |<div class="agreement-attributes">
-           |  <!-- Questo template si ripete per tutti gli attributi -->
-           |  <div class="item">
-           |    <h2>${attribute._1}</h2>
-           |    <p>${attribute._2}</p>
-           |  </div>
-           |</div>
-           |""".stripMargin
-      }
-      .mkString("\n")
-  }
 }
