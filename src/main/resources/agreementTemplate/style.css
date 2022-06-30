@@ -1,3 +1,22 @@
+.agreement-info {
+  margin: 16px 0;
+}
+
+.agreement-info .label {
+  float: left;
+}
+
+.agreement-info .label,
+.agreement-info .value {
+  width: 50%;
+  display: inline-block;
+}
+
+.agreement-info .value {
+  font-weight: 600;
+}
+
+
 /* Load fonts */
 @font-face {
   font-family: 'Montserrat';
@@ -30,6 +49,29 @@
   font-weight: 700;
 }
 
+@page {
+  margin: 2.5cm 2cm 3.5cm 2cm;
+  size: a4;
+
+  @top-center {
+    content: element(header);
+    vertical-align: top;
+  }
+
+  @bottom-center {
+    content: element(footer);
+    vertical-align: bottom;
+  }
+}
+
+.header {
+  position: running(header);
+}
+
+.footer {
+  position: running(footer);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -39,53 +81,31 @@ body {
   font-size: 12px;
   line-height: 18px;
   margin: 0;
-  padding: 64px 48px;
 }
 
 .header img {
   width: 85px;
 }
 
+.header {
+  margin-top: 48px;
+}
 
 h1 {
   font-size: 14px;
   line-height: 16px;
-  margin: 16px 0;
+  margin: 0 0 16px;
   font-weight: 700;
-}
-
-.purpose-info {
-  margin: 16px 0;
-}
-
-.purpose-info .label {
-  float: left;
-}
-
-.purpose-info .label,
-.purpose-info .value {
-  width: 50%;
-  display: inline-block;
-}
-
-.purpose-info .value {
-  font-weight: 600;
-}
-
-.purpose-answers .item {
-  margin: 16px 0;
-}
-
-.purpose-answers .info-label {
-  font-style: italic;
-}
-
-.purpose-answers .answer {
-  font-weight: 600;
 }
 
 .signature {
   margin: 32px 0;
+}
+
+.signature::after {
+  content: '';
+  display: block;
+  clear: both;
 }
 
 .signature .date {
@@ -94,28 +114,25 @@ h1 {
 
 .signature .date,
 .signature .message {
-  width: 50%;
   display: inline-block;
+  width: 50%;
 }
 
 .signature .message {
   font-weight: 500;
 }
 
-.footer {
-  margin: 32px 0;
-}
-
-.footer .page-number {
-  color: #898989;
-}
-
 .footer hr {
-  border: 0; 
+  border: 0;
   border-top: 1px solid #E3E7EB;
-  margin: 8 0; 
+  margin: 8px 0;
   padding: 0;
   height: 1px;
+}
+
+.footer .page-number:after {
+  content: counter(page) " di " counter(pages);
+  color: #898989;
 }
 
 .footer .pagopa {
@@ -127,10 +144,14 @@ h1 {
 .footer .pagopa-data {
   color: #475A6D;
   display: inline-block;
-  font-size: 6px;
-  line-height: 7.5px;
 }
 
 .footer .pictogram {
   float: right;
+}
+
+.footer {
+  margin-bottom: 12px;
+  font-size: 6px;
+  line-height: 7.5px;
 }

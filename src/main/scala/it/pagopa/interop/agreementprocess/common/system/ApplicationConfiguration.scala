@@ -24,5 +24,4 @@ object ApplicationConfiguration {
   val storageContainer: String = config.getString("agreement-process.storage.container")
   val storagePath: String      = config.getString("agreement-process.storage.agreement-document-path")
 
-  val agreementDocTemplatePath: String = config.getString("agreement-process.agreement-doc-template-path")
 }

@@ -2,10 +2,11 @@ package it.pagopa.interop.agreementprocess.service.impl
 
 import com.openhtmltopdf.util.XRLog
 import it.pagopa.interop.agreementprocess.service.PDFCreator
+import it.pagopa.interop.commons.files.model.PDFConfiguration
 import it.pagopa.interop.commons.files.service.PDFManager
 
 import java.io.File
-import java.time.LocalDateTime
+import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.Future
@@ -18,13 +19,15 @@ object PDFCreatorImpl extends PDFCreator with PDFManager {
   XRLog.listRegisteredLoggers.asScala.foreach((logger: String) =>
     XRLog.setLevel(logger, java.util.logging.Level.SEVERE)
   )
+  private[this] val pdfConfigs: PDFConfiguration = PDFConfiguration(resourcesBaseUrl = Some("/agreementTemplate/"))
+  private[this] val printedDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
   override def create(template: String, eservice: String, producer: String, consumer: String): Future[File] =
     Future.fromTry {
       for {
         file <- createTempFile
         data = setupData(eservice, producer, consumer)
-        pdf <- getPDFAsFile(file.toPath, template, data)
+        pdf <- getPDFAsFileWithConfigs(file.toPath, template, data, pdfConfigs)
       } yield pdf
 
     }
@@ -37,6 +40,11 @@ object PDFCreatorImpl extends PDFCreator with PDFManager {
   }
 
   private def setupData(eservice: String, producer: String, consumer: String): Map[String, String] =
-    Map("eservice.name" -> eservice, "producer.name" -> producer, "consumer.name" -> consumer)
+    Map(
+      "eserviceName" -> eservice,
+      "producerName" -> producer,
+      "consumerName" -> consumer,
+      "today"        -> LocalDate.now().format(printedDateFormatter)
+    )
 
 }

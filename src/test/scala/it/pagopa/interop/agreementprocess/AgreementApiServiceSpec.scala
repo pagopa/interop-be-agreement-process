@@ -1,10 +1,12 @@
 package it.pagopa.interop.agreementprocess
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.directives.FileInfo
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import akka.testkit._
 import it.pagopa.interop.agreementmanagement.client.model.{AgreementDocumentSeed, StateChangeDetails}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api._
@@ -15,8 +17,8 @@ import it.pagopa.interop.agreementprocess.api.impl.{
 }
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
-import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServiceImpl
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServiceImpl
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
@@ -32,6 +34,7 @@ import spray.json.RootJsonFormat
 
 import java.io.File
 import java.util.UUID
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
@@ -65,10 +68,14 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Activation" should {
     "succeed on pending agreement" in {
+
+      implicit def default(implicit system: ActorSystem) = RouteTestTimeout(new DurationInt(5).second.dilated(system))
+
       implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
-      val eService         = TestDataOne.eService.copy(descriptors =
-        Seq(
+      val eService         = TestDataOne.eService.copy(
+        name = "Fake Eservice for Test",
+        descriptors = Seq(
           EServiceDescriptor(
             id = pendingAgreement.descriptorId,
             version = "1",
@@ -115,13 +122,13 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
         .expects(pendingAgreement.producerId, Common.requestContexts, *)
         .once()
-        .returns(Future.successful(TestDataOne.producer))
+        .returns(Future.successful(TestDataOne.producer.copy(description = "Ente Producer")))
 
       (mockPartyManagementService
         .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
         .expects(pendingAgreement.consumerId, Common.requestContexts, *)
         .once()
-        .returns(Future.successful(TestDataOne.consumer))
+        .returns(Future.successful(TestDataOne.consumer.copy(description = "Ente Consumer")))
 
       (mockPDFCreator
         .create(_: String, _: String, _: String, _: String))

@@ -54,7 +54,7 @@ final case class AgreementApiServiceImpl(
     extends AgreementApiService {
 
   private[this] val agreementTemplate = Source
-    .fromResource(ApplicationConfiguration.agreementDocTemplatePath)
+    .fromResource("agreementTemplate/index.html")
     .getLines()
     .mkString(System.lineSeparator())
 
