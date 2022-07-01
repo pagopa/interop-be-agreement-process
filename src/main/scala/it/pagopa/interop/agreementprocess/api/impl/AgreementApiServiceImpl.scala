@@ -113,7 +113,7 @@ final case class AgreementApiServiceImpl(
     consumer <- partyManagementService.getInstitution(agreement.consumerId)
     document <- pdfCreator.create(agreementTemplate, eservice.name, producer.description, consumer.description)
     fileInfo = FileInfo("agreementDocument", document.getName, MediaTypes.`application/pdf`)
-    path <- fileManager.store(ApplicationConfiguration.storageContainer, ApplicationConfiguration.storagePath)(
+    path <- fileManager.store(ApplicationConfiguration.storageContainer, ApplicationConfiguration.agreementDocPath)(
       uuidSupplier.get,
       (fileInfo, document)
     )
@@ -476,7 +476,7 @@ final case class AgreementApiServiceImpl(
       agreement    <- agreementManagementService.getAgreementById(agreementId)
       documentUuid <- documentId.toFutureUUID
       document     <- agreement.document.find(_.id == documentUuid).toFuture(DocumentNotFound(agreementId, documentId))
-      byteStream   <- fileManager.get(ApplicationConfiguration.storagePath)(document.path)
+      byteStream   <- fileManager.get(ApplicationConfiguration.storageContainer)(document.path)
     } yield HttpEntity(ContentType(MediaTypes.`application/pdf`), byteStream.toByteArray())
 
     onComplete(result) {

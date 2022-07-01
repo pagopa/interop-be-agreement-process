@@ -22,7 +22,7 @@ import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServic
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
-import it.pagopa.interop.commons.files.service.{FileManager, StorageFilePath}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.USER_ROLES
@@ -703,7 +703,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       inputStream.transferTo(outputStream)
 
       (mockFileManager
-        .get(_: String)(_: StorageFilePath))
+        .get(_: String)(_: String))
         .expects(*, *)
         .once()
         .returns(Future.successful(outputStream))
