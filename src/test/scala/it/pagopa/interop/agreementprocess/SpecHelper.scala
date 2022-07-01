@@ -11,6 +11,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.nimbusds.jwt.JWTClaimsSet
 import it.pagopa.interop.agreementmanagement.client.model.{
+  AgreementDocument,
   AgreementDocumentSeed,
   VerifiedAttribute,
   Agreement => ClientAgreement
@@ -377,6 +378,7 @@ trait SpecHelper {
     val descriptorId: UUID        = UUID.randomUUID()
     val producerId: UUID          = UUID.randomUUID()
     val consumerId: UUID          = UUID.randomUUID()
+    val documentId: UUID          = UUID.randomUUID()
     val createdAt: OffsetDateTime = OffsetDateTime.now()
     val consumer                  = Institution(
       description = "Consumer",
@@ -465,6 +467,106 @@ trait SpecHelper {
       ),
       createdAt = createdAt,
       updatedAt = None
+    )
+
+  }
+
+  object TestDataEight {
+    val agreementId: UUID         = UUID.randomUUID()
+    val eserviceId: UUID          = UUID.randomUUID()
+    val descriptorId: UUID        = UUID.randomUUID()
+    val producerId: UUID          = UUID.randomUUID()
+    val consumerId: UUID          = UUID.randomUUID()
+    val documentId: UUID          = UUID.randomUUID()
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
+    val consumer                  = Institution(
+      description = "Consumer",
+      digitalAddress = "digitalAddress",
+      id = consumerId,
+      origin = "origin",
+      originId = "originId",
+      externalId = "externalId",
+      attributes = Seq.empty,
+      taxCode = "code",
+      address = "address",
+      zipCode = "zipCode",
+      institutionType = "PUBLIC"
+    )
+
+    val producer = Institution(
+      description = "Producer",
+      digitalAddress = "digitalAddress",
+      id = producerId,
+      origin = "origin",
+      originId = "originId",
+      externalId = "externalId",
+      attributes = Seq.empty,
+      taxCode = "code",
+      address = "address",
+      zipCode = "zipCode",
+      institutionType = "PUBLIC"
+    )
+
+    val eservice: EService = EService(
+      id = eserviceId,
+      producerId = producerId,
+      name = "name",
+      description = "description",
+      technology = CatalogManagementDependency.EServiceTechnology.REST,
+      attributes = Attributes(
+        certified = Seq.empty,
+        declared = Seq.empty,
+        verified = Seq(
+          Attribute(
+            single = Some(AttributeValue(id = Common.verifiedAttributeId1, explicitAttributeVerification = true)),
+            group = None
+          ),
+          Attribute(
+            single = Some(AttributeValue(id = Common.verifiedAttributeId2, explicitAttributeVerification = false)),
+            group = None
+          )
+        )
+      ),
+      descriptors = Seq(
+        EServiceDescriptor(
+          id = descriptorId,
+          version = "1",
+          description = None,
+          audience = Seq.empty,
+          voucherLifespan = 1,
+          interface = None,
+          docs = Seq.empty,
+          state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
+          dailyCallsTotal = 1000,
+          dailyCallsPerConsumer = 1000
+        )
+      )
+    )
+
+    val agreement: ClientAgreement = ClientAgreement(
+      id = agreementId,
+      eserviceId = eserviceId,
+      descriptorId = descriptorId,
+      producerId = producerId,
+      consumerId = consumerId,
+      state = AgreementManagementDependency.AgreementState.PENDING,
+      verifiedAttributes = Seq(
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId1),
+          verified = None,
+          verificationDate = None,
+          validityTimespan = None
+        ),
+        VerifiedAttribute(
+          id = UUID.fromString(Common.verifiedAttributeId2),
+          verified = Some(false),
+          verificationDate = None,
+          validityTimespan = None
+        )
+      ),
+      createdAt = createdAt,
+      updatedAt = None,
+      document = Some(AgreementDocument(id = documentId, contentType = "", path = "", createdAt = OffsetDateTime.now()))
     )
 
   }

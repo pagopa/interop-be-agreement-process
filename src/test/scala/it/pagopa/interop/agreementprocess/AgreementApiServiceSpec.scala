@@ -22,7 +22,7 @@ import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServic
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
-import it.pagopa.interop.commons.files.service.FileManager
+import it.pagopa.interop.commons.files.service.{FileManager, StorageFilePath}
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.USER_ROLES
@@ -32,7 +32,7 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.RootJsonFormat
 
-import java.io.File
+import java.io.{ByteArrayOutputStream, File, FileInputStream, InputStream}
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -682,6 +682,40 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       Get() ~> service.getAgreementById(TestDataSeven.agreementId.toString) ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Agreement] shouldEqual expected
+      }
+    }
+
+  }
+
+  "Agreement Document GET" should {
+    "retrieves an agreement document" in {
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataEight.agreementId.toString, Common.requestContexts)
+        .once()
+        .returns(Future.successful(TestDataEight.agreement))
+
+      val inputStream: InputStream            = new FileInputStream("src/test/resources/test_file.pdf")
+      val outputStream: ByteArrayOutputStream = new ByteArrayOutputStream()
+
+      inputStream.transferTo(outputStream)
+
+      (mockFileManager
+        .get(_: String)(_: StorageFilePath))
+        .expects(*, *)
+        .once()
+        .returns(Future.successful(outputStream))
+
+      import agreementApiMarshaller._
+
+      Get() ~> service.getAgreementDocument(
+        TestDataEight.agreementId.toString,
+        documentId = TestDataEight.documentId.toString
+      ) ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[Array[Byte]] shouldEqual outputStream.toByteArray
       }
     }
 
