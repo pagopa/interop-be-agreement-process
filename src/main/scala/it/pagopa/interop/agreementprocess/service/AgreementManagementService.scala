@@ -10,34 +10,37 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait AgreementManagementService {
 
-  def createAgreement(contexts: Seq[(String, String)])(
+  def createAgreement(
     producerId: UUID,
     agreementPayload: AgreementProcess.AgreementPayload,
     verifiedAttributeSeeds: Seq[VerifiedAttributeSeed]
-  ): Future[Agreement]
+  )(implicit contexts: Seq[(String, String)]): Future[Agreement]
 
-  def getAgreementById(contexts: Seq[(String, String)])(agreementId: String): Future[Agreement]
+  def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement]
 
-  def getAgreements(contexts: Seq[(String, String)])(
+  def getAgreements(
     producerId: Option[String] = None,
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
     descriptorId: Option[String] = None,
     state: Option[AgreementState] = None
-  ): Future[Seq[Agreement]]
+  )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]]
 
-  def activateById(
+  def activateById(agreementId: String, stateChangeDetails: StateChangeDetails)(implicit
     contexts: Seq[(String, String)]
-  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
-  def suspendById(
-    contexts: Seq[(String, String)]
-  )(agreementId: String, stateChangeDetails: StateChangeDetails): Future[Agreement]
+  ): Future[Agreement]
 
-  def markVerifiedAttribute(
+  def suspendById(agreementId: String, stateChangeDetails: StateChangeDetails)(implicit
     contexts: Seq[(String, String)]
-  )(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed): Future[Agreement]
+  ): Future[Agreement]
 
-  def upgradeById(contexts: Seq[(String, String)])(agreementId: UUID, agreementSeed: AgreementSeed): Future[Agreement]
+  def markVerifiedAttribute(agreementId: String, verifiedAttributeSeed: VerifiedAttributeSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Agreement]
+
+  def upgradeById(agreementId: UUID, agreementSeed: AgreementSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Agreement]
 }
 
 object AgreementManagementService {
@@ -46,20 +49,14 @@ object AgreementManagementService {
     payload: AgreementProcess.AgreementPayload,
     agreements: Seq[Agreement]
   ): Future[AgreementProcess.AgreementPayload] = {
-
-    val isValidPayload = !agreements.exists(existsAgreement(payload))
-
-    Future.fromTry(
-      Either
-        .cond(
-          isValidPayload,
-          payload,
-          new RuntimeException(
-            s"Consumer ${payload.consumerId} already has an active agreement for eservice/descriptor ${payload.eserviceId}/${payload.descriptorId}"
-          )
+    val isValidPayload: Boolean = !agreements.exists(existsAgreement(payload))
+    if (isValidPayload) Future.successful(payload)
+    else
+      Future.failed(
+        new RuntimeException(
+          s"Consumer ${payload.consumerId} already has an active agreement for eservice/descriptor ${payload.eserviceId}/${payload.descriptorId}"
         )
-        .toTry
-    )
+      )
   }
 
   private def existsAgreement(payload: AgreementProcess.AgreementPayload): Agreement => Boolean = agreement => {
@@ -74,34 +71,24 @@ object AgreementManagementService {
     val producerId = agreement.producerId.toString
 
     partyId match {
-      case `consumerId` =>
-        Future.successful(StateChangeDetails(changedBy = Some(ChangedBy.CONSUMER)))
-      case `producerId` =>
-        Future.successful(StateChangeDetails(changedBy = Some(ChangedBy.PRODUCER)))
-      case _            =>
-        Future.failed(new RuntimeException("the party doing the operation is neither consumer nor producer"))
+      case `consumerId` => Future.successful(StateChangeDetails(changedBy = Some(ChangedBy.CONSUMER)))
+      case `producerId` => Future.successful(StateChangeDetails(changedBy = Some(ChangedBy.PRODUCER)))
+      case _ => Future.failed(new RuntimeException("the party doing the operation is neither consumer nor producer"))
     }
   }
 
-  def isPending(agreement: Agreement): Future[Agreement] =
-    agreement.state match {
-      case AgreementState.PENDING =>
-        Future.successful(agreement)
-      case _                      =>
-        Future.failed(new RuntimeException(s"Agreement ${agreement.id} state is ${agreement.state}"))
-    }
+  def isPending(agreement: Agreement): Future[Agreement] = agreement.state match {
+    case AgreementState.PENDING => Future.successful(agreement)
+    case _ => Future.failed(new RuntimeException(s"Agreement ${agreement.id} state is ${agreement.state}"))
+  }
 
-  def isSuspended(agreement: Agreement): Future[Agreement] =
-    agreement.state match {
-      case AgreementState.SUSPENDED =>
-        Future.successful(agreement)
-      case _                        =>
-        Future.failed(new RuntimeException(s"Agreement ${agreement.id} state is ${agreement.state}"))
-    }
+  def isSuspended(agreement: Agreement): Future[Agreement] = agreement.state match {
+    case AgreementState.SUSPENDED => Future.successful(agreement)
+    case _ => Future.failed(new RuntimeException(s"Agreement ${agreement.id} state is ${agreement.state}"))
+  }
 
   def verifyCertifiedAttributes(consumerAttributesIds: Seq[String], eservice: EService): Future[EService] = {
     val isActivatable: Boolean = hasAllAttributes(consumerAttributesIds)(eservice.attributes.certified)
-
     if (isActivatable) Future.successful(eservice)
     else Future.failed[EService](new RuntimeException("This consumer does not have certified attributes"))
   }
@@ -120,15 +107,12 @@ object AgreementManagementService {
       hasAllAttributes(verifiedAttributes)(eserviceAttributes.verified)
     }
 
-    if (hasCertified && hasVerified)
-      Future.successful(true)
-    else
-      Future.failed[Boolean](new RuntimeException("This agreement does not have all the expected attributes"))
+    if (hasCertified && hasVerified) Future.successful(true)
+    else Future.failed[Boolean](new RuntimeException("This agreement does not have all the expected attributes"))
   }
 
-  private def hasAllAttributes(consumerAttributes: Seq[String])(attributes: Seq[Attribute]): Boolean = {
+  private def hasAllAttributes(consumerAttributes: Seq[String])(attributes: Seq[Attribute]): Boolean =
     attributes.map(hasAttribute(consumerAttributes)).forall(identity)
-  }
 
   private def hasAttribute(consumerAttributes: Seq[String])(attribute: Attribute): Boolean = {
     val hasSingleAttribute = attribute.single.forall(single => consumerAttributes.contains(single.id))
@@ -152,36 +136,30 @@ object AgreementManagementService {
       .filter { case (_, attrs) => attrs.nonEmpty && attrs.forall(_.verified.contains(true)) }
       .keys
       .toSet
-
   }
 
   def applyImplicitVerification(verifiedAttributes: Seq[AttributeValue], consumerVerifiedAttributes: Set[UUID])(implicit
     ec: ExecutionContext
-  ): Future[Seq[VerifiedAttributeSeed]] = {
-    Future.traverse(verifiedAttributes)(verifiedAttribute =>
-      createVerifiedAttributeSeeds(verifiedAttribute, consumerVerifiedAttributes)
-    )
-  }
+  ): Future[Seq[VerifiedAttributeSeed]] = Future.traverse(verifiedAttributes)(verifiedAttribute =>
+    createVerifiedAttributeSeeds(verifiedAttribute, consumerVerifiedAttributes)
+  )
 
   private def createVerifiedAttributeSeeds(
     attribute: AttributeValue,
     consumerVerifiedAttributes: Set[UUID]
-  ): Future[VerifiedAttributeSeed] =
-    Future.fromTry {
-      val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
-      attribute.id.toUUID.map { uuid =>
-        if (isImplicitVerifications && consumerVerifiedAttributes.contains(uuid))
-          VerifiedAttributeSeed(uuid, Some(true))
-        else VerifiedAttributeSeed(uuid, verified = None)
-      }
-
+  ): Future[VerifiedAttributeSeed] = Future.fromTry {
+    val isImplicitVerifications: Boolean = !attribute.explicitAttributeVerification
+    attribute.id.toUUID.map { uuid =>
+      if (isImplicitVerifications && consumerVerifiedAttributes.contains(uuid))
+        VerifiedAttributeSeed(uuid, Some(true))
+      else VerifiedAttributeSeed(uuid, verified = None)
     }
+  }
 
-  def agreementStateToApi(status: AgreementState): AgreementProcess.AgreementState =
-    status match {
-      case AgreementState.ACTIVE    => AgreementProcess.AgreementState.ACTIVE
-      case AgreementState.PENDING   => AgreementProcess.AgreementState.PENDING
-      case AgreementState.SUSPENDED => AgreementProcess.AgreementState.SUSPENDED
-      case AgreementState.INACTIVE  => AgreementProcess.AgreementState.INACTIVE
-    }
+  def agreementStateToApi(status: AgreementState): AgreementProcess.AgreementState = status match {
+    case AgreementState.ACTIVE    => AgreementProcess.AgreementState.ACTIVE
+    case AgreementState.PENDING   => AgreementProcess.AgreementState.PENDING
+    case AgreementState.SUSPENDED => AgreementProcess.AgreementState.SUSPENDED
+    case AgreementState.INACTIVE  => AgreementProcess.AgreementState.INACTIVE
+  }
 }

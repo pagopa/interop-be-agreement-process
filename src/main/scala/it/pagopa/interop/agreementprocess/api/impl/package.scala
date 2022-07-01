@@ -1,24 +1,29 @@
 package it.pagopa.interop.agreementprocess.api
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.marshalling.ToEntityMarshaller
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.server.Route
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.utils.AkkaUtils.getFutureBearer
 import it.pagopa.interop.commons.utils.TypeConversions.TryOps
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.errors.ComponentError
 import it.pagopa.interop._
+import it.pagopa.interop.selfcare._
 import it.pagopa.interop.agreementprocess.model._
+import it.pagopa.interop.commons.jwt.{authorizeInterop, hasPermissions}
+import it.pagopa.interop.commons.utils.errors.GenericComponentErrors.OperationForbidden
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
 
-  type ManagementEService     = catalogmanagement.client.model.EService
-  type ManagementOrganization = partymanagement.client.model.Organization
-  type ManagementAgreement    = agreementmanagement.client.model.Agreement
-  type ManagementAttributes   = catalogmanagement.client.model.Attributes
+  type ManagementEService    = catalogmanagement.client.model.EService
+  type ManagementInstitution = partymanagement.client.model.Institution
+  type ManagementAgreement   = agreementmanagement.client.model.Agreement
+  type ManagementAttributes  = catalogmanagement.client.model.Attributes
 
   implicit def organizationJsonFormat: RootJsonFormat[Organization]               = jsonFormat2(Organization)
   implicit def activeDescriptorJsonFormat: RootJsonFormat[ActiveDescriptor]       = jsonFormat3(ActiveDescriptor)
@@ -52,4 +57,11 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
       bearer <- getFutureBearer(contexts)
       _      <- jwt.getClaims(bearer).toFuture
     } yield bearer
+
+  private[impl] def authorize(roles: String*)(
+    route: => Route
+  )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
+    authorizeInterop(hasPermissions(roles: _*), problemOf(StatusCodes.Forbidden, OperationForbidden)) {
+      route
+    }
 }

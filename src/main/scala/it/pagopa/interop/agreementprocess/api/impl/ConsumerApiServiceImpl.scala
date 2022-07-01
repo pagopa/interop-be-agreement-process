@@ -5,21 +5,15 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.ConsumerApiService
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.RetrieveAttributesError
 import it.pagopa.interop.agreementprocess.model.{Attributes, Problem}
-import it.pagopa.interop.agreementprocess.service.{
-  AgreementManagementService,
-  AttributeManagementService,
-  CatalogManagementService,
-  PartyManagementService
-}
+import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.TypeConversions.StringOps
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -33,7 +27,7 @@ final case class ConsumerApiServiceImpl(
 )(implicit ec: ExecutionContext)
     extends ConsumerApiService {
 
-  val logger = Logger.takingImplicit[ContextFieldsToLog](LoggerFactory.getLogger(this.getClass))
+  val logger: LoggerTakingImplicit[ContextFieldsToLog] = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 
   /** Code: 200, Message: attributes found, DataType: Attributes
     * Code: 404, Message: Consumer not found, DataType: Problem
@@ -46,25 +40,22 @@ final case class ConsumerApiServiceImpl(
   ): Route = {
     logger.info("Getting consumer {} attributes", consumerId)
     val result: Future[Attributes] = for {
-      bearerToken <- validateBearer(contexts, jwtReader)
-      agreements  <- agreementManagementService.getAgreements(contexts)(
+      agreements <- agreementManagementService.getAgreements(
         consumerId = Some(consumerId),
         state = Some(AgreementManagementDependency.AgreementState.ACTIVE)
       )
       eserviceIds = agreements.map(_.eserviceId)
-      eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById(contexts))
+      eservices           <- Future.traverse(eserviceIds)(catalogManagementService.getEServiceById)
       consumerUuid        <- consumerId.toFutureUUID
-      partyAttributes     <- partyManagementService.getPartyAttributes(bearerToken)(consumerUuid)
+      partyAttributes     <- partyManagementService.getPartyAttributes(consumerUuid)
       eserviceAttributes  <- eservices
         .flatTraverse(eservice => CatalogManagementService.flattenAttributes(eservice.attributes.declared))
       agreementAttributes <- AgreementManagementService.extractVerifiedAttribute(agreements)
       certified           <- Future.traverse(partyAttributes)(a =>
-        attributeManagementService.getAttributeByOriginAndCode(contexts)(a.origin, a.code)
+        attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code)
       )
-      declared   <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute(contexts))
-      verified   <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(
-        attributeManagementService.getAttribute(contexts)
-      )
+      declared            <- Future.traverse(eserviceAttributes.map(_.id))(attributeManagementService.getAttribute)
+      verified   <- Future.traverse(agreementAttributes.toSeq.map(_.toString))(attributeManagementService.getAttribute)
       attributes <- AttributeManagementService.getAttributes(
         verified = verified,
         declared = declared,
@@ -75,10 +66,8 @@ final case class ConsumerApiServiceImpl(
     onComplete(result) {
       case Success(res) => getAttributesByConsumerId200(res)
       case Failure(ex)  =>
-        logger.error(s"Error while getting consumer $consumerId attributes - ${ex.getMessage}")
-        val errorResponse: Problem = {
-          problemOf(StatusCodes.BadRequest, RetrieveAttributesError(consumerId))
-        }
+        logger.error(s"Error while getting consumer $consumerId attributes", ex)
+        val errorResponse: Problem = problemOf(StatusCodes.BadRequest, RetrieveAttributesError(consumerId))
         getAttributesByConsumerId400(errorResponse)
     }
   }

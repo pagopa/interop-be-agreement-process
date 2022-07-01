@@ -4,33 +4,24 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.agreementmanagement.client.model.StateChangeDetails
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
-import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
+import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.api.impl.{
   AgreementApiMarshallerImpl,
   AgreementApiServiceImpl,
   ConsumerApiMarshallerImpl
 }
-import it.pagopa.interop.agreementprocess.api.{
-  AgreementApi,
-  AgreementApiMarshaller,
-  AgreementApiService,
-  ConsumerApiMarshaller,
-  HealthApi
-}
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
-import it.pagopa.interop.agreementprocess.service.{
-  AgreementManagementService,
-  AttributeManagementService,
-  AuthorizationManagementService,
-  CatalogManagementService,
-  PartyManagementService
-}
+import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServiceImpl
+import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
+import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
+import it.pagopa.interop.commons.utils.USER_ROLES
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -38,12 +29,11 @@ import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
 
   val consumerApiMarshaller: ConsumerApiMarshaller                       = new ConsumerApiMarshallerImpl
-  val agreementApiMarshaller: AgreementApiMarshaller                     = new AgreementApiMarshallerImpl
+  val agreementApiMarshaller: AgreementApiMarshaller                     = AgreementApiMarshallerImpl
   val mockHealthApi: HealthApi                                           = mock[HealthApi]
   val mockAgreementApi: AgreementApi                                     = mock[AgreementApi]
   val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
@@ -54,7 +44,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
   val mockJWTReader: JWTReader                                           = mock[JWTReader]
 
   import consumerApiMarshaller._
-
   val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
@@ -66,7 +55,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Activation" should {
     "succeed on pending agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
       val eService         = TestDataOne.eService.copy(descriptors =
         Seq(
@@ -85,74 +74,67 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(pendingAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(pendingAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, pendingAgreement.consumerId)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(pendingAgreement.consumerId, *, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, eService.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(eService.id, Common.requestContexts)
         .once()
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
+        .activateById(_: String, _: StateChangeDetails)(_: Seq[(String, String)]))
         .expects(
-          Common.requestContexts,
           TestDataOne.id.toString,
-          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
+          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER)),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(pendingAgreement))
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: Seq[(String, String)])(
-            _: UUID,
-            _: UUID,
-            _: AuthorizationManagementDependency.ClientComponentState
+          .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+            _: Seq[(String, String)]
           )
         )
         .expects(
-          Common.requestContexts,
           pendingAgreement.eserviceId,
           pendingAgreement.consumerId,
-          AuthorizationManagementDependency.ClientComponentState.ACTIVE
+          pendingAgreement.id,
+          AuthorizationManagementDependency.ClientComponentState.ACTIVE,
+          Common.requestContexts
         )
         .returning(Future.successful(()))
         .once()
@@ -163,7 +145,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "succeed on suspended agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val suspendedAgreement                      =
         TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
       val eService                                = TestDataOne.eService.copy(descriptors =
@@ -183,74 +165,67 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(suspendedAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(suspendedAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, suspendedAgreement.consumerId)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(suspendedAgreement.consumerId, *, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, eService.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(eService.id, Common.requestContexts)
         .once()
         .returns(Future.successful(eService))
 
       (mockAgreementManagementService
-        .activateById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
+        .activateById(_: String, _: StateChangeDetails)(_: Seq[(String, String)]))
         .expects(
-          Common.requestContexts,
           TestDataOne.id.toString,
-          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER))
+          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER)),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(suspendedAgreement))
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: Seq[(String, String)])(
-            _: UUID,
-            _: UUID,
-            _: AuthorizationManagementDependency.ClientComponentState
+          .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+            _: Seq[(String, String)]
           )
         )
         .expects(
-          Common.requestContexts,
           suspendedAgreement.eserviceId,
           suspendedAgreement.consumerId,
-          AuthorizationManagementDependency.ClientComponentState.ACTIVE
+          suspendedAgreement.id,
+          AuthorizationManagementDependency.ClientComponentState.ACTIVE,
+          Common.requestContexts
         )
         .returning(Future.successful(()))
         .once()
@@ -262,13 +237,21 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
     "fail if missing authorization header" in {
       implicit val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
+      val service: AgreementApiService             = AgreementApiServiceImpl(
+        AgreementManagementServiceImpl(AgreementManagementInvoker(), AgreementManagementApi(url)),
+        mockCatalogManagementService,
+        mockPartyManagementService,
+        mockAttributeManagementService,
+        mockAuthorizationManagementService,
+        mockJWTReader
+      )(ExecutionContext.global)
       Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+        status shouldEqual StatusCodes.Forbidden
       }
     }
 
     "fail if an active agreement already exists" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
       val activeAgreement  =
         TestDataOne.agreement.copy(id = UUID.randomUUID(), state = AgreementManagementDependency.AgreementState.ACTIVE)
@@ -290,35 +273,29 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq(activeAgreement)))
@@ -329,7 +306,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if agreement is not Pending or Suspended" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       val eService = TestDataOne.eService.copy(descriptors =
@@ -349,35 +326,29 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
@@ -388,7 +359,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if descriptor is not Published" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
       val eService = TestDataOne.eService.copy(descriptors =
@@ -408,48 +379,42 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
       )
 
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
-
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
       (
         mockAgreementManagementService
-          .getAgreements(_: Seq[(String, String)])(
+          .getAgreements(
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[String],
             _: Option[AgreementManagementDependency.AgreementState]
-          )
+          )(_: Seq[(String, String)])
         )
         .expects(
-          Common.requestContexts,
           Some(TestDataOne.producerId.toString),
           Some(currentAgreement.consumerId.toString),
           Some(eService.id.toString),
           Some(TestDataOne.descriptorId.toString),
-          Some(AgreementManagementDependency.AgreementState.ACTIVE)
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
-        .getPartyAttributes(_: String)(_: UUID))
-        .expects(Common.bearerToken, currentAgreement.consumerId)
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(currentAgreement.consumerId, *, *)
         .once()
         .returns(Future.successful(Seq.empty))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, eService.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(eService.id, Common.requestContexts)
         .once()
         .returns(Future.successful(eService))
 
@@ -462,38 +427,37 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Suspension" should {
     "succeed on active agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val activeAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(activeAgreement))
 
       (mockAgreementManagementService
-        .suspendById(_: Seq[(String, String)])(_: String, _: StateChangeDetails))
+        .suspendById(_: String, _: StateChangeDetails)(_: Seq[(String, String)]))
         .expects(
-          Common.requestContexts,
           TestDataOne.id.toString,
-          StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER))
+          StateChangeDetails(Some(AgreementManagementDependency.ChangedBy.PRODUCER)),
+          Common.requestContexts
         )
         .once()
         .returns(Future.successful(activeAgreement))
 
       (
         mockAuthorizationManagementService
-          .updateStateOnClients(_: Seq[(String, String)])(
-            _: UUID,
-            _: UUID,
-            _: AuthorizationManagementDependency.ClientComponentState
+          .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+            _: Seq[(String, String)]
           )
         )
         .expects(
-          Common.requestContexts,
           activeAgreement.eserviceId,
           activeAgreement.consumerId,
-          AuthorizationManagementDependency.ClientComponentState.INACTIVE
+          activeAgreement.id,
+          AuthorizationManagementDependency.ClientComponentState.INACTIVE,
+          Common.requestContexts
         )
         .returning(Future.successful(()))
         .once()
@@ -504,12 +468,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     }
 
     "fail if agreement is not Active" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val currentAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataOne.id.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(currentAgreement))
 
@@ -521,47 +485,41 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement GET" should {
     "retrieves an agreement" in {
-      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken)
-
-      (mockJWTReader
-        .getClaims(_: String))
-        .expects(*)
-        .returning(mockSubject(UUID.randomUUID().toString))
-        .once()
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
 
       (mockAgreementManagementService
-        .getAgreementById(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataSeven.agreementId.toString)
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.agreementId.toString, Common.requestContexts)
         .once()
         .returns(Future.successful(TestDataSeven.agreement))
 
       (mockCatalogManagementService
-        .getEServiceById(_: Seq[(String, String)])(_: UUID))
-        .expects(Common.requestContexts, TestDataSeven.eservice.id)
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.eservice.id, Common.requestContexts)
         .once()
         .returns(Future.successful(TestDataSeven.eservice))
 
       (mockPartyManagementService
-        .getOrganization(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataSeven.producerId)
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(TestDataSeven.producerId, *, *)
         .once()
         .returns(Future.successful(TestDataSeven.producer))
 
       (mockPartyManagementService
-        .getOrganization(_: String)(_: UUID))
-        .expects(Common.bearerToken, TestDataSeven.consumerId)
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(TestDataSeven.consumerId, *, *)
         .once()
         .returns(Future.successful(TestDataSeven.consumer))
 
       (mockAttributeManagementService
-        .getAttribute(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataSeven.eservice.attributes.verified(0).single.get.id)
+        .getAttribute(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.eservice.attributes.verified.head.single.get.id, Common.requestContexts)
         .once()
         .returns(Future.successful(ClientAttributes.verifiedAttributeId1))
 
       (mockAttributeManagementService
-        .getAttribute(_: Seq[(String, String)])(_: String))
-        .expects(Common.requestContexts, TestDataSeven.eservice.attributes.verified(1).single.get.id)
+        .getAttribute(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataSeven.eservice.attributes.verified(1).single.get.id, Common.requestContexts)
         .once()
         .returns(Future.successful(ClientAttributes.verifiedAttributeId2))
 
@@ -581,15 +539,15 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
       val expected = Agreement(
         id = TestDataSeven.agreementId,
-        producer = Organization(id = TestDataSeven.producer.institutionId, name = TestDataSeven.producer.description),
-        consumer = Organization(id = TestDataSeven.consumer.institutionId, name = TestDataSeven.consumer.description),
+        producer = Organization(id = TestDataSeven.producer.originId, name = TestDataSeven.producer.description),
+        consumer = Organization(id = TestDataSeven.consumer.originId, name = TestDataSeven.consumer.description),
         eservice = EService(
           id = TestDataSeven.eservice.id,
           name = TestDataSeven.eservice.name,
-          version = TestDataSeven.eservice.descriptors(0).version,
+          version = TestDataSeven.eservice.descriptors.head.version,
           activeDescriptor = None
         ),
-        eserviceDescriptorId = TestDataSeven.eservice.descriptors(0).id,
+        eserviceDescriptorId = TestDataSeven.eservice.descriptors.head.id,
         state = agreementStateToApi(TestDataSeven.agreement.state),
         suspendedByConsumer = None,
         suspendedByProducer = None,
@@ -603,10 +561,10 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
                 origin = ClientAttributes.verifiedAttributeId1.origin,
                 name = ClientAttributes.verifiedAttributeId1.name,
                 explicitAttributeVerification =
-                  Some(TestDataSeven.eservice.attributes.verified(0).single.get.explicitAttributeVerification),
-                verified = TestDataSeven.agreement.verifiedAttributes(0).verified,
-                verificationDate = TestDataSeven.agreement.verifiedAttributes(0).verificationDate,
-                validityTimespan = TestDataSeven.agreement.verifiedAttributes(0).validityTimespan
+                  Some(TestDataSeven.eservice.attributes.verified.head.single.get.explicitAttributeVerification),
+                verified = TestDataSeven.agreement.verifiedAttributes.head.verified,
+                verificationDate = TestDataSeven.agreement.verifiedAttributes.head.verificationDate,
+                validityTimespan = TestDataSeven.agreement.verifiedAttributes.head.validityTimespan
               )
             ),
             group = None

@@ -10,7 +10,7 @@ import scala.util.Try
 
 trait CatalogManagementService {
 
-  def getEServiceById(contexts: Seq[(String, String)])(eServiceId: UUID): Future[EService]
+  def getEServiceById(eServiceId: UUID)(implicit contexts: Seq[(String, String)]): Future[EService]
 
 }
 
@@ -18,16 +18,13 @@ object CatalogManagementService {
   def getActiveDescriptorOption(
     eservice: EService,
     currentDescriptor: EServiceDescriptor
-  ): Future[Option[EServiceDescriptor]] = {
-
-    Future.successful {
-      val currentVersion = currentDescriptor.version.toLongOption
-      eservice.descriptors
-        .find(d =>
-          d.state == EServiceDescriptorState.PUBLISHED && Ordering[Option[Long]]
-            .gt(d.version.toLongOption, currentVersion)
-        )
-    }
+  ): Future[Option[EServiceDescriptor]] = Future.successful {
+    val currentVersion = currentDescriptor.version.toLongOption
+    eservice.descriptors
+      .find(d =>
+        d.state == EServiceDescriptorState.PUBLISHED && Ordering[Option[Long]]
+          .gt(d.version.toLongOption, currentVersion)
+      )
   }
 
   def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
@@ -72,12 +69,10 @@ object CatalogManagementService {
     }
   }
 
-  def flattenAttributes(attributes: Seq[Attribute]): Future[Seq[AttributeValue]] = {
-    Future.fromTry {
-      Try {
-        attributes
-          .flatMap(attribute => attribute.group.toSeq.flatten ++ attribute.single.toSeq)
-      }
+  def flattenAttributes(attributes: Seq[Attribute]): Future[Seq[AttributeValue]] = Future.fromTry {
+    Try {
+      attributes
+        .flatMap(attribute => attribute.group.toSeq.flatten ++ attribute.single.toSeq)
     }
   }
 
@@ -88,12 +83,11 @@ object CatalogManagementService {
       case _ => Future.failed[Boolean](new RuntimeException("No new versions exist for this agreement!"))
     }
 
-  def descriptorStateToApi(state: EServiceDescriptorState): AgreementProcess.EServiceDescriptorState =
-    state match {
-      case EServiceDescriptorState.DRAFT      => AgreementProcess.EServiceDescriptorState.DRAFT
-      case EServiceDescriptorState.PUBLISHED  => AgreementProcess.EServiceDescriptorState.PUBLISHED
-      case EServiceDescriptorState.DEPRECATED => AgreementProcess.EServiceDescriptorState.DEPRECATED
-      case EServiceDescriptorState.SUSPENDED  => AgreementProcess.EServiceDescriptorState.SUSPENDED
-      case EServiceDescriptorState.ARCHIVED   => AgreementProcess.EServiceDescriptorState.ARCHIVED
-    }
+  def descriptorStateToApi(state: EServiceDescriptorState): AgreementProcess.EServiceDescriptorState = state match {
+    case EServiceDescriptorState.DRAFT      => AgreementProcess.EServiceDescriptorState.DRAFT
+    case EServiceDescriptorState.PUBLISHED  => AgreementProcess.EServiceDescriptorState.PUBLISHED
+    case EServiceDescriptorState.DEPRECATED => AgreementProcess.EServiceDescriptorState.DEPRECATED
+    case EServiceDescriptorState.SUSPENDED  => AgreementProcess.EServiceDescriptorState.SUSPENDED
+    case EServiceDescriptorState.ARCHIVED   => AgreementProcess.EServiceDescriptorState.ARCHIVED
+  }
 }

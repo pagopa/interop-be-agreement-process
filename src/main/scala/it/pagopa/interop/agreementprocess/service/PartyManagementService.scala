@@ -1,12 +1,16 @@
 package it.pagopa.interop.agreementprocess.service
 
-import it.pagopa.interop.partymanagement.client.model.{Attribute, Organization}
+import it.pagopa.interop.selfcare.partymanagement.client.model.{Attribute, Institution}
+
 import java.util.UUID
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait PartyManagementService {
 
-  def getPartyAttributes(bearerToken: String)(partyId: UUID): Future[Seq[Attribute]]
-  def getOrganization(bearerToken: String)(partyId: UUID): Future[Organization]
+  def getPartyAttributes(
+    partyId: UUID
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Seq[Attribute]]
+
+  def getInstitution(partyId: UUID)(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution]
 
 }
