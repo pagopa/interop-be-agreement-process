@@ -5,6 +5,7 @@ ThisBuild / scalaVersion        := "2.13.8"
 ThisBuild / organization        := "it.pagopa"
 ThisBuild / organizationName    := "Pagopa S.p.A."
 ThisBuild / libraryDependencies := Dependencies.Jars.`server`
+Global / onChangedBuildSource   := ReloadOnSourceChanges
 
 ThisBuild / dependencyOverrides ++= Dependencies.Jars.overrides
 ThisBuild / version := ComputeVersion.version
