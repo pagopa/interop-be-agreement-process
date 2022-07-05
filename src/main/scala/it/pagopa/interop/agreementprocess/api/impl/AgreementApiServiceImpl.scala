@@ -4,7 +4,6 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives.{complete, onComplete}
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.directives.FileInfo
 import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.model.{
@@ -36,6 +35,8 @@ import it.pagopa.interop.commons.utils.errors.GenericComponentErrors.GenericErro
 import it.pagopa.interop.commons.utils.service.UUIDSupplier
 
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.{Failure, Success}
@@ -57,6 +58,8 @@ final case class AgreementApiServiceImpl(
     .fromResource("agreementTemplate/index.html")
     .getLines()
     .mkString(System.lineSeparator())
+
+  private val agreementDocumentSuffix: String = "_richiesta_di_fruizione.pdf"
 
   val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
@@ -112,18 +115,20 @@ final case class AgreementApiServiceImpl(
     producer <- partyManagementService.getInstitution(agreement.producerId)
     consumer <- partyManagementService.getInstitution(agreement.consumerId)
     document <- pdfCreator.create(agreementTemplate, eservice.name, producer.description, consumer.description)
-    fileInfo = FileInfo("agreementDocument", document.getName, MediaTypes.`application/pdf`)
-    path <- fileManager.store(ApplicationConfiguration.storageContainer, ApplicationConfiguration.agreementDocPath)(
-      uuidSupplier.get,
-      (fileInfo, document)
-    )
-    _    <- agreementManagementService.addAgreementDocument(
+    path     <- fileManager.storeBytes(
+      ApplicationConfiguration.storageContainer,
+      ApplicationConfiguration.agreementDocPath
+    )(uuidSupplier.get, createAgreementDocumentName, document)
+    _        <- agreementManagementService.addAgreementDocument(
       agreement.id.toString,
-      AgreementDocumentSeed(fileInfo.contentType.value, path)
+      AgreementDocumentSeed(MediaTypes.`application/pdf`.value, path)
     )
     changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
     result             <- agreementManagementService.activateById(agreement.id.toString, changeStateDetails)
   } yield result
+
+  private def createAgreementDocumentName: String =
+    s"${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))}$agreementDocumentSuffix"
 
   /** Code: 204, Message: Active agreement suspended.
     * Code: 400, Message: Bad Request, DataType: Problem

@@ -1,12 +1,9 @@
 package it.pagopa.interop.agreementprocess
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.directives.FileInfo
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import akka.testkit._
 import it.pagopa.interop.agreementmanagement.client.model.{AgreementDocumentSeed, StateChangeDetails}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api._
@@ -32,9 +29,8 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.RootJsonFormat
 
-import java.io.{ByteArrayOutputStream, File, FileInputStream, InputStream}
+import java.io.{ByteArrayOutputStream, FileInputStream, InputStream}
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with SpecHelper with ScalatestRouteTest {
@@ -68,8 +64,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
 
   "Agreement Activation" should {
     "succeed on pending agreement" in {
-
-      implicit def default(implicit system: ActorSystem) = RouteTestTimeout(new DurationInt(5).second.dilated(system))
 
       implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
@@ -137,8 +131,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataOne.file))
 
       (mockFileManager
-        .store(_: String, _: String)(_: UUID, _: (FileInfo, File)))
-        .expects(*, *, *, *)
+        .storeBytes(_: String, _: String)(_: UUID, _: String, _: Array[Byte]))
+        .expects(*, *, *, *, *)
         .once()
         .returns(Future.successful("path"))
 
@@ -263,8 +257,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(TestDataOne.file))
 
       (mockFileManager
-        .store(_: String, _: String)(_: UUID, _: (FileInfo, File)))
-        .expects(*, *, *, *)
+        .storeBytes(_: String, _: String)(_: UUID, _: String, _: Array[Byte]))
+        .expects(*, *, *, *, *)
         .once()
         .returns(Future.successful("path"))
 

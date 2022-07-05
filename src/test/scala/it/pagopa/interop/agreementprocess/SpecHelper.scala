@@ -26,9 +26,7 @@ import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDep
 import it.pagopa.interop.commons.utils.{BEARER, USER_ROLES}
 import it.pagopa.interop.selfcare.partymanagement.client.model.{Institution, Attribute => PartyManagementAttribute}
 
-import java.io.File
 import java.net.InetAddress
-import java.nio.file.Files
 import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.Await
@@ -88,7 +86,7 @@ trait SpecHelper {
     val descriptorId: UUID = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9214")
     val documentId: UUID   = UUID.fromString("17f8dce0-0a5b-476b-9fdd-a7a658eb9215")
 
-    val file: File = Files.createTempFile("document", "").toFile
+    val file: Array[Byte] = Array.empty
 
     val agreementDocumentSeed: AgreementDocumentSeed = AgreementDocumentSeed("application/pdf", "path")
 

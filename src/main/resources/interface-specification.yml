@@ -306,8 +306,6 @@ paths:
       - $ref: '#/components/parameters/CorrelationIdHeader'
       - $ref: '#/components/parameters/IpAddress'
     get:
-      security:
-        - bearerAuth: [ ]
       tags:
         - agreement
       summary: get agreement document
