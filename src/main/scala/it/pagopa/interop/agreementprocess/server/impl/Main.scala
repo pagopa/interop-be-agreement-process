@@ -3,19 +3,19 @@ package it.pagopa.interop.agreementprocess.server.impl
 import cats.syntax.all._
 import buildinfo.BuildInfo
 import akka.http.scaladsl.Http
-
 import akka.management.scaladsl.AkkaManagement
 import it.pagopa.interop.commons.utils.CORSSupport
 import it.pagopa.interop.agreementprocess.server.Controller
 import it.pagopa.interop.commons.logging.renderBuildInfo
-
 import kamon.Kamon
 import com.typesafe.scalalogging.Logger
+
 import scala.util.{Failure, Success}
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ActorSystem, DispatcherSelector}
 import akka.actor.typed.scaladsl.Behaviors
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-import scala.concurrent.ExecutionContext
+
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 object Main extends App with CORSSupport with Dependencies {
 
@@ -28,6 +28,9 @@ object Main extends App with CORSSupport with Dependencies {
       implicit val actorSystem: ActorSystem[_]        = context.system
       implicit val executionContext: ExecutionContext = actorSystem.executionContext
 
+      val selector: DispatcherSelector         = DispatcherSelector.fromConfig("futures-dispatcher")
+      val blockingEc: ExecutionContextExecutor = actorSystem.dispatchers.lookup(selector)
+
       Kamon.init()
       AkkaManagement.get(actorSystem.classicSystem).start()
 
@@ -35,9 +38,10 @@ object Main extends App with CORSSupport with Dependencies {
 
       val serverBinding = for {
         jwtReader <- getJwtValidator()
-        agreement  = agreementApi(jwtReader)
-        consumer   = consumerApi(jwtReader)
-        controller = new Controller(agreement, consumer, healthApi, validationExceptionToRoute.some)(
+        fileManager = getFileManager(blockingEc)
+        agreement   = agreementApi(jwtReader, fileManager)
+        consumer    = consumerApi(jwtReader)
+        controller  = new Controller(agreement, consumer, healthApi, validationExceptionToRoute.some)(
           actorSystem.classicSystem
         )
         binding <- Http()(actorSystem.classicSystem)

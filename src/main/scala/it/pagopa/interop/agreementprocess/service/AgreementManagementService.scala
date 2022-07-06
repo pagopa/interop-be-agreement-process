@@ -26,6 +26,10 @@ trait AgreementManagementService {
     state: Option[AgreementState] = None
   )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]]
 
+  def addAgreementDocument(agreementId: String, agreementDocumentSeed: AgreementDocumentSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Unit]
+
   def activateById(agreementId: String, stateChangeDetails: StateChangeDetails)(implicit
     contexts: Seq[(String, String)]
   ): Future[Agreement]
@@ -41,6 +45,7 @@ trait AgreementManagementService {
   def upgradeById(agreementId: UUID, agreementSeed: AgreementSeed)(implicit
     contexts: Seq[(String, String)]
   ): Future[Agreement]
+
 }
 
 object AgreementManagementService {

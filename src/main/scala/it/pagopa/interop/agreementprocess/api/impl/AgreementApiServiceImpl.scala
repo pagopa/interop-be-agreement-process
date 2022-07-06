@@ -1,14 +1,20 @@
 package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives.onComplete
+import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes, StatusCodes}
+import akka.http.scaladsl.server.Directives.{complete, onComplete}
 import akka.http.scaladsl.server.Route
 import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import it.pagopa.interop.agreementmanagement.client.model.{AgreementSeed, VerifiedAttribute, VerifiedAttributeSeed}
+import it.pagopa.interop.agreementmanagement.client.model.{
+  AgreementDocumentSeed,
+  AgreementSeed,
+  VerifiedAttribute,
+  VerifiedAttributeSeed
+}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
+import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
@@ -20,12 +26,19 @@ import it.pagopa.interop.catalogmanagement.client.model.{
   EService => CatalogEService
 }
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
-import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.service.JWTReader
+import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.interop.commons.utils.errors.GenericComponentErrors.GenericError
+import it.pagopa.interop.commons.utils.service.UUIDSupplier
 
+import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 import scala.util.{Failure, Success}
 
 final case class AgreementApiServiceImpl(
@@ -34,9 +47,19 @@ final case class AgreementApiServiceImpl(
   partyManagementService: PartyManagementService,
   attributeManagementService: AttributeManagementService,
   authorizationManagementService: AuthorizationManagementService,
-  jwtReader: JWTReader
+  jwtReader: JWTReader,
+  fileManager: FileManager,
+  pdfCreator: PDFCreator,
+  uuidSupplier: UUIDSupplier
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
+
+  private[this] val agreementTemplate = Source
+    .fromResource("agreementTemplate/index.html")
+    .getLines()
+    .mkString(System.lineSeparator())
+
+  private val agreementDocumentSuffix: String = "_richiesta_di_fruizione.pdf"
 
   val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
@@ -47,25 +70,15 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE) {
     logger.info("Activating agreement {}", agreementId)
     val result = for {
-      agreement             <- agreementManagementService.getAgreementById(agreementId)
-      _                     <- verifyAgreementActivationEligibility(agreement)
-      consumerAttributes    <- partyManagementService.getPartyAttributes(agreement.consumerId)
-      consumerAttributesIds <- Future.traverse(consumerAttributes)(a =>
-        attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code).map(_.id)
-      )
-      eservice              <- catalogManagementService.getEServiceById(agreement.eserviceId)
-      activeEservice        <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
-      _                     <- AgreementManagementService.verifyAttributes(
-        consumerAttributesIds,
-        activeEservice.attributes,
-        agreement.verifiedAttributes
-      )
-      changeStateDetails    <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
-      _                     <- agreementManagementService.activateById(agreementId, changeStateDetails)
-      _                     <- authorizationManagementService.updateStateOnClients(
-        eServiceId = agreement.eserviceId,
-        consumerId = agreement.consumerId,
-        agreementId = agreement.id,
+      agreement <- agreementManagementService.getAgreementById(agreementId)
+      _         <- verifyAgreementActivationEligibility(agreement)
+      eservice  <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      _         <- verifyAttributes(agreement, eservice)
+      activated <- activate(agreement, eservice, partyId)
+      _         <- authorizationManagementService.updateStateOnClients(
+        eServiceId = activated.eserviceId,
+        consumerId = activated.consumerId,
+        agreementId = activated.id,
         state = AuthorizationManagementDependency.ClientComponentState.ACTIVE
       )
     } yield ()
@@ -77,6 +90,45 @@ final case class AgreementApiServiceImpl(
         activateAgreement400(problemOf(StatusCodes.BadRequest, ActivateAgreementError(agreementId)))
     }
   }
+
+  private def verifyAttributes(
+    agreement: AgreementManagementDependency.Agreement,
+    eservice: CatalogManagementDependency.EService
+  )(implicit contexts: Seq[(String, String)]): Future[Boolean] = for {
+    consumerAttributes    <- partyManagementService.getPartyAttributes(agreement.consumerId)
+    consumerAttributesIds <- Future.traverse(consumerAttributes)(a =>
+      attributeManagementService.getAttributeByOriginAndCode(a.origin, a.code).map(_.id)
+    )
+    activeEservice        <- CatalogManagementService.validateActivationOnDescriptor(eservice, agreement.descriptorId)
+    result                <- AgreementManagementService.verifyAttributes(
+      consumerAttributesIds,
+      activeEservice.attributes,
+      agreement.verifiedAttributes
+    )
+  } yield result
+
+  private def activate(
+    agreement: AgreementManagementDependency.Agreement,
+    eservice: CatalogManagementDependency.EService,
+    partyId: String
+  )(implicit contexts: Seq[(String, String)]) = for {
+    producer <- partyManagementService.getInstitution(agreement.producerId)
+    consumer <- partyManagementService.getInstitution(agreement.consumerId)
+    document <- pdfCreator.create(agreementTemplate, eservice.name, producer.description, consumer.description)
+    path     <- fileManager.storeBytes(
+      ApplicationConfiguration.storageContainer,
+      ApplicationConfiguration.agreementDocPath
+    )(uuidSupplier.get, createAgreementDocumentName, document)
+    _        <- agreementManagementService.addAgreementDocument(
+      agreement.id.toString,
+      AgreementDocumentSeed(MediaTypes.`application/pdf`.value, path)
+    )
+    changeStateDetails <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
+    result             <- agreementManagementService.activateById(agreement.id.toString, changeStateDetails)
+  } yield result
+
+  private def createAgreementDocumentName: String =
+    s"${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))}$agreementDocumentSuffix"
 
   /** Code: 204, Message: Active agreement suspended.
     * Code: 400, Message: Bad Request, DataType: Problem
@@ -415,4 +467,38 @@ final case class AgreementApiServiceImpl(
     }
   }
 
+  /**
+    * Code: 200, Message: Agreement document retrieved, DataType: File
+    * Code: 404, Message: Agreement not found, DataType: Problem
+    */
+  override def getAgreementDocument(agreementId: String, documentId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerFile: ToEntityMarshaller[File]
+  ): Route = {
+    logger.info("Getting agreement by id {}", agreementId)
+    val result: Future[HttpEntity.Strict] = for {
+      agreement    <- agreementManagementService.getAgreementById(agreementId)
+      documentUuid <- documentId.toFutureUUID
+      document     <- agreement.document.find(_.id == documentUuid).toFuture(DocumentNotFound(agreementId, documentId))
+      byteStream   <- fileManager.get(ApplicationConfiguration.storageContainer)(document.path)
+    } yield HttpEntity(ContentType(MediaTypes.`application/pdf`), byteStream.toByteArray())
+
+    onComplete(result) {
+      case Success(file) => complete(file)
+      case Failure(ex)   =>
+        logger.error(s"Error while getting document agreement agreementId=$agreementId/documentId=$documentId", ex)
+        ex match {
+          case ex: DocumentNotFound =>
+            val errorResponse: Problem =
+              problemOf(StatusCodes.NotFound, ex)
+            getAgreementDocument404(errorResponse)
+          case ex                   =>
+            logger.error(s"Error while getting document agreement agreementId=$agreementId/documentId=$documentId", ex)
+            val errorResponse: Problem =
+              problemOf(StatusCodes.InternalServerError, GenericError(ex.getMessage))
+            complete(StatusCodes.InternalServerError, errorResponse)
+        }
+    }
+  }
 }

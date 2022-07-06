@@ -103,6 +103,10 @@ object FakeDependencies {
       )
     )
 
+    override def addAgreementDocument(agreementId: String, agreementDocumentSeed: AgreementDocumentSeed)(implicit
+      contexts: Seq[(String, String)]
+    ): Future[Unit] = Future.unit
+
     override def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
       Future.successful(
         Agreement(

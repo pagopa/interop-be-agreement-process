@@ -8,9 +8,11 @@ import it.pagopa.interop.agreementprocess.model.AgreementPayload
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.util.FakeDependencies._
 import it.pagopa.interop.agreementprocess.util.{AuthorizedRoutes, AuthzScalatestRouteTest}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
 import it.pagopa.interop.commons.jwt.{KID, PublicKeysHolder, SerializedKey}
+import it.pagopa.interop.commons.utils.service.UUIDSupplier
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -30,6 +32,9 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     override protected val claimsVerifier: DefaultJWTClaimsVerifier[SecurityContext] =
       getClaimsVerifier(audience = Set("test"))
   }
+  val fakeFileManager: FileManager                                       = mock[FileManager]
+  val fakePDFCreator: PDFCreator                                         = mock[PDFCreator]
+  val fakeUUIDSupplier: UUIDSupplier                                     = mock[UUIDSupplier]
 
   val service: AgreementApiServiceImpl = AgreementApiServiceImpl(
     fakeAgreementManagementService,
@@ -37,7 +42,10 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     fakePartyManagementService,
     fakeAttributeManagementService,
     fakeAuthorizationManagementService,
-    fakeJWTReader
+    fakeJWTReader,
+    fakeFileManager,
+    fakePDFCreator,
+    fakeUUIDSupplier
   )(ExecutionContext.global)
 
   "Agreement api operation authorization spec" should {

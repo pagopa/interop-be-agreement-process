@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import it.pagopa.interop.agreementmanagement.client.model.StateChangeDetails
+import it.pagopa.interop.agreementmanagement.client.model.{AgreementDocumentSeed, StateChangeDetails}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagementDependency}
 import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.api.impl.{
@@ -14,19 +14,22 @@ import it.pagopa.interop.agreementprocess.api.impl.{
 }
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
-import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServiceImpl
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.agreementprocess.service.impl.AgreementManagementServiceImpl
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagementDependency}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.USER_ROLES
+import it.pagopa.interop.commons.utils.service.UUIDSupplier
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.RootJsonFormat
 
+import java.io.{ByteArrayOutputStream, FileInputStream, InputStream}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,6 +45,9 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
   val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
   val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
   val mockJWTReader: JWTReader                                           = mock[JWTReader]
+  val mockFileManager: FileManager                                       = mock[FileManager]
+  val mockPDFCreator: PDFCreator                                         = mock[PDFCreator]
+  val mockUUIDSupplier: UUIDSupplier                                     = mock[UUIDSupplier]
 
   import consumerApiMarshaller._
   val service: AgreementApiService = AgreementApiServiceImpl(
@@ -50,15 +56,20 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     mockPartyManagementService,
     mockAttributeManagementService,
     mockAuthorizationManagementService,
-    mockJWTReader
+    mockJWTReader,
+    mockFileManager,
+    mockPDFCreator,
+    mockUUIDSupplier
   )(ExecutionContext.global)
 
   "Agreement Activation" should {
     "succeed on pending agreement" in {
+
       implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
       val pendingAgreement = TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.PENDING)
-      val eService         = TestDataOne.eService.copy(descriptors =
-        Seq(
+      val eService         = TestDataOne.eService.copy(
+        name = "Fake Eservice for Test",
+        descriptors = Seq(
           EServiceDescriptor(
             id = pendingAgreement.descriptorId,
             version = "1",
@@ -100,6 +111,41 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         )
         .once()
         .returns(Future.successful(Seq.empty))
+
+      (mockPartyManagementService
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(pendingAgreement.producerId, Common.requestContexts, *)
+        .once()
+        .returns(Future.successful(TestDataOne.producer.copy(description = "Ente Producer")))
+
+      (mockPartyManagementService
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(pendingAgreement.consumerId, Common.requestContexts, *)
+        .once()
+        .returns(Future.successful(TestDataOne.consumer.copy(description = "Ente Consumer")))
+
+      (mockPDFCreator
+        .create(_: String, _: String, _: String, _: String))
+        .expects(*, *, *, *)
+        .once()
+        .returns(Future.successful(TestDataOne.file))
+
+      (mockFileManager
+        .storeBytes(_: String, _: String)(_: UUID, _: String, _: Array[Byte]))
+        .expects(*, *, *, *, *)
+        .once()
+        .returns(Future.successful("path"))
+
+      (() => mockUUIDSupplier.get)
+        .expects()
+        .once()
+        .returns(TestDataOne.documentId)
+
+      (mockAgreementManagementService
+        .addAgreementDocument(_: String, _: AgreementDocumentSeed)(_: Seq[(String, String)]))
+        .expects(TestDataOne.agreement.id.toString, TestDataOne.agreementDocumentSeed, Common.requestContexts)
+        .once()
+        .returns(Future.unit)
 
       (mockPartyManagementService
         .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
@@ -193,6 +239,41 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         .returns(Future.successful(Seq.empty))
 
       (mockPartyManagementService
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(suspendedAgreement.producerId, Common.requestContexts, *)
+        .once()
+        .returns(Future.successful(TestDataOne.producer))
+
+      (mockPartyManagementService
+        .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(suspendedAgreement.consumerId, Common.requestContexts, *)
+        .once()
+        .returns(Future.successful(TestDataOne.consumer))
+
+      (mockPDFCreator
+        .create(_: String, _: String, _: String, _: String))
+        .expects(*, *, *, *)
+        .once()
+        .returns(Future.successful(TestDataOne.file))
+
+      (mockFileManager
+        .storeBytes(_: String, _: String)(_: UUID, _: String, _: Array[Byte]))
+        .expects(*, *, *, *, *)
+        .once()
+        .returns(Future.successful("path"))
+
+      (() => mockUUIDSupplier.get)
+        .expects()
+        .once()
+        .returns(TestDataOne.documentId)
+
+      (mockAgreementManagementService
+        .addAgreementDocument(_: String, _: AgreementDocumentSeed)(_: Seq[(String, String)]))
+        .expects(TestDataOne.agreement.id.toString, TestDataOne.agreementDocumentSeed, Common.requestContexts)
+        .once()
+        .returns(Future.unit)
+
+      (mockPartyManagementService
         .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
         .expects(suspendedAgreement.consumerId, *, *)
         .once()
@@ -243,7 +324,10 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
         mockPartyManagementService,
         mockAttributeManagementService,
         mockAuthorizationManagementService,
-        mockJWTReader
+        mockJWTReader,
+        mockFileManager,
+        mockPDFCreator,
+        mockUUIDSupplier
       )(ExecutionContext.global)
       Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -592,6 +676,40 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
       Get() ~> service.getAgreementById(TestDataSeven.agreementId.toString) ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Agreement] shouldEqual expected
+      }
+    }
+
+  }
+
+  "Agreement Document GET" should {
+    "retrieves an agreement document" in {
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataEight.agreementId.toString, Common.requestContexts)
+        .once()
+        .returns(Future.successful(TestDataEight.agreement))
+
+      val inputStream: InputStream            = new FileInputStream("src/test/resources/test_file.pdf")
+      val outputStream: ByteArrayOutputStream = new ByteArrayOutputStream()
+
+      inputStream.transferTo(outputStream)
+
+      (mockFileManager
+        .get(_: String)(_: String))
+        .expects(*, *)
+        .once()
+        .returns(Future.successful(outputStream))
+
+      import agreementApiMarshaller._
+
+      Get() ~> service.getAgreementDocument(
+        TestDataEight.agreementId.toString,
+        documentId = TestDataEight.documentId.toString
+      ) ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[Array[Byte]] shouldEqual outputStream.toByteArray
       }
     }
 
