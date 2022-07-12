@@ -17,6 +17,7 @@ import java.util.UUID
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl.CatalogManagementServiceImpl
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import scala.concurrent.ExecutionContext
 
 /** Tests the integration with Catalog Management service, creating a corresponding pact interaction file */
 class CatalogProviderContractSpec
@@ -117,7 +118,7 @@ class CatalogProviderContractSpec
   // it launches a mock server and tests the interaction and the expected outcome
   "Connecting to Catalog Management service" should {
     "be able to get the eservice by id" in {
-      val catalogManagementInvoker = CatalogManagementInvoker()(system.classicSystem)
+      val catalogManagementInvoker = CatalogManagementInvoker(ExecutionContext.global)(system.classicSystem)
       def catalogManagement(catalogApi: EServiceApi): CatalogManagementService =
         CatalogManagementServiceImpl(catalogManagementInvoker, catalogApi)(system.executionContext)
 

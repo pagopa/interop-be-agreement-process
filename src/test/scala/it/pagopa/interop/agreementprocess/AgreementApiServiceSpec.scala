@@ -238,7 +238,10 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
     "fail if missing authorization header" in {
       implicit val contexts: Seq[(String, String)] = Seq.empty[(String, String)]
       val service: AgreementApiService             = AgreementApiServiceImpl(
-        AgreementManagementServiceImpl(AgreementManagementInvoker(), AgreementManagementApi(url)),
+        AgreementManagementServiceImpl(
+          AgreementManagementInvoker(ExecutionContext.global),
+          AgreementManagementApi(url)
+        ),
         mockCatalogManagementService,
         mockPartyManagementService,
         mockAttributeManagementService,
