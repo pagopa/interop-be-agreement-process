@@ -5,7 +5,7 @@ import it.pagopa.interop._
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.selfcare._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 
 package object service {
   type AgreementManagementInvoker         = agreementmanagement.client.invoker.ApiInvoker
@@ -32,23 +32,27 @@ package object service {
   }
 
   object AgreementManagementInvoker {
-    def apply()(implicit actorSystem: ActorSystem): AgreementManagementInvoker =
-      agreementmanagement.client.invoker.ApiInvoker(agreementmanagement.client.api.EnumsSerializers.all)
+    def apply(blockingEc: ExecutionContextExecutor)(implicit actorSystem: ActorSystem): AgreementManagementInvoker =
+      agreementmanagement.client.invoker.ApiInvoker(agreementmanagement.client.api.EnumsSerializers.all, blockingEc)
   }
 
   object AuthorizationManagementInvoker {
-    def apply()(implicit actorSystem: ActorSystem, blockingEc: ExecutionContext): AuthorizationManagementInvoker =
-      authorizationmanagement.client.invoker.ApiInvoker(authorizationmanagement.client.api.EnumsSerializers.all)
+    def apply(blockingEc: ExecutionContextExecutor)(implicit actorSystem: ActorSystem): AuthorizationManagementInvoker =
+      authorizationmanagement.client.invoker
+        .ApiInvoker(authorizationmanagement.client.api.EnumsSerializers.all, blockingEc)
   }
 
   object CatalogManagementInvoker {
-    def apply()(implicit actorSystem: ActorSystem): CatalogManagementInvoker =
-      catalogmanagement.client.invoker.ApiInvoker(catalogmanagement.client.api.EnumsSerializers.all)
+    def apply(blockingEc: ExecutionContextExecutor)(implicit actorSystem: ActorSystem): CatalogManagementInvoker =
+      catalogmanagement.client.invoker.ApiInvoker(catalogmanagement.client.api.EnumsSerializers.all, blockingEc)
   }
 
   object AttributeRegistryManagementInvoker {
-    def apply()(implicit actorSystem: ActorSystem): AttributeRegistryManagementInvoker =
-      attributeregistrymanagement.client.invoker.ApiInvoker(attributeregistrymanagement.client.api.EnumsSerializers.all)
+    def apply(
+      blockingEc: ExecutionContextExecutor
+    )(implicit actorSystem: ActorSystem): AttributeRegistryManagementInvoker =
+      attributeregistrymanagement.client.invoker
+        .ApiInvoker(attributeregistrymanagement.client.api.EnumsSerializers.all, blockingEc)
   }
 
   object AgreementManagementApi {
