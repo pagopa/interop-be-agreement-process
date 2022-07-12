@@ -24,20 +24,25 @@ import it.pagopa.interop.commons.utils.errors.GenericComponentErrors
 import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 trait Dependencies {
 
   implicit val partyManagementApiKeyValue: PartyManagementApiKeyValue = PartyManagementApiKeyValue()
 
-  def agreementManagement()(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AgreementManagementService =
+  def agreementManagement(
+    blockingEc: ExecutionContextExecutor
+  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AgreementManagementService =
     AgreementManagementServiceImpl(
-      AgreementManagementInvoker()(actorSystem.classicSystem),
+      AgreementManagementInvoker(blockingEc)(actorSystem.classicSystem),
       AgreementManagementApi(ApplicationConfiguration.agreementManagementURL)
     )
 
-  def catalogManagement()(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): CatalogManagementService =
+  def catalogManagement(
+    blockingEc: ExecutionContextExecutor
+  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): CatalogManagementService =
     CatalogManagementServiceImpl(
-      CatalogManagementInvoker()(actorSystem.classicSystem),
+      CatalogManagementInvoker(blockingEc)(actorSystem.classicSystem),
       EServiceApi(ApplicationConfiguration.catalogManagementURL)
     )
 
@@ -47,27 +52,24 @@ trait Dependencies {
       PartyApi(ApplicationConfiguration.partyManagementURL)
     )
 
-  def attributeRegistryManagement()(implicit
-    actorSystem: ActorSystem[_],
-    ec: ExecutionContext
-  ): AttributeManagementService =
+  def attributeRegistryManagement(
+    blockingEc: ExecutionContextExecutor
+  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AttributeManagementService =
     AttributeManagementServiceImpl(
-      AttributeRegistryManagementInvoker()(actorSystem.classicSystem),
+      AttributeRegistryManagementInvoker(blockingEc)(actorSystem.classicSystem),
       AttributeApi(ApplicationConfiguration.attributeRegistryManagementURL)
     )
 
-  def authorizationManagement(implicit
-    actorSystem: ActorSystem[_],
-    blockingEc: ExecutionContext
-  ): AuthorizationManagementService =
+  def authorizationManagement(
+    blockingEc: ExecutionContextExecutor
+  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AuthorizationManagementService =
     AuthorizationManagementServiceImpl(
-      AuthorizationManagementInvoker()(actorSystem.classicSystem, blockingEc),
+      AuthorizationManagementInvoker(blockingEc)(actorSystem.classicSystem),
       new AuthorizationManagementPurposeApi(ApplicationConfiguration.authorizationManagementURL)
     )
 
-  def getJwtValidator()(implicit ec: ExecutionContext): Future[JWTReader] = JWTConfiguration.jwtReader
+  def getJwtValidator(): Future[JWTReader] = JWTConfiguration.jwtReader
     .loadKeyset()
-    .toFuture
     .map(keyset =>
       new DefaultJWTReader with PublicKeysHolder {
         var publicKeyset: Map[KID, SerializedKey] = keyset
@@ -76,28 +78,35 @@ trait Dependencies {
           getClaimsVerifier(audience = ApplicationConfiguration.jwtAudience)
       }
     )
+    .toFuture
 
-  def agreementApi(jwtReader: JWTReader)(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AgreementApi =
+  def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
+    actorSystem: ActorSystem[_],
+    ec: ExecutionContext
+  ): AgreementApi =
     new AgreementApi(
       AgreementApiServiceImpl(
-        agreementManagement(),
-        catalogManagement(),
+        agreementManagement(blockingEc),
+        catalogManagement(blockingEc),
         partyManagement,
-        attributeRegistryManagement(),
-        authorizationManagement,
+        attributeRegistryManagement(blockingEc),
+        authorizationManagement(blockingEc),
         jwtReader
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts
     )
 
-  def consumerApi(jwtReader: JWTReader)(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): ConsumerApi =
+  def consumerApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
+    actorSystem: ActorSystem[_],
+    ec: ExecutionContext
+  ): ConsumerApi =
     new ConsumerApi(
       ConsumerApiServiceImpl(
-        agreementManagement(),
-        catalogManagement(),
+        agreementManagement(blockingEc),
+        catalogManagement(blockingEc),
         partyManagement,
-        attributeRegistryManagement(),
+        attributeRegistryManagement(blockingEc),
         jwtReader
       ),
       new ConsumerApiMarshallerImpl(),
