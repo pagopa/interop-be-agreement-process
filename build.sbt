@@ -5,9 +5,8 @@ ThisBuild / scalaVersion      := "2.13.8"
 ThisBuild / organization      := "it.pagopa"
 ThisBuild / organizationName  := "Pagopa S.p.A."
 Global / onChangedBuildSource := ReloadOnSourceChanges
-
 ThisBuild / dependencyOverrides ++= Dependencies.Jars.overrides
-ThisBuild / version := ComputeVersion.version
+ThisBuild / version           := ComputeVersion.version
 
 ThisBuild / resolvers += "Pagopa Nexus Snapshots" at s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/maven-snapshots/"
 ThisBuild / resolvers += "Pagopa Nexus Releases" at s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/maven-releases/"
@@ -109,13 +108,12 @@ lazy val root = (project in file("."))
     Docker / dockerExposedPorts := Seq(8080),
     Docker / maintainer         := "https://pagopa.it",
     libraryDependencies         := Dependencies.Jars.`server`,
-    javaAgents += "io.kamon"     % "kanela-agent" % "1.0.14",
     dockerCommands += Cmd("LABEL", s"org.opencontainers.image.source https://github.com/pagopa/${name.value}")
   )
   .aggregate(client)
   .dependsOn(generated)
   .enableContractTest
-  .enablePlugins(JavaAppPackaging, JavaAgent)
+  .enablePlugins(JavaAppPackaging)
   .setupBuildInfo
 
 ProjectSettings.addContractTestCommandAlias
