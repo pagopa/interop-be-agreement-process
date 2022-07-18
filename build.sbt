@@ -88,11 +88,8 @@ lazy val client = project
     Docker / publish    := {},
     publishTo           := {
       val nexus = s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/"
-
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "maven-snapshots/")
-      else
-        Some("releases" at nexus + "maven-releases/")
+      if (isSnapshot.value) Some("snapshots" at nexus + "maven-snapshots/")
+      else Some("releases" at nexus + "maven-releases/")
     }
   )
 
@@ -100,6 +97,8 @@ lazy val root = (project in file("."))
   .settings(
     name                        := "interop-be-agreement-process",
     Test / parallelExecution    := false,
+    Test / fork                 := true,
+    Test / javaOptions += "-Dconfig.file=src/test/resources/application-test.conf",
     scalafmtOnCompile           := true,
     dockerBuildOptions ++= Seq("--network=host"),
     dockerRepository            := Some(System.getenv("DOCKER_REPO")),
@@ -110,6 +109,7 @@ lazy val root = (project in file("."))
     Docker / dockerExposedPorts := Seq(8080),
     Docker / maintainer         := "https://pagopa.it",
     libraryDependencies         := Dependencies.Jars.`server`,
+    javaAgents += "io.kamon"     % "kanela-agent" % "1.0.14",
     dockerCommands += Cmd("LABEL", s"org.opencontainers.image.source https://github.com/pagopa/${name.value}")
   )
   .aggregate(client)
@@ -119,8 +119,3 @@ lazy val root = (project in file("."))
   .setupBuildInfo
 
 ProjectSettings.addContractTestCommandAlias
-
-javaAgents += "io.kamon" % "kanela-agent" % "1.0.14"
-
-Test / fork := true
-Test / javaOptions += "-Dconfig.file=src/test/resources/application-test.conf"
