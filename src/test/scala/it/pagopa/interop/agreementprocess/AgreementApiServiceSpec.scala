@@ -121,7 +121,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           Common.requestContexts
         )
         .once()
-        .returns(Future.successful(pendingAgreement))
+        .returns(Future.successful(pendingAgreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE)))
 
       (
         mockAuthorizationManagementService
@@ -212,7 +212,9 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           Common.requestContexts
         )
         .once()
-        .returns(Future.successful(suspendedAgreement))
+        .returns(
+          Future.successful(suspendedAgreement.copy(state = AgreementManagementDependency.AgreementState.ACTIVE))
+        )
 
       (
         mockAuthorizationManagementService
@@ -225,6 +227,97 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with MockFactory with Spec
           suspendedAgreement.consumerId,
           suspendedAgreement.id,
           AuthorizationManagementDependency.ClientComponentState.ACTIVE,
+          Common.requestContexts
+        )
+        .returning(Future.successful(()))
+        .once()
+
+      Get() ~> service.activateAgreement(TestDataOne.id.toString, TestDataOne.producerId.toString) ~> check {
+        status shouldEqual StatusCodes.NoContent
+      }
+    }
+
+    "succeed on suspended agreement that remains suspended" in {
+      implicit val context: Seq[(String, String)] = Seq("bearer" -> Common.bearerToken, USER_ROLES -> "admin")
+      val suspendedAgreement                      =
+        TestDataOne.agreement.copy(state = AgreementManagementDependency.AgreementState.SUSPENDED)
+      val eService                                = TestDataOne.eService.copy(descriptors =
+        Seq(
+          EServiceDescriptor(
+            id = suspendedAgreement.descriptorId,
+            version = "1",
+            description = None,
+            audience = Seq.empty,
+            voucherLifespan = 0,
+            interface = None,
+            docs = Seq.empty,
+            state = CatalogManagementDependency.EServiceDescriptorState.PUBLISHED,
+            dailyCallsPerConsumer = 1000,
+            dailyCallsTotal = 10
+          )
+        )
+      )
+
+      (mockAgreementManagementService
+        .getAgreementById(_: String)(_: Seq[(String, String)]))
+        .expects(TestDataOne.id.toString, Common.requestContexts)
+        .once()
+        .returns(Future.successful(suspendedAgreement))
+
+      (
+        mockAgreementManagementService
+          .getAgreements(
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[String],
+            _: Option[AgreementManagementDependency.AgreementState]
+          )(_: Seq[(String, String)])
+        )
+        .expects(
+          Some(TestDataOne.producerId.toString),
+          Some(suspendedAgreement.consumerId.toString),
+          Some(eService.id.toString),
+          Some(TestDataOne.descriptorId.toString),
+          Some(AgreementManagementDependency.AgreementState.ACTIVE),
+          Common.requestContexts
+        )
+        .once()
+        .returns(Future.successful(Seq.empty))
+
+      (mockPartyManagementService
+        .getPartyAttributes(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+        .expects(suspendedAgreement.consumerId, *, *)
+        .once()
+        .returns(Future.successful(Seq.empty))
+
+      (mockCatalogManagementService
+        .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+        .expects(eService.id, Common.requestContexts)
+        .once()
+        .returns(Future.successful(eService))
+
+      (mockAgreementManagementService
+        .activateById(_: String, _: StateChangeDetails)(_: Seq[(String, String)]))
+        .expects(
+          TestDataOne.id.toString,
+          StateChangeDetails(changedBy = Some(AgreementManagementDependency.ChangedBy.PRODUCER)),
+          Common.requestContexts
+        )
+        .once()
+        .returns(Future.successful(suspendedAgreement))
+
+      (
+        mockAuthorizationManagementService
+          .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: AuthorizationManagementDependency.ClientComponentState)(
+            _: Seq[(String, String)]
+          )
+        )
+        .expects(
+          suspendedAgreement.eserviceId,
+          suspendedAgreement.consumerId,
+          suspendedAgreement.id,
+          AuthorizationManagementDependency.ClientComponentState.INACTIVE,
           Common.requestContexts
         )
         .returning(Future.successful(()))
