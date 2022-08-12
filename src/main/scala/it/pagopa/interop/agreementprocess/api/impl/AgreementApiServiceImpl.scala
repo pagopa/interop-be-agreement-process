@@ -61,12 +61,15 @@ final case class AgreementApiServiceImpl(
         agreement.verifiedAttributes
       )
       changeStateDetails    <- AgreementManagementService.getStateChangeDetails(agreement, partyId)
-      _                     <- agreementManagementService.activateById(agreementId, changeStateDetails)
+      updated               <- agreementManagementService.activateById(agreementId, changeStateDetails)
       _                     <- authorizationManagementService.updateStateOnClients(
         eServiceId = agreement.eserviceId,
         consumerId = agreement.consumerId,
         agreementId = agreement.id,
-        state = AuthorizationManagementDependency.ClientComponentState.ACTIVE
+        state =
+          if (updated.state == AgreementManagementDependency.AgreementState.ACTIVE)
+            AuthorizationManagementDependency.ClientComponentState.ACTIVE
+          else AuthorizationManagementDependency.ClientComponentState.INACTIVE
       )
     } yield ()
 
