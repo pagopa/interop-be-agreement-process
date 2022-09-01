@@ -128,7 +128,7 @@ paths:
       summary: Agreement Creation
       operationId: createAgreement
       responses:
-        '201':
+        '200':
           description: Agreement created.
           content:
             application/json:

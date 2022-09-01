@@ -99,8 +99,7 @@ trait Dependencies {
         partyManagement,
         tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
-        authorizationManagement(blockingEc),
-        jwtReader
+        authorizationManagement(blockingEc)
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts

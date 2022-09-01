@@ -7,6 +7,8 @@ import java.util.UUID
 
 object AgreementProcessErrors {
 
+  final case class UnexpectedError(message: String) extends ComponentError("0000", s"Unexpected error: $message")
+
   final case class ActivateAgreementError(agreementId: String)
       extends ComponentError("0001", s"Error while activating agreement $agreementId")
 

@@ -2,19 +2,10 @@ package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives.onComplete
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.Directives.{complete, onComplete}
+import akka.http.scaladsl.server.{Route, StandardRoute}
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import it.pagopa.interop.agreementmanagement.client.model.AgreementState.{ACTIVE, DRAFT, PENDING, SUSPENDED}
-import it.pagopa.interop.agreementmanagement.client.model.{
-  AgreementState,
-  CertifiedAttribute,
-  DeclaredAttribute,
-  UpdateAgreementSeed,
-  UpgradeAgreementSeed,
-  VerifiedAttribute
-}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
@@ -23,13 +14,11 @@ import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agr
 import it.pagopa.interop.agreementprocess.service.CatalogManagementService.descriptorStateToApi
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
-import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 import it.pagopa.interop.catalogmanagement.client.model.{
   AttributeValue => CatalogAttributeValue,
   EService => CatalogEService
 }
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
-import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.getClaimFuture
@@ -37,6 +26,7 @@ import it.pagopa.interop.commons.utils.ORGANIZATION_ID_CLAIM
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
 import it.pagopa.interop.commons.utils.errors.ComponentError
+import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,12 +34,15 @@ import scala.util.{Failure, Success}
 
 object Adapters {
 
-  val ACTIVABLE_STATES: Set[AgreementState]   = Set(PENDING, SUSPENDED)
-  val SUSPENDABLE_STATES: Set[AgreementState] = Set(ACTIVE, SUSPENDED)
-  val ARCHIVABLE_STATES: Set[AgreementState]  = Set(ACTIVE, SUSPENDED)
-  val SUBMITTABLE_STATES: Set[AgreementState] = Set(DRAFT)
+  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState]   =
+    Set(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
+  val SUSPENDABLE_STATES: Set[AgreementManagement.AgreementState] =
+    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+  val ARCHIVABLE_STATES: Set[AgreementManagement.AgreementState]  =
+    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+  val SUBMITTABLE_STATES: Set[AgreementManagement.AgreementState] = Set(AgreementManagement.AgreementState.DRAFT)
 
-  final case class AgreementNotInExpectedState(agreementId: String, state: AgreementState)
+  final case class AgreementNotInExpectedState(agreementId: String, state: AgreementManagement.AgreementState)
       extends ComponentError("0003", s"Agreement $agreementId not in expected state (current state: ${state.toString})")
 
   implicit class AgreementWrapper(private val a: AgreementManagement.Agreement) extends AnyVal {
@@ -79,8 +72,7 @@ final case class AgreementApiServiceImpl(
   partyManagementService: PartyManagementService,
   tenantManagementService: TenantManagementService,
   attributeManagementService: AttributeManagementService,
-  authorizationManagementService: AuthorizationManagementService,
-  jwtReader: JWTReader
+  authorizationManagementService: AuthorizationManagementService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
@@ -94,7 +86,7 @@ final case class AgreementApiServiceImpl(
     requesterOrgId: String,
     destinationState: AgreementState
   ): Option[Boolean] =
-    if (requesterOrgId == agreement.consumerId.toString) Some(destinationState == SUSPENDED)
+    if (requesterOrgId == agreement.consumerId.toString) Some(destinationState == AgreementState.SUSPENDED)
     else agreement.suspendedByConsumer
 
   def suspendedByProducerFlag(
@@ -102,7 +94,7 @@ final case class AgreementApiServiceImpl(
     requesterOrgId: String,
     destinationState: AgreementState
   ): Option[Boolean] =
-    if (requesterOrgId == agreement.producerId.toString) Some(destinationState == SUSPENDED)
+    if (requesterOrgId == agreement.producerId.toString) Some(destinationState == AgreementState.SUSPENDED)
     else agreement.suspendedByProducer
 
   def agreementStateByFlags(
@@ -112,10 +104,10 @@ final case class AgreementApiServiceImpl(
     suspendedByPlatform: Option[Boolean]
   ): AgreementManagement.AgreementState =
     (stateByAttribute, suspendedByProducer, suspendedByConsumer, suspendedByPlatform) match {
-      case (ACTIVE, Some(true), _, _) => SUSPENDED
-      case (ACTIVE, _, Some(true), _) => SUSPENDED
-      case (ACTIVE, _, _, Some(true)) => SUSPENDED
-      case _                          => stateByAttribute
+      case (AgreementManagement.AgreementState.ACTIVE, Some(true), _, _) => AgreementManagement.AgreementState.SUSPENDED
+      case (AgreementManagement.AgreementState.ACTIVE, _, Some(true), _) => AgreementManagement.AgreementState.SUSPENDED
+      case (AgreementManagement.AgreementState.ACTIVE, _, _, Some(true)) => AgreementManagement.AgreementState.SUSPENDED
+      case _                                                             => stateByAttribute
     }
 
   def matchingAttributes(
@@ -129,23 +121,23 @@ final case class AgreementApiServiceImpl(
   def matchingCertifiedAttributes(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
-  ): Seq[CertifiedAttribute] =
+  ): Seq[AgreementManagement.CertifiedAttribute] =
     matchingAttributes(eService.attributes.certified, consumer.attributes.flatMap(_.certified).map(_.id))
-      .map(CertifiedAttribute)
+      .map(AgreementManagement.CertifiedAttribute)
 
   def matchingDeclaredAttributes(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
-  ): Seq[DeclaredAttribute] =
+  ): Seq[AgreementManagement.DeclaredAttribute] =
     matchingAttributes(eService.attributes.declared, consumer.attributes.flatMap(_.declared).map(_.id))
-      .map(DeclaredAttribute)
+      .map(AgreementManagement.DeclaredAttribute)
 
   def matchingVerifiedAttributes(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
-  ): Seq[VerifiedAttribute] =
+  ): Seq[AgreementManagement.VerifiedAttribute] =
     matchingAttributes(eService.attributes.verified, consumer.attributes.flatMap(_.verified).map(_.id))
-      .map(VerifiedAttribute)
+      .map(AgreementManagement.VerifiedAttribute)
 
   override def createAgreement(payload: AgreementPayload)(implicit
     contexts: Seq[(String, String)],
@@ -185,12 +177,12 @@ final case class AgreementApiServiceImpl(
     } yield apiAgreement
 
     onComplete(result) {
-      case Success(agreement) => createAgreement201(agreement)
+      case Success(agreement) => createAgreement200(agreement)
       case Failure(ex)        =>
-        logger.error(s"Error while creating agreement $payload", ex)
-        val errorResponse: Problem =
-          problemOf(StatusCodes.BadRequest, CreateAgreementError(payload))
-        createAgreement400(errorResponse)
+        val message =
+          s"Error creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
+        logger.error(message, ex)
+        internalServerError(message)
     }
   }
 
@@ -217,9 +209,11 @@ final case class AgreementApiServiceImpl(
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
-        suspendedByPlatform = Some(nextStateByAttributes != ACTIVE) // TODO Which states enable the suspendedByPlatform?
-        newState            = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
-        updateSeed          = UpdateAgreementSeed(
+        suspendedByPlatform   = Some(
+          nextStateByAttributes != AgreementManagement.AgreementState.ACTIVE
+        ) // TODO Which states enable the suspendedByPlatform?
+        newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
+        updateSeed            = AgreementManagement.UpdateAgreementSeed(
           state = newState,
           certifiedAttributes = Nil,
           declaredAttributes = Nil,
@@ -257,16 +251,18 @@ final case class AgreementApiServiceImpl(
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
-        suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, ACTIVE)
-        suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, ACTIVE)
-        suspendedByPlatform = Some(nextStateByAttributes != ACTIVE) // TODO Which states enable the suspendedByPlatform?
-        newState            = agreementStateByFlags(
+        suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
+        suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
+        suspendedByPlatform   = Some(
+          nextStateByAttributes != AgreementManagement.AgreementState.ACTIVE
+        ) // TODO Which states enable the suspendedByPlatform?
+        newState              = agreementStateByFlags(
           nextStateByAttributes,
           suspendedByProducer,
           suspendedByConsumer,
           suspendedByPlatform
         )
-        updateSeed          = UpdateAgreementSeed(
+        updateSeed            = AgreementManagement.UpdateAgreementSeed(
           state = newState,
           certifiedAttributes = matchingCertifiedAttributes(eService, consumer),
           declaredAttributes = matchingDeclaredAttributes(eService, consumer),
@@ -281,7 +277,8 @@ final case class AgreementApiServiceImpl(
           consumerId = agreement.consumerId,
           agreementId = agreement.id,
           state =
-            if (newState == ACTIVE) AuthorizationManagement.ClientComponentState.ACTIVE
+            if (newState == AgreementManagement.AgreementState.ACTIVE)
+              AuthorizationManagement.ClientComponentState.ACTIVE
             else AuthorizationManagement.ClientComponentState.INACTIVE
         )
       } yield ()
@@ -307,16 +304,18 @@ final case class AgreementApiServiceImpl(
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
-        suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, SUSPENDED)
-        suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, SUSPENDED)
-        suspendedByPlatform = Some(nextStateByAttributes != ACTIVE) // TODO Which states enable the suspendedByPlatform?
-        newState            = agreementStateByFlags(
+        suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
+        suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
+        suspendedByPlatform   = Some(
+          nextStateByAttributes != AgreementManagement.AgreementState.ACTIVE
+        ) // TODO Which states enable the suspendedByPlatform?
+        newState              = agreementStateByFlags(
           nextStateByAttributes,
           suspendedByProducer,
           suspendedByConsumer,
           suspendedByPlatform
         )
-        updateSeed          = UpdateAgreementSeed(
+        updateSeed            = AgreementManagement.UpdateAgreementSeed(
           state = newState,
           certifiedAttributes = agreement.certifiedAttributes,
           declaredAttributes = agreement.declaredAttributes,
@@ -360,8 +359,8 @@ final case class AgreementApiServiceImpl(
       s"Getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
     )
     val result: Future[Seq[Agreement]] = for {
-      statesEnums              <- parseArrayParameters(states).traverse(AgreementState.fromValue).toFuture
-      agreements               <- agreementManagementService.getAgreements(
+      statesEnums <- parseArrayParameters(states).traverse(AgreementManagement.AgreementState.fromValue).toFuture
+      agreements  <- agreementManagementService.getAgreements(
         producerId = producerId,
         consumerId = consumerId,
         eserviceId = eserviceId,
@@ -445,11 +444,17 @@ final case class AgreementApiServiceImpl(
     )
   }
 
-  private def getApiAgreementAttributes(verifiedAttributes: Seq[VerifiedAttribute], eService: CatalogEService)(implicit
-    contexts: Seq[(String, String)]
-  ): Future[Seq[AgreementAttributes]] =
+  private def getApiAgreementAttributes(
+    verifiedAttributes: Seq[AgreementManagement.VerifiedAttribute],
+    eService: CatalogEService
+  )(implicit contexts: Seq[(String, String)]): Future[Seq[AgreementAttributes]] =
     for {
-      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
+      // TODO Disabled for development
+//      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
+      attributes <- Future.successful[Seq[Attribute]](Nil)
+      _                        = verifiedAttributes
+      _                        = contexts
+      // TODO end
       eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
       eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
       // This traverse over Future is ok since eServiceToAgreementAttribute is sync
@@ -469,9 +474,9 @@ final case class AgreementApiServiceImpl(
       .find(_.id == eServiceAttributeValue.id)
       .toFuture(AgreementAttributeNotFound(eServiceAttributeValue.id.toString))
 
-  private def getApiAttribute(attributes: ManagementAttributes)(verifiedAttribute: VerifiedAttribute)(implicit
-    contexts: Seq[(String, String)]
-  ): Future[Attribute] = ???
+//  private def getApiAttribute(attributes: ManagementAttributes)(verifiedAttribute: VerifiedAttribute)(implicit
+//    contexts: Seq[(String, String)]
+//  ): Future[Attribute] =
 //  {
 //    val fromSingle: Seq[CatalogAttributeValue] =
 //      attributes.verified.flatMap(attribute => attribute.single.toList.find(_.id == verifiedAttribute.id))
@@ -527,7 +532,7 @@ final case class AgreementApiServiceImpl(
       )
       _               <- Future
         .failed(AgreementAlreadyExists(producerId, consumerId, eServiceId, descriptorId))
-        .whenA(activeAgreement.isEmpty)
+        .whenA(activeAgreement.nonEmpty)
     } yield ()
   }
 
@@ -546,7 +551,7 @@ final case class AgreementApiServiceImpl(
       latestDescriptorVersion = latestActiveEserviceDescriptor.version.toLongOption
       currentVersion = eservice.descriptors.find(d => d.id == agreement.descriptorId).flatMap(_.version.toLongOption)
       _ <- CatalogManagementService.hasEserviceNewPublishedVersion(latestDescriptorVersion, currentVersion)
-      upgradeSeed = UpgradeAgreementSeed(descriptorId = latestActiveEserviceDescriptor.id)
+      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = latestActiveEserviceDescriptor.id)
       newAgreement <- agreementManagementService.upgradeById(agreement.id, upgradeSeed)
       apiAgreement <- getApiAgreement(newAgreement)
     } yield apiAgreement
@@ -561,4 +566,6 @@ final case class AgreementApiServiceImpl(
     }
   }
 
+  private def internalServerError(errorMessage: String): StandardRoute =
+    complete(StatusCodes.InternalServerError, UnexpectedError(errorMessage))
 }
