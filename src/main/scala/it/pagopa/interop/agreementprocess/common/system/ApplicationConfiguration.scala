@@ -8,6 +8,7 @@ object ApplicationConfiguration {
   val serverPort: Int                    = config.getInt("agreement-process.port")
   val agreementManagementURL: String     = config.getString("agreement-process.services.agreement-management")
   val catalogManagementURL: String       = config.getString("agreement-process.services.catalog-management")
+  val tenantManagementURL: String        = config.getString("agreement-process.services.tenant-management")
   val partyManagementURL: String         = config.getString("agreement-process.services.party-management")
   val authorizationManagementURL: String = config.getString("agreement-process.services.authorization-management")
   val partyManagementApiKey: String      = config.getString("agreement-process.api-keys.party-management")

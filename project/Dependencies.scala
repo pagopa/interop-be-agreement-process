@@ -35,6 +35,7 @@ object Dependencies {
       namespace %% "interop-selfcare-party-management-client" % partyManagementVersion
     lazy val attributeRegistryManagementClient =
       namespace %% "interop-be-attribute-registry-management-client" % attributeRegistryManagementVersion
+    lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client" % tenantManagementVersion
 
     lazy val commons =
       namespace %% "interop-commons-utils" % commonsVersion
@@ -111,6 +112,7 @@ object Dependencies {
       pagopa.commons                           % Compile,
       pagopa.commonsJWT                        % Compile,
       pagopa.partyManagementClient             % Compile,
+      pagopa.tenantManagementClient            % Compile,
       akka.httpTestkit                         % Test,
       akka.testkit                             % Test,
       akka.untypedTestkit                      % Test,

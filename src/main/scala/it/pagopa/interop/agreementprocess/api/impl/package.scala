@@ -30,7 +30,7 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def eServiceJsonFormat: RootJsonFormat[EService]                       = jsonFormat4(EService)
   implicit def agreementAttributesJsonFormat: RootJsonFormat[AgreementAttributes] = jsonFormat2(AgreementAttributes)
   implicit def agreementJsonFormat: RootJsonFormat[Agreement]                     = jsonFormat9(Agreement)
-  implicit def agreementPayloadJsonFormat: RootJsonFormat[AgreementPayload]       = jsonFormat3(AgreementPayload)
+  implicit def agreementPayloadJsonFormat: RootJsonFormat[AgreementPayload]       = jsonFormat2(AgreementPayload)
   implicit def attributeJsonFormat: RootJsonFormat[Attribute]                     = jsonFormat9(Attribute)
   implicit def attributesJsonFormat: RootJsonFormat[Attributes]                   = jsonFormat3(Attributes)
   implicit def problemErrorFormat: RootJsonFormat[ProblemError]                   = jsonFormat2(ProblemError)

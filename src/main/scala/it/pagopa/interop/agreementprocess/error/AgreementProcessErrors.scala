@@ -1,8 +1,9 @@
 package it.pagopa.interop.agreementprocess.error
 
 import it.pagopa.interop.commons.utils.errors.ComponentError
-import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementprocess.model.AgreementPayload
+
+import java.util.UUID
 
 object AgreementProcessErrors {
 
@@ -30,10 +31,10 @@ object AgreementProcessErrors {
   final case class UpdateAgreementError(agreementId: String)
       extends ComponentError("0008", s"Error while updating agreement $agreementId")
 
-  final case class ActiveAgreementAlreadyExists(agreement: Agreement)
+  final case class AgreementAlreadyExists(producerId: UUID, consumerId: UUID, eServiceId: UUID, descriptorId: UUID)
       extends ComponentError(
         "0009",
-        s"Active Agreement already exists for Producer = ${agreement.producerId.toString}, Consumer = ${agreement.consumerId.toString}, EService = ${agreement.eserviceId.toString}, Descriptor = ${agreement.descriptorId.toString}"
+        s"Agreement already exists for Producer = $producerId, Consumer = $consumerId, EService = $eServiceId, Descriptor = $descriptorId"
       )
 
   final case class AgreementAttributeNotFound(attributeId: String)
@@ -44,4 +45,10 @@ object AgreementProcessErrors {
 
   final case class RetrieveAttributesError(consumerId: String)
       extends ComponentError("00012", s"Error while retrieving attributes for consumer $consumerId")
+
+  final case class MissingCertifiedAttributes(eServiceId: UUID, descriptorId: UUID, consumerId: UUID)
+      extends ComponentError(
+        "00013",
+        s"Required certificated attribute is missing. EService $eServiceId, Descriptor $descriptorId, Consumer: $consumerId"
+      )
 }

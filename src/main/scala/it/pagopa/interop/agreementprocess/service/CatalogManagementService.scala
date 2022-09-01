@@ -27,12 +27,28 @@ object CatalogManagementService {
       )
   }
 
-  def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
-    val allowedStatus: List[EServiceDescriptorState] = List(EServiceDescriptorState.PUBLISHED)
+  // TODO
+  //  Verify eServices states
+  //  Rename
+  def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit] = {
+    val allowedStatus: List[EServiceDescriptorState] =
+      List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.DEPRECATED, EServiceDescriptorState.SUSPENDED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
+  def validateCreationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]   = {
+    val allowedStatus: List[EServiceDescriptorState] =
+      List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
+    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+  }
+  def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]     = {
+    val allowedStatus: List[EServiceDescriptorState] =
+      List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
+    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+  }
+  // TODO end todo
 
-  def validateOperationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EService] = {
+  // TODO Rename
+  def validateOperationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit] = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.DEPRECATED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
@@ -42,14 +58,14 @@ object CatalogManagementService {
     eservice: EService,
     descriptorId: UUID,
     allowedStatus: List[EServiceDescriptorState]
-  ): Future[EService] = {
+  ): Future[Unit] = {
     val descriptorStatus = eservice.descriptors.find(_.id == descriptorId).map(_.state)
 
     Future.fromTry(
       Either
         .cond(
           descriptorStatus.exists(status => allowedStatus.contains(status)),
-          eservice,
+          (),
           new RuntimeException(
             s"Descriptor ${descriptorId.toString} of Eservice ${eservice.id} has not status in ${allowedStatus
                 .mkString("[", ",", "]")}"
