@@ -72,6 +72,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   '/agreements/{agreementId}/activate':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'
@@ -95,6 +101,12 @@ paths:
                 $ref: '#/components/schemas/Agreement'
         '400':
           description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Agreement not found
           content:
             application/problem+json:
               schema:
@@ -125,6 +137,12 @@ paths:
                 $ref: '#/components/schemas/Agreement'
         '400':
           description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Agreement not found
           content:
             application/problem+json:
               schema:

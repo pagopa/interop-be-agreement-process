@@ -46,6 +46,7 @@ object CatalogManagementService {
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
   def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]     = {
+    // TODO Check which descriptor states are allowed
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)

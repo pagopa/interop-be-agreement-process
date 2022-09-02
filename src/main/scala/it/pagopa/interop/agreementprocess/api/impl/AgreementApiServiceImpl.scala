@@ -20,6 +20,7 @@ import it.pagopa.interop.commons.utils.AkkaUtils.getClaimFuture
 import it.pagopa.interop.commons.utils.ORGANIZATION_ID_CLAIM
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.interop.commons.utils.errors.ComponentError
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.util.UUID
@@ -56,6 +57,12 @@ final case class AgreementApiServiceImpl(
   ): Option[Boolean] =
     if (requesterOrgId == agreement.producerId.toString) Some(destinationState == AgreementState.SUSPENDED)
     else agreement.suspendedByProducer
+
+  def suspendedByPlatformFlag(fsmState: AgreementManagement.AgreementState): Option[Boolean] =
+    // TODO Which states enable the suspendedByPlatform?
+    List(AgreementManagement.AgreementState.SUSPENDED, AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
+      .contains(fsmState)
+      .some
 
   def agreementStateByFlags(
     stateByAttribute: AgreementManagement.AgreementState,
@@ -173,6 +180,7 @@ final case class AgreementApiServiceImpl(
       logger.info("Submitting agreement {}", agreementId)
       val result = for {
         agreement <- agreementManagementService.getAgreementById(agreementId)
+        _         <- agreement.assertSubmittableState.toFuture
         _         <- verifyConflictingAgreements(
           agreement,
           List(
@@ -183,15 +191,14 @@ final case class AgreementApiServiceImpl(
           )
         )
         eService  <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        // TODO Check which descriptor states are allowed
         _         <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
-        _         <- agreement.assertSubmittableState.toFuture
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
+        _        <- Future
+          .failed(MissingDeclaredAttributes(agreement.eserviceId, agreement.descriptorId, consumer.id))
+          .unlessA(AgreementStateByAttributesFSM.declaredAttributesSatisfied(eService, consumer))
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
-        suspendedByPlatform   = Some(
-          nextStateByAttributes != AgreementManagement.AgreementState.ACTIVE
-        ) // TODO Which states enable the suspendedByPlatform?
+        suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
         newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
         updateSeed            = AgreementManagement.UpdateAgreementSeed(
           state = newState,
@@ -203,13 +210,34 @@ final case class AgreementApiServiceImpl(
           suspendedByPlatform = suspendedByPlatform
         )
         updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
+        _       <- Future
+          .failed(MissingCertifiedAttributes(agreement.eserviceId, agreement.descriptorId, consumer.id))
+          .unlessA(AgreementStateByAttributesFSM.certifiedAttributesSatisfied(eService, consumer))
       } yield updated.toApi
 
       onComplete(result) {
-        case Success(agreement) => activateAgreement200(agreement)
-        case Failure(ex)        =>
-          logger.error(s"Error while activating agreement $agreementId", ex)
-          activateAgreement400(problemOf(StatusCodes.BadRequest, ActivateAgreementError(agreementId)))
+        case Success(agreement)                        => activateAgreement200(agreement)
+        case Failure(ex: AgreementNotFound)            =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          submitAgreement404(problemOf(StatusCodes.NotFound, ex))
+        case Failure(ex: AgreementAlreadyExists)       =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          submitAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: AgreementNotInExpectedState)  =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          submitAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: MissingCertifiedAttributes)   =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          submitAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: MissingDeclaredAttributes)    =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          submitAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: DescriptorNotInExpectedState) =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          submitAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex)                               =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          internalServerError(ActivateAgreementError(agreementId))
       }
     }
 
@@ -223,21 +251,19 @@ final case class AgreementApiServiceImpl(
       val result = for {
         requesterOrgId <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
         agreement      <- agreementManagementService.getAgreementById(agreementId)
+        _              <- agreement.assertActivableState.toFuture
         _              <- verifyConflictingAgreements(
           agreement,
           List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
         )
         eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
         _              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
-        _              <- agreement.assertActivableState.toFuture
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
         suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
         suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
-        suspendedByPlatform   = Some(
-          nextStateByAttributes != AgreementManagement.AgreementState.ACTIVE
-        ) // TODO Which states enable the suspendedByPlatform?
+        suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
         newState              = agreementStateByFlags(
           nextStateByAttributes,
           suspendedByProducer,
@@ -283,16 +309,14 @@ final case class AgreementApiServiceImpl(
       val result = for {
         requesterOrgId <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
         agreement      <- agreementManagementService.getAgreementById(agreementId)
-        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
         _              <- agreement.assertSuspendableState.toFuture
+        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
         suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
         suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
-        suspendedByPlatform   = Some(
-          nextStateByAttributes != AgreementManagement.AgreementState.ACTIVE
-        ) // TODO Which states enable the suspendedByPlatform?
+        suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
         newState              = agreementStateByFlags(
           nextStateByAttributes,
           suspendedByProducer,
@@ -460,4 +484,7 @@ final case class AgreementApiServiceImpl(
 
   private def internalServerError(errorMessage: String): StandardRoute =
     complete(StatusCodes.InternalServerError, UnexpectedError(errorMessage))
+
+  private def internalServerError(error: ComponentError): StandardRoute =
+    complete(StatusCodes.InternalServerError, error)
 }

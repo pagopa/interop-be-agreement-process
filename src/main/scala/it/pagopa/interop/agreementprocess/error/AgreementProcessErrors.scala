@@ -17,6 +17,12 @@ object AgreementProcessErrors {
         s"Required certificated attribute is missing. EService $eServiceId, Descriptor $descriptorId, Consumer: $consumerId"
       )
 
+  final case class MissingDeclaredAttributes(eServiceId: UUID, descriptorId: UUID, consumerId: UUID)
+      extends ComponentError(
+        "00xx",
+        s"Required declared attribute is missing. EService $eServiceId, Descriptor $descriptorId, Consumer: $consumerId"
+      )
+
   final case class AgreementNotInExpectedState(agreementId: String, state: AgreementManagement.AgreementState)
       extends ComponentError("00xx", s"Agreement $agreementId not in expected state (current state: ${state.toString})")
 

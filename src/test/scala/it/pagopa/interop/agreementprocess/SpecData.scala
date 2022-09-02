@@ -10,7 +10,13 @@ import it.pagopa.interop.catalogmanagement.client.model.{
   EServiceDescriptorState
 }
 import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
-import it.pagopa.interop.tenantmanagement.client.model.{CertifiedTenantAttribute, ExternalId, Tenant, TenantAttribute}
+import it.pagopa.interop.tenantmanagement.client.model.{
+  CertifiedTenantAttribute,
+  DeclaredTenantAttribute,
+  ExternalId,
+  Tenant,
+  TenantAttribute
+}
 
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
@@ -45,10 +51,6 @@ object SpecData {
     descriptors = Nil
   )
 
-  def catalogAttribute: Attribute           = Attribute(single = Some(AttributeValue(UUID.randomUUID(), false)))
-  def catalogCertifiedAttribute: Attributes =
-    Attributes(certified = Seq(catalogAttribute), declared = Nil, verified = Nil)
-
   def tenant: Tenant = Tenant(
     id = UUID.randomUUID(),
     selfcareId = Some(UUID.randomUUID().toString),
@@ -59,8 +61,38 @@ object SpecData {
     updatedAt = None
   )
 
+  def catalogAttribute(id: UUID = UUID.randomUUID()): Attribute =
+    Attribute(single = Some(AttributeValue(id, false)))
+
+  def catalogCertifiedAttribute: Attributes =
+    Attributes(certified = Seq(catalogAttribute()), declared = Nil, verified = Nil)
+
+  def catalogDeclaredAttribute: Attributes =
+    Attributes(declared = Seq(catalogAttribute()), certified = Nil, verified = Nil)
+
   def tenantCertifiedAttribute: TenantAttribute =
     TenantAttribute(certified = Some(CertifiedTenantAttribute(id = UUID.randomUUID(), assignmentTimestamp = timestamp)))
+
+  def tenantDeclaredAttribute: TenantAttribute =
+    TenantAttribute(declared = Some(DeclaredTenantAttribute(id = UUID.randomUUID(), assignmentTimestamp = timestamp)))
+
+  def matchingCertifiedAttributes: (Attributes, TenantAttribute) = {
+    val attributeId       = UUID.randomUUID()
+    val eServiceAttribute = Attributes(certified = Seq(catalogAttribute(attributeId)), declared = Nil, verified = Nil)
+    val tenantAttribute   =
+      TenantAttribute(certified = Some(CertifiedTenantAttribute(id = attributeId, assignmentTimestamp = timestamp)))
+
+    (eServiceAttribute, tenantAttribute)
+  }
+
+  def matchingDeclaredAttributes: (Attributes, TenantAttribute) = {
+    val attributeId       = UUID.randomUUID()
+    val eServiceAttribute = Attributes(certified = Nil, declared = Seq(catalogAttribute(attributeId)), verified = Nil)
+    val tenantAttribute   =
+      TenantAttribute(declared = Some(DeclaredTenantAttribute(id = attributeId, assignmentTimestamp = timestamp)))
+
+    (eServiceAttribute, tenantAttribute)
+  }
 
   def agreement: Agreement = Agreement(
     id = UUID.randomUUID(),
@@ -75,4 +107,7 @@ object SpecData {
     consumerDocuments = Nil,
     createdAt = OffsetDateTime.now()
   )
+
+  def draftAgreement: Agreement   = agreement.copy(state = AgreementState.DRAFT)
+  def pendingAgreement: Agreement = agreement.copy(state = AgreementState.PENDING)
 }

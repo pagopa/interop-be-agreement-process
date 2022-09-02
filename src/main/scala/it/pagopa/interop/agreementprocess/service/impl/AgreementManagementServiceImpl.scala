@@ -2,8 +2,9 @@ package it.pagopa.interop.agreementprocess.service.impl
 
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.api.AgreementApi
-import it.pagopa.interop.agreementmanagement.client.invoker.BearerToken
+import it.pagopa.interop.agreementmanagement.client.invoker.{ApiError, BearerToken}
 import it.pagopa.interop.agreementmanagement.client.model._
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotFound
 import it.pagopa.interop.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.TypeConversions.EitherOps
@@ -31,7 +32,9 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     for {
       (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
       request = api.getAgreement(correlationId, agreementId, ip)(BearerToken(bearerToken))
-      result <- invoker.invoke(request, s"Retrieving agreement by id = $agreementId")
+      result <- invoker.invoke(request, s"Retrieving agreement by id = $agreementId").recoverWith {
+        case err: ApiError[_] if err.code == 404 => Future.failed(AgreementNotFound(agreementId))
+      }
     } yield result
 
   override def createAgreement(producerId: UUID, consumerId: UUID, eServiceId: UUID, descriptorId: UUID)(implicit

@@ -1,9 +1,9 @@
 package it.pagopa.interop.agreementprocess
 
-import it.pagopa.interop.agreementmanagement.client.model.{Agreement, AgreementState}
+import it.pagopa.interop.agreementmanagement.client.model.{Agreement, AgreementState, UpdateAgreementSeed}
 import it.pagopa.interop.agreementprocess.api.impl.{AgreementApiMarshallerImpl, AgreementApiServiceImpl}
 import it.pagopa.interop.agreementprocess.api.{AgreementApiMarshaller, AgreementApiService}
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.EServiceNotFound
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{AgreementNotFound, EServiceNotFound}
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, USER_ROLES}
@@ -61,6 +61,27 @@ trait SpecHelper extends MockFactory {
       .expects(*, *, *, *, *)
       .once()
       .returns(Future.successful(result))
+
+  def mockAgreementUpdate(agreementId: UUID, seed: UpdateAgreementSeed, result: Agreement) =
+    (mockAgreementManagementService
+      .updateAgreement(_: UUID, _: UpdateAgreementSeed)(_: Seq[(String, String)]))
+      .expects(agreementId, seed, *)
+      .once()
+      .returns(Future.successful(result))
+
+  def mockAgreementRetrieve(result: Agreement) =
+    (mockAgreementManagementService
+      .getAgreementById(_: String)(_: Seq[(String, String)]))
+      .expects(*, *)
+      .once()
+      .returns(Future.successful(result))
+
+  def mockAgreementRetrieveNotFound(agreementId: UUID) =
+    (mockAgreementManagementService
+      .getAgreementById(_: String)(_: Seq[(String, String)]))
+      .expects(*, *)
+      .once()
+      .returns(Future.failed(AgreementNotFound(agreementId.toString)))
 
   def mockAgreementsRetrieve(result: Seq[Agreement]) =
     (mockAgreementManagementService
