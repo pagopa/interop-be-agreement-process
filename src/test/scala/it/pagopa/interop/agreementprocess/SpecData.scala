@@ -2,18 +2,22 @@ package it.pagopa.interop.agreementprocess
 
 import it.pagopa.interop.agreementmanagement.client.model.{Agreement, AgreementState}
 import it.pagopa.interop.catalogmanagement.client.model.{
+  Attribute,
+  AttributeValue,
   Attributes,
   EService,
   EServiceDescriptor,
   EServiceDescriptorState
 }
 import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
-import it.pagopa.interop.tenantmanagement.client.model.{ExternalId, Tenant}
+import it.pagopa.interop.tenantmanagement.client.model.{CertifiedTenantAttribute, ExternalId, Tenant, TenantAttribute}
 
-import java.time.OffsetDateTime
+import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
 
 object SpecData {
+
+  final val timestamp: OffsetDateTime = OffsetDateTime.of(2022, 12, 31, 11, 22, 33, 0, ZoneOffset.UTC)
 
   def descriptor: EServiceDescriptor = EServiceDescriptor(
     id = UUID.randomUUID(),
@@ -29,6 +33,7 @@ object SpecData {
   )
 
   def publishedDescriptor: EServiceDescriptor = descriptor.copy(state = EServiceDescriptorState.PUBLISHED)
+  def archivedDescriptor: EServiceDescriptor  = descriptor.copy(state = EServiceDescriptorState.ARCHIVED)
 
   def eService: EService = EService(
     id = UUID.randomUUID(),
@@ -40,6 +45,10 @@ object SpecData {
     descriptors = Nil
   )
 
+  def catalogAttribute: Attribute           = Attribute(single = Some(AttributeValue(UUID.randomUUID(), false)))
+  def catalogCertifiedAttribute: Attributes =
+    Attributes(certified = Seq(catalogAttribute), declared = Nil, verified = Nil)
+
   def tenant: Tenant = Tenant(
     id = UUID.randomUUID(),
     selfcareId = Some(UUID.randomUUID().toString),
@@ -49,6 +58,9 @@ object SpecData {
     createdAt = OffsetDateTime.now(),
     updatedAt = None
   )
+
+  def tenantCertifiedAttribute: TenantAttribute =
+    TenantAttribute(certified = Some(CertifiedTenantAttribute(id = UUID.randomUUID(), assignmentTimestamp = timestamp)))
 
   def agreement: Agreement = Agreement(
     id = UUID.randomUUID(),

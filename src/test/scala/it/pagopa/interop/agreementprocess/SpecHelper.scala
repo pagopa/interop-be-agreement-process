@@ -2,7 +2,8 @@ package it.pagopa.interop.agreementprocess
 
 import it.pagopa.interop.agreementmanagement.client.model.{Agreement, AgreementState}
 import it.pagopa.interop.agreementprocess.api.impl.{AgreementApiMarshallerImpl, AgreementApiServiceImpl}
-import it.pagopa.interop.agreementprocess.api.{AgreementApi, AgreementApiMarshaller, AgreementApiService, HealthApi}
+import it.pagopa.interop.agreementprocess.api.{AgreementApiMarshaller, AgreementApiService}
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.EServiceNotFound
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, USER_ROLES}
@@ -22,9 +23,8 @@ trait SpecHelper extends MockFactory {
   implicit val contexts: Seq[(String, String)] =
     Seq("bearer" -> "bearerToken", ORGANIZATION_ID_CLAIM -> requesterOrgId.toString, USER_ROLES -> "admin")
 
-  val agreementApiMarshaller: AgreementApiMarshaller                     = AgreementApiMarshallerImpl
-  val mockHealthApi: HealthApi                                           = mock[HealthApi]
-  val mockAgreementApi: AgreementApi                                     = mock[AgreementApi]
+  val agreementApiMarshaller: AgreementApiMarshaller = AgreementApiMarshallerImpl
+
   val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
   val mockAgreementManagementService: AgreementManagementService         = mock[AgreementManagementService]
   val mockCatalogManagementService: CatalogManagementService             = mock[CatalogManagementService]
@@ -47,6 +47,13 @@ trait SpecHelper extends MockFactory {
       .expects(eServiceId, *)
       .once()
       .returns(Future.successful(result))
+
+  def mockEServiceRetrieveNotFound(eServiceId: UUID) =
+    (mockCatalogManagementService
+      .getEServiceById(_: UUID)(_: Seq[(String, String)]))
+      .expects(eServiceId, *)
+      .once()
+      .returns(Future.failed(EServiceNotFound(eServiceId)))
 
   def mockAgreementCreation(result: Agreement) =
     (mockAgreementManagementService

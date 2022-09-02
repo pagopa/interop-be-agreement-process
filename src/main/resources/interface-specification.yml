@@ -60,8 +60,12 @@ paths:
       description: Submit the draft agreement if all the pre-requisites are met.
       operationId: submitAgreement
       responses:
-        '204':
+        '200':
           description: Draft agreement submitted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
         '400':
           description: Bad Request
           content:
@@ -83,8 +87,12 @@ paths:
       summary: Agreement Activation
       operationId: activateAgreement
       responses:
-        '204':
+        '200':
           description: Pending agreement activated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
         '400':
           description: Bad Request
           content:
@@ -109,8 +117,12 @@ paths:
       summary: Suspend Agreement
       operationId: suspendAgreement
       responses:
-        '204':
+        '200':
           description: Active agreement suspended.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
         '400':
           description: Bad Request
           content:
@@ -325,46 +337,97 @@ components:
         - name
         - version
     Agreement:
+      type: object
       properties:
         id:
           type: string
           format: uuid
-        eserviceDescriptorId:
+        eserviceId:
           type: string
           format: uuid
-        producer:
-          $ref: '#/components/schemas/Organization'
-        consumer:
-          $ref: '#/components/schemas/Organization'
-        eservice:
-          $ref: '#/components/schemas/EService'
+        descriptorId:
+          type: string
+          format: uuid
+        producerId:
+          type: string
+          format: uuid
+        consumerId:
+          type: string
+          format: uuid
         state:
           $ref: '#/components/schemas/AgreementState'
-        attributes:
+        verifiedAttributes:
           type: array
+          description: 'set of the verified attributes belonging to this agreement, if any.'
           items:
-            type: object
-            # TODO This should be oneOf, but openapi generator does not support it
-            properties:
-              single:
-                $ref: '#/components/schemas/Attribute'
-              group:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Attribute'
+            $ref: '#/components/schemas/VerifiedAttribute'
+        certifiedAttributes:
+          type: array
+          description: 'set of the certified attributes belonging to this agreement, if any.'
+          items:
+            $ref: '#/components/schemas/CertifiedAttribute'
+        declaredAttributes:
+          type: array
+          description: 'set of the declared attributes belonging to this agreement, if any.'
+          items:
+            $ref: '#/components/schemas/DeclaredAttribute'
         suspendedByConsumer:
           type: boolean
         suspendedByProducer:
           type: boolean
-      additionalProperties: false
+        suspendedByPlatform:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - id
-        - producer
-        - consumer
-        - eserviceDescriptorId
-        - eservice
-        - attributes
+        - eserviceId
+        - descriptorId
+        - producerId
+        - consumerId
         - state
+        - verifiedAttributes
+        - certifiedAttributes
+        - declaredAttributes
+        - createdAt
+      description: business representation of an agreement
+    VerifiedAttribute:
+      title: VerifiedAttribute
+      type: object
+      description: represents the details of a verified attribute bound to the agreement.
+      properties:
+        id:
+          type: string
+          description: identifier of the attribute as defined on the attribute registry
+          format: uuid
+      required:
+        - id
+    CertifiedAttribute:
+      title: CertifiedAttribute
+      type: object
+      description: represents the details of a certified attribute bound to the agreement.
+      properties:
+        id:
+          type: string
+          description: identifier of the attribute as defined on the attribute registry
+          format: uuid
+      required:
+        - id
+    DeclaredAttribute:
+      title: DeclaredAttribute
+      type: object
+      description: represents the details of a declared attribute bound to the agreement.
+      properties:
+        id:
+          type: string
+          description: identifier of the attribute as defined on the attribute registry
+          format: uuid
+      required:
+        - id
     Agreements:
       type: array
       items:

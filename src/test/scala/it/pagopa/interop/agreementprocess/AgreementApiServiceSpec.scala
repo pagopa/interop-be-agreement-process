@@ -26,10 +26,59 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
         status shouldEqual StatusCodes.OK
       }
     }
-//    "fail if EService does not exist" in {}
-    "fail if Descriptor is not in expected state" in {}
-    "fail if other Agreements exist in conflicting state" in {}
-    "fail on missing certified attributes" in {}
+
+    "fail if EService does not exist" in {
+      val descriptor = SpecData.publishedDescriptor
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+
+      mockEServiceRetrieveNotFound(eService.id)
+
+      Get() ~> service.createAgreement(payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if Descriptor is not in expected state" in {
+      val descriptor = SpecData.archivedDescriptor
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+
+      mockEServiceRetrieve(eService.id, eService)
+
+      Get() ~> service.createAgreement(payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if other Agreements exist in conflicting state" in {
+      val descriptor = SpecData.publishedDescriptor
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+
+      mockEServiceRetrieve(eService.id, eService)
+      mockAgreementsRetrieve(Seq(SpecData.agreement))
+
+      Get() ~> service.createAgreement(payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail on missing certified attributes" in {
+      val descriptor = SpecData.publishedDescriptor
+      val eService   =
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute)
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute))
+      val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+
+      mockEServiceRetrieve(eService.id, eService)
+      mockAgreementsRetrieve(Nil)
+      mockTenantRetrieve(consumer.id, consumer)
+
+      Get() ~> service.createAgreement(payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
   }
 
   "Agreement Submission" should {}

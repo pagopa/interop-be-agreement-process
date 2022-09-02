@@ -8,16 +8,11 @@ import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.model._
-import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
-import it.pagopa.interop.agreementprocess.service.CatalogManagementService.descriptorStateToApi
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
-import it.pagopa.interop.catalogmanagement.client.model.{
-  AttributeValue => CatalogAttributeValue,
-  EService => CatalogEService
-}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
 import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
@@ -25,46 +20,13 @@ import it.pagopa.interop.commons.utils.AkkaUtils.getClaimFuture
 import it.pagopa.interop.commons.utils.ORGANIZATION_ID_CLAIM
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
-import it.pagopa.interop.commons.utils.errors.ComponentError
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object Adapters {
-
-  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState]   =
-    Set(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
-  val SUSPENDABLE_STATES: Set[AgreementManagement.AgreementState] =
-    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
-  val ARCHIVABLE_STATES: Set[AgreementManagement.AgreementState]  =
-    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
-  val SUBMITTABLE_STATES: Set[AgreementManagement.AgreementState] = Set(AgreementManagement.AgreementState.DRAFT)
-
-  final case class AgreementNotInExpectedState(agreementId: String, state: AgreementManagement.AgreementState)
-      extends ComponentError("0003", s"Agreement $agreementId not in expected state (current state: ${state.toString})")
-
-  implicit class AgreementWrapper(private val a: AgreementManagement.Agreement) extends AnyVal {
-
-    def assertSubmittableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
-      .withRight[Unit]
-      .unlessA(SUBMITTABLE_STATES.contains(a.state))
-
-    def assertActivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
-      .withRight[Unit]
-      .unlessA(ACTIVABLE_STATES.contains(a.state))
-
-    def assertSuspendableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
-      .withRight[Unit]
-      .unlessA(SUSPENDABLE_STATES.contains(a.state))
-
-    def assertArchivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
-      .withRight[Unit]
-      .unlessA(ARCHIVABLE_STATES.contains(a.state))
-
-  }
-}
+// TODO File upload and download endpoints
 
 final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
@@ -75,8 +37,6 @@ final case class AgreementApiServiceImpl(
   authorizationManagementService: AuthorizationManagementService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
-
-  import Adapters._
 
   val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
@@ -114,7 +74,6 @@ final case class AgreementApiServiceImpl(
     eServiceAttributes: Seq[CatalogManagement.Attribute],
     consumerAttributes: Seq[UUID]
   ): Seq[UUID] =
-    // TODO Will compile once Catalog Attribute ID will be fixed
     eServiceAttributes.flatMap(_.single.map(_.id)).intersect(consumerAttributes) ++
       eServiceAttributes.flatMap(_.group).flatten.map(_.id).intersect(consumerAttributes)
 
@@ -173,12 +132,31 @@ final case class AgreementApiServiceImpl(
         payload.eserviceId,
         payload.descriptorId
       )
-      apiAgreement     <- getApiAgreement(agreement) // TODO Still necessary?
-    } yield apiAgreement
+    } yield agreement.toApi
 
     onComplete(result) {
-      case Success(agreement) => createAgreement200(agreement)
-      case Failure(ex)        =>
+      case Success(agreement)                        => createAgreement200(agreement)
+      case Failure(ex: DescriptorNotInExpectedState) =>
+        val message =
+          s"Error creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
+        logger.error(message, ex)
+        createAgreement400(problemOf(StatusCodes.BadRequest, ex))
+      case Failure(ex: AgreementAlreadyExists)       =>
+        val message =
+          s"Error creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
+        logger.error(message, ex)
+        createAgreement400(problemOf(StatusCodes.BadRequest, ex))
+      case Failure(ex: MissingCertifiedAttributes)   =>
+        val message =
+          s"Error creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
+        logger.error(message, ex)
+        createAgreement400(problemOf(StatusCodes.BadRequest, ex))
+      case Failure(ex: EServiceNotFound)             =>
+        val message =
+          s"Error creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
+        logger.error(message, ex)
+        createAgreement400(problemOf(StatusCodes.BadRequest, ex))
+      case Failure(ex)                               =>
         val message =
           s"Error creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
         logger.error(message, ex)
@@ -186,9 +164,11 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  override def submitAgreement(
-    agreementId: String
-  )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
+  override def submitAgreement(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route =
     authorize(ADMIN_ROLE) {
       logger.info("Submitting agreement {}", agreementId)
       val result = for {
@@ -222,20 +202,22 @@ final case class AgreementApiServiceImpl(
           suspendedByProducer = None,
           suspendedByPlatform = suspendedByPlatform
         )
-        _ <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
-      } yield ()
+        updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
+      } yield updated.toApi
 
       onComplete(result) {
-        case Success(_)  => activateAgreement204
-        case Failure(ex) =>
+        case Success(agreement) => activateAgreement200(agreement)
+        case Failure(ex)        =>
           logger.error(s"Error while activating agreement $agreementId", ex)
           activateAgreement400(problemOf(StatusCodes.BadRequest, ActivateAgreementError(agreementId)))
       }
     }
 
-  override def activateAgreement(
-    agreementId: String
-  )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
+  override def activateAgreement(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route =
     authorize(ADMIN_ROLE) {
       logger.info("Activating agreement {}", agreementId)
       val result = for {
@@ -271,8 +253,8 @@ final case class AgreementApiServiceImpl(
           suspendedByProducer = suspendedByProducer,
           suspendedByPlatform = suspendedByPlatform
         )
-        _ <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
-        _ <- authorizationManagementService.updateStateOnClients(
+        updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
+        _       <- authorizationManagementService.updateStateOnClients(
           eServiceId = agreement.eserviceId,
           consumerId = agreement.consumerId,
           agreementId = agreement.id,
@@ -281,19 +263,21 @@ final case class AgreementApiServiceImpl(
               AuthorizationManagement.ClientComponentState.ACTIVE
             else AuthorizationManagement.ClientComponentState.INACTIVE
         )
-      } yield ()
+      } yield updated.toApi
 
       onComplete(result) {
-        case Success(_)  => activateAgreement204
-        case Failure(ex) =>
+        case Success(agreement) => activateAgreement200(agreement)
+        case Failure(ex)        =>
           logger.error(s"Error while activating agreement $agreementId", ex)
           activateAgreement400(problemOf(StatusCodes.BadRequest, ActivateAgreementError(agreementId)))
       }
     }
 
-  override def suspendAgreement(
-    agreementId: String
-  )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
+  override def suspendAgreement(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route =
     authorize(ADMIN_ROLE) {
       logger.info("Suspending agreement {}", agreementId)
       val result = for {
@@ -324,18 +308,18 @@ final case class AgreementApiServiceImpl(
           suspendedByProducer = suspendedByProducer,
           suspendedByPlatform = suspendedByPlatform
         )
-        _ <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
-        _ <- authorizationManagementService.updateStateOnClients(
+        updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
+        _       <- authorizationManagementService.updateStateOnClients(
           eServiceId = agreement.eserviceId,
           consumerId = agreement.consumerId,
           agreementId = agreement.id,
           state = AuthorizationManagement.ClientComponentState.INACTIVE
         )
-      } yield ()
+      } yield updated.toApi
 
       onComplete(result) {
-        case Success(_)  => suspendAgreement204
-        case Failure(ex) =>
+        case Success(agreement) => suspendAgreement200(agreement)
+        case Failure(ex)        =>
           logger.error(s"Error while suspending agreement $agreementId", ex)
           val errorResponse: Problem =
             problemOf(StatusCodes.BadRequest, SuspendAgreementError(agreementId))
@@ -367,9 +351,12 @@ final case class AgreementApiServiceImpl(
         descriptorId = descriptorId,
         states = statesEnums
       )
-      apiAgreementsWithVersion <- Future.traverse(agreements)(getApiAgreement)
-      apiAgreements            <- AgreementFilter.filterAgreementsByLatestVersion(latest, apiAgreementsWithVersion)
-    } yield apiAgreements
+      filtered    <- latest
+        .filter(_ == true)
+        .fold(Future.successful(agreements))(_ =>
+          AgreementFilter.filterAgreementsByLatestVersion(catalogManagementService, agreements)
+        )
+    } yield filtered.map(_.toApi)
 
     onComplete(result) {
       case Success(agreement) => getAgreements200(agreement)
@@ -378,8 +365,7 @@ final case class AgreementApiServiceImpl(
           s"Error while getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest",
           ex
         )
-        val errorResponse: Problem =
-          problemOf(StatusCodes.BadRequest, RetrieveAgreementsError)
+        val errorResponse: Problem = problemOf(StatusCodes.BadRequest, RetrieveAgreementsError)
         getAgreements400(errorResponse)
     }
   }
@@ -391,9 +377,8 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
     logger.info(s"Getting agreement by id $agreementId")
     val result: Future[Agreement] = for {
-      agreement    <- agreementManagementService.getAgreementById(agreementId)
-      apiAgreement <- getApiAgreement(agreement)
-    } yield apiAgreement
+      agreement <- agreementManagementService.getAgreementById(agreementId)
+    } yield agreement.toApi
 
     onComplete(result) {
       case Success(agreement) => getAgreementById200(agreement)
@@ -411,98 +396,6 @@ final case class AgreementApiServiceImpl(
         }
     }
   }
-
-  private def getApiAgreement(
-    agreement: ManagementAgreement
-  )(implicit contexts: Seq[(String, String)]): Future[Agreement] = {
-    for {
-      eservice               <- catalogManagementService.getEServiceById(agreement.eserviceId)
-      descriptor             <- eservice.descriptors
-        .find(_.id == agreement.descriptorId)
-        .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
-      activeDescriptorOption <- CatalogManagementService.getActiveDescriptorOption(eservice, descriptor)
-      producer               <- partyManagementService.getInstitution(agreement.producerId)
-      consumer               <- partyManagementService.getInstitution(agreement.consumerId)
-      attributes             <- getApiAgreementAttributes(agreement.verifiedAttributes, eservice)
-    } yield Agreement(
-      id = agreement.id,
-      producer = Organization(id = producer.originId, name = producer.description),
-      consumer = Organization(id = consumer.originId, name = consumer.description),
-      eserviceDescriptorId = descriptor.id,
-      eservice = EService(
-        id = eservice.id,
-        name = eservice.name,
-        version = descriptor.version,
-        activeDescriptor = activeDescriptorOption.map(d =>
-          ActiveDescriptor(id = d.id, state = descriptorStateToApi(d.state), version = d.version)
-        )
-      ),
-      state = agreementStateToApi(agreement.state),
-      attributes = attributes,
-      suspendedByConsumer = agreement.suspendedByConsumer,
-      suspendedByProducer = agreement.suspendedByProducer
-    )
-  }
-
-  private def getApiAgreementAttributes(
-    verifiedAttributes: Seq[AgreementManagement.VerifiedAttribute],
-    eService: CatalogEService
-  )(implicit contexts: Seq[(String, String)]): Future[Seq[AgreementAttributes]] =
-    for {
-      // TODO Disabled for development
-//      attributes <- Future.traverse(verifiedAttributes)(getApiAttribute(eService.attributes))
-      attributes <- Future.successful[Seq[Attribute]](Nil)
-      _                        = verifiedAttributes
-      _                        = contexts
-      // TODO end
-      eServiceSingleAttributes = eService.attributes.verified.flatMap(_.single)
-      eServiceGroupAttributes  = eService.attributes.verified.flatMap(_.group)
-      // This traverse over Future is ok since eServiceToAgreementAttribute is sync
-      agreementSingleAttributes <- eServiceSingleAttributes.traverse(eServiceToAgreementAttribute(_, attributes))
-      agreementGroupAttributes  <- eServiceGroupAttributes.traverse(
-        _.traverse(eServiceToAgreementAttribute(_, attributes))
-      )
-      apiSingleAttributes = agreementSingleAttributes.map(single => AgreementAttributes(Some(single), None))
-      apiGroupAttributes  = agreementGroupAttributes.map(group => AgreementAttributes(None, Some(group)))
-    } yield apiSingleAttributes ++ apiGroupAttributes
-
-  private def eServiceToAgreementAttribute(
-    eServiceAttributeValue: CatalogAttributeValue,
-    agreementAttributes: Seq[Attribute]
-  ): Future[Attribute] =
-    agreementAttributes
-      .find(_.id == eServiceAttributeValue.id)
-      .toFuture(AgreementAttributeNotFound(eServiceAttributeValue.id.toString))
-
-//  private def getApiAttribute(attributes: ManagementAttributes)(verifiedAttribute: VerifiedAttribute)(implicit
-//    contexts: Seq[(String, String)]
-//  ): Future[Attribute] =
-//  {
-//    val fromSingle: Seq[CatalogAttributeValue] =
-//      attributes.verified.flatMap(attribute => attribute.single.toList.find(_.id == verifiedAttribute.id))
-//
-//    val fromGroup: Seq[CatalogAttributeValue] =
-//      attributes.verified.flatMap(attribute => attribute.group.flatMap(_.find(_.id == verifiedAttribute.id)))
-//
-//    val allVerifiedAttributes: Map[String, Boolean] =
-//      (fromSingle ++ fromGroup).map(attribute => attribute.id -> attribute.explicitAttributeVerification).toMap
-//
-//    for {
-//      att  <- attributeManagementService.getAttribute(verifiedAttribute.id.toString)
-//      uuid <- att.id.toFutureUUID
-//    } yield Attribute(
-//      id = uuid,
-//      code = att.code,
-//      description = att.description,
-//      origin = att.origin,
-//      name = att.name,
-//      explicitAttributeVerification = allVerifiedAttributes.get(att.id),
-//      verified = verifiedAttribute.verified,
-//      verificationDate = verifiedAttribute.verificationDate,
-//      validityTimespan = verifiedAttribute.validityTimespan
-//    )
-//
-//  }
 
   private def verifyConflictingAgreements(
     agreement: ManagementAgreement,
@@ -553,8 +446,7 @@ final case class AgreementApiServiceImpl(
       _ <- CatalogManagementService.hasEserviceNewPublishedVersion(latestDescriptorVersion, currentVersion)
       upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = latestActiveEserviceDescriptor.id)
       newAgreement <- agreementManagementService.upgradeById(agreement.id, upgradeSeed)
-      apiAgreement <- getApiAgreement(newAgreement)
-    } yield apiAgreement
+    } yield newAgreement.toApi
 
     onComplete(result) {
       case Success(agreement) => upgradeAgreementById200(agreement)

@@ -1,12 +1,17 @@
 package it.pagopa.interop.agreementprocess.service
 
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.DescriptorNotFound
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
+  DescriptorNotFound,
+  DescriptorNotInExpectedState
+}
 import it.pagopa.interop.agreementprocess.{model => AgreementProcess}
 import it.pagopa.interop.catalogmanagement.client.model._
 
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.Try
+import cats.implicits._
+import it.pagopa.interop.commons.utils.TypeConversions._
 
 trait CatalogManagementService {
 
@@ -55,24 +60,17 @@ object CatalogManagementService {
   }
 
   def validateEServiceDescriptorStatus(
-    eservice: EService,
+    eService: EService,
     descriptorId: UUID,
-    allowedStatus: List[EServiceDescriptorState]
+    allowedStates: List[EServiceDescriptorState]
   ): Future[Unit] = {
-    val descriptorStatus = eservice.descriptors.find(_.id == descriptorId).map(_.state)
+    val descriptorStatus = eService.descriptors.find(_.id == descriptorId).map(_.state)
 
-    Future.fromTry(
-      Either
-        .cond(
-          descriptorStatus.exists(status => allowedStatus.contains(status)),
-          (),
-          new RuntimeException(
-            s"Descriptor ${descriptorId.toString} of Eservice ${eservice.id} has not status in ${allowedStatus
-                .mkString("[", ",", "]")}"
-          )
-        )
-        .toTry
-    )
+    // Not using whenA on Future.failed because it requires an ExecutionContext, which is not actually needed here
+    Left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates))
+      .withRight[Unit]
+      .unlessA(descriptorStatus.exists(status => allowedStates.contains(status)))
+      .toFuture
   }
 
   def getDescriptorAudience(eservice: EService, descriptorId: UUID): Future[Seq[String]] = {

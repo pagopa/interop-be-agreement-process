@@ -1,7 +1,9 @@
 package it.pagopa.interop.agreementprocess.error
 
-import it.pagopa.interop.commons.utils.errors.ComponentError
+import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.model.AgreementPayload
+import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptorState
+import it.pagopa.interop.commons.utils.errors.ComponentError
 
 import java.util.UUID
 
@@ -9,6 +11,28 @@ object AgreementProcessErrors {
 
   final case class UnexpectedError(message: String) extends ComponentError("0000", s"Unexpected error: $message")
 
+  final case class MissingCertifiedAttributes(eServiceId: UUID, descriptorId: UUID, consumerId: UUID)
+      extends ComponentError(
+        "00xx",
+        s"Required certificated attribute is missing. EService $eServiceId, Descriptor $descriptorId, Consumer: $consumerId"
+      )
+
+  final case class AgreementNotInExpectedState(agreementId: String, state: AgreementManagement.AgreementState)
+      extends ComponentError("00xx", s"Agreement $agreementId not in expected state (current state: ${state.toString})")
+
+  final case class DescriptorNotInExpectedState(
+    eServiceId: UUID,
+    descriptorId: UUID,
+    allowedStates: List[EServiceDescriptorState]
+  ) extends ComponentError(
+        "00xx",
+        s"Descriptor $descriptorId of EService $eServiceId has not status in ${allowedStates.mkString("[", ",", "]")}"
+      )
+
+  final case class EServiceNotFound(eServiceId: UUID)
+      extends ComponentError("00xx", s"EService $eServiceId does not exist")
+
+  ////
   final case class ActivateAgreementError(agreementId: String)
       extends ComponentError("0001", s"Error while activating agreement $agreementId")
 
@@ -48,9 +72,4 @@ object AgreementProcessErrors {
   final case class RetrieveAttributesError(consumerId: String)
       extends ComponentError("00012", s"Error while retrieving attributes for consumer $consumerId")
 
-  final case class MissingCertifiedAttributes(eServiceId: UUID, descriptorId: UUID, consumerId: UUID)
-      extends ComponentError(
-        "00013",
-        s"Required certificated attribute is missing. EService $eServiceId, Descriptor $descriptorId, Consumer: $consumerId"
-      )
 }
