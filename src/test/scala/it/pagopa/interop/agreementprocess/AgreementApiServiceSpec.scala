@@ -157,7 +157,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId)
       val agreement  =
-        SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+        SpecData.draftAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = eService.producerId
+        )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
@@ -276,7 +281,12 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
         SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = requesterOrgId)
       val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
       val agreement  =
-        SpecData.pendingAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+        SpecData.pendingAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = eService.producerId
+        )
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
@@ -284,7 +294,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
         declaredAttributes = Seq(DeclaredAttribute(declAttr1), DeclaredAttribute(declAttr2)),
         verifiedAttributes = Seq(VerifiedAttribute(verAttr1), VerifiedAttribute(verAttr2)),
         suspendedByConsumer = None,
-        suspendedByProducer = None,
+        suspendedByProducer = Some(false),
         suspendedByPlatform = Some(false)
       )
 
@@ -550,10 +560,15 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
 
     "fail if Descriptor is not in expected state" in {
       val descriptor = SpecData.archivedDescriptor
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), producerId = requesterOrgId)
-      val consumer   = SpecData.tenant
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId)
       val agreement  =
-        SpecData.pendingAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+        SpecData.pendingAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = eService.producerId
+        )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
@@ -569,8 +584,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
       val agreement = SpecData.suspendedAgreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())
 
       mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
-      mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden

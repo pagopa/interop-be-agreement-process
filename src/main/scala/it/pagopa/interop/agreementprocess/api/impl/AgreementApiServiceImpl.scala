@@ -259,14 +259,14 @@ final case class AgreementApiServiceImpl(
         requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
         requesterOrgUuid <- requesterOrgId.toFutureUUID
         agreement        <- agreementManagementService.getAgreementById(agreementId)
+        _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
+          .recoverWith(_ => verifyRequester(requesterOrgUuid, agreement.producerId))
         _                <- agreement.assertActivableState.toFuture
         _                <- verifyConflictingAgreements(
           agreement,
           List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
         )
         eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
-          .recoverWith(_ => verifyRequester(requesterOrgUuid, eService.producerId))
         _                <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
@@ -335,10 +335,10 @@ final case class AgreementApiServiceImpl(
         requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
         requesterOrgUuid <- requesterOrgId.toFutureUUID
         agreement        <- agreementManagementService.getAgreementById(agreementId)
+        _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
+          .recoverWith(_ => verifyRequester(requesterOrgUuid, agreement.producerId))
         _                <- agreement.assertSuspendableState.toFuture
         eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
-          .recoverWith(_ => verifyRequester(requesterOrgUuid, eService.producerId))
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
