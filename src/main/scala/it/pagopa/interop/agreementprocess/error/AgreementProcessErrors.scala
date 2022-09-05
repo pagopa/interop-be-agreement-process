@@ -38,6 +38,12 @@ object AgreementProcessErrors {
   final case class EServiceNotFound(eServiceId: UUID)
       extends ComponentError("00xx", s"EService $eServiceId does not exist")
 
+  final case class SubmitAgreementError(agreementId: String)
+      extends ComponentError("00xx", s"Error while submitting agreement $agreementId")
+
+  final case class OperationNotAllowed(requesterId: UUID)
+      extends ComponentError("00xx", s"Operation not allowed by $requesterId")
+
   ////
   final case class ActivateAgreementError(agreementId: String)
       extends ComponentError("0001", s"Error while activating agreement $agreementId")

@@ -15,7 +15,9 @@ import it.pagopa.interop.tenantmanagement.client.model.{
   DeclaredTenantAttribute,
   ExternalId,
   Tenant,
-  TenantAttribute
+  TenantAttribute,
+  VerificationRenewal,
+  VerifiedTenantAttribute
 }
 
 import java.time.{OffsetDateTime, ZoneOffset}
@@ -61,35 +63,67 @@ object SpecData {
     updatedAt = None
   )
 
-  def catalogAttribute(id: UUID = UUID.randomUUID()): Attribute =
-    Attribute(single = Some(AttributeValue(id, false)))
+  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Attribute =
+    Attribute(single = Some(AttributeValue(id, explicitAttributeVerification = false)))
 
-  def catalogCertifiedAttribute: Attributes =
-    Attributes(certified = Seq(catalogAttribute()), declared = Nil, verified = Nil)
+  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): Attribute =
+    Attribute(group =
+      Some(
+        Seq(
+          AttributeValue(id1, explicitAttributeVerification = false),
+          AttributeValue(id2, explicitAttributeVerification = false)
+        )
+      )
+    )
 
-  def catalogDeclaredAttribute: Attributes =
-    Attributes(declared = Seq(catalogAttribute()), certified = Nil, verified = Nil)
+  def catalogCertifiedAttribute(id: UUID = UUID.randomUUID()): Attributes =
+    Attributes(certified = Seq(catalogSingleAttribute(id)), declared = Nil, verified = Nil)
 
-  def tenantCertifiedAttribute: TenantAttribute =
-    TenantAttribute(certified = Some(CertifiedTenantAttribute(id = UUID.randomUUID(), assignmentTimestamp = timestamp)))
+  def catalogDeclaredAttribute(id: UUID = UUID.randomUUID()): Attributes =
+    Attributes(declared = Seq(catalogSingleAttribute(id)), certified = Nil, verified = Nil)
 
-  def tenantDeclaredAttribute: TenantAttribute =
-    TenantAttribute(declared = Some(DeclaredTenantAttribute(id = UUID.randomUUID(), assignmentTimestamp = timestamp)))
+  def catalogVerifiedAttribute(id: UUID = UUID.randomUUID()): Attributes =
+    Attributes(declared = Nil, certified = Nil, verified = Seq(catalogSingleAttribute(id)))
+
+  def tenantCertifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(certified = Some(CertifiedTenantAttribute(id = id, assignmentTimestamp = timestamp)))
+
+  def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(declared = Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp)))
+
+  def tenantVerifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(verified =
+      Some(
+        VerifiedTenantAttribute(
+          id = id,
+          assignmentTimestamp = timestamp,
+          renewal = VerificationRenewal.AUTOMATIC_RENEWAL,
+          verifiedBy = Nil,
+          revokedBy = Nil
+        )
+      )
+    )
 
   def matchingCertifiedAttributes: (Attributes, TenantAttribute) = {
     val attributeId       = UUID.randomUUID()
-    val eServiceAttribute = Attributes(certified = Seq(catalogAttribute(attributeId)), declared = Nil, verified = Nil)
-    val tenantAttribute   =
-      TenantAttribute(certified = Some(CertifiedTenantAttribute(id = attributeId, assignmentTimestamp = timestamp)))
+    val eServiceAttribute = catalogCertifiedAttribute(attributeId)
+    val tenantAttribute   = tenantCertifiedAttribute(attributeId)
 
     (eServiceAttribute, tenantAttribute)
   }
 
   def matchingDeclaredAttributes: (Attributes, TenantAttribute) = {
     val attributeId       = UUID.randomUUID()
-    val eServiceAttribute = Attributes(certified = Nil, declared = Seq(catalogAttribute(attributeId)), verified = Nil)
-    val tenantAttribute   =
-      TenantAttribute(declared = Some(DeclaredTenantAttribute(id = attributeId, assignmentTimestamp = timestamp)))
+    val eServiceAttribute = catalogDeclaredAttribute(attributeId)
+    val tenantAttribute   = tenantDeclaredAttribute(attributeId)
+
+    (eServiceAttribute, tenantAttribute)
+  }
+
+  def matchingVerifiedAttributes: (Attributes, TenantAttribute) = {
+    val attributeId       = UUID.randomUUID()
+    val eServiceAttribute = catalogCertifiedAttribute(attributeId)
+    val tenantAttribute   = tenantVerifiedAttribute(attributeId)
 
     (eServiceAttribute, tenantAttribute)
   }

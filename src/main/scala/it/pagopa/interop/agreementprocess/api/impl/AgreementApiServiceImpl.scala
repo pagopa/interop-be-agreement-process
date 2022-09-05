@@ -27,8 +27,6 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-// TODO File upload and download endpoints
-
 final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
   catalogManagementService: CatalogManagementService,
@@ -105,6 +103,9 @@ final case class AgreementApiServiceImpl(
     matchingAttributes(eService.attributes.verified, consumer.attributes.flatMap(_.verified).map(_.id))
       .map(AgreementManagement.VerifiedAttribute)
 
+  def verifyRequester(requesterId: UUID, expected: UUID): Future[Unit] =
+    Future.failed(OperationNotAllowed(requesterId)).whenA(requesterId != expected)
+
   override def createAgreement(payload: AgreementPayload)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
@@ -179,9 +180,12 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Submitting agreement {}", agreementId)
       val result = for {
-        agreement <- agreementManagementService.getAgreementById(agreementId)
-        _         <- agreement.assertSubmittableState.toFuture
-        _         <- verifyConflictingAgreements(
+        requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
+        requesterOrgUuid <- requesterOrgId.toFutureUUID
+        agreement        <- agreementManagementService.getAgreementById(agreementId)
+        _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
+        _                <- agreement.assertSubmittableState.toFuture
+        _                <- verifyConflictingAgreements(
           agreement,
           List(
             AgreementManagement.AgreementState.ACTIVE,
@@ -190,8 +194,8 @@ final case class AgreementApiServiceImpl(
             AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
           )
         )
-        eService  <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _         <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
+        eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
+        _                <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         _        <- Future
@@ -216,7 +220,7 @@ final case class AgreementApiServiceImpl(
       } yield updated.toApi
 
       onComplete(result) {
-        case Success(agreement)                        => activateAgreement200(agreement)
+        case Success(agreement)                        => submitAgreement200(agreement)
         case Failure(ex: AgreementNotFound)            =>
           logger.error(s"Error while submitting agreement $agreementId", ex)
           submitAgreement404(problemOf(StatusCodes.NotFound, ex))
@@ -235,9 +239,12 @@ final case class AgreementApiServiceImpl(
         case Failure(ex: DescriptorNotInExpectedState) =>
           logger.error(s"Error while submitting agreement $agreementId", ex)
           submitAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: OperationNotAllowed)          =>
+          logger.error(s"Error while submitting agreement $agreementId", ex)
+          submitAgreement403(problemOf(StatusCodes.Forbidden, ex))
         case Failure(ex)                               =>
           logger.error(s"Error while submitting agreement $agreementId", ex)
-          internalServerError(ActivateAgreementError(agreementId))
+          internalServerError(SubmitAgreementError(agreementId))
       }
     }
 
@@ -249,15 +256,17 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Activating agreement {}", agreementId)
       val result = for {
-        requesterOrgId <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
-        _              <- agreement.assertActivableState.toFuture
-        _              <- verifyConflictingAgreements(
+        requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
+        requesterOrgUuid <- requesterOrgId.toFutureUUID
+        agreement        <- agreementManagementService.getAgreementById(agreementId)
+        _                <- agreement.assertActivableState.toFuture
+        _                <- verifyConflictingAgreements(
           agreement,
           List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
         )
-        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
+        eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
+        _                <- verifyRequester(requesterOrgUuid, eService.producerId)
+        _                <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
@@ -292,10 +301,13 @@ final case class AgreementApiServiceImpl(
       } yield updated.toApi
 
       onComplete(result) {
-        case Success(agreement) => activateAgreement200(agreement)
-        case Failure(ex)        =>
+        case Success(agreement)               => activateAgreement200(agreement)
+        case Failure(ex: OperationNotAllowed) =>
           logger.error(s"Error while activating agreement $agreementId", ex)
-          activateAgreement400(problemOf(StatusCodes.BadRequest, ActivateAgreementError(agreementId)))
+          activateAgreement403(problemOf(StatusCodes.Forbidden, ex))
+        case Failure(ex)                      =>
+          logger.error(s"Error while activating agreement $agreementId", ex)
+          internalServerError(ActivateAgreementError(agreementId))
       }
     }
 
@@ -307,10 +319,13 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Suspending agreement {}", agreementId)
       val result = for {
-        requesterOrgId <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
-        _              <- agreement.assertSuspendableState.toFuture
-        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+        requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
+        requesterOrgUuid <- requesterOrgId.toFutureUUID
+        agreement        <- agreementManagementService.getAgreementById(agreementId)
+        _                <- agreement.assertSuspendableState.toFuture
+        eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
+        _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
+          .recoverWith(_ => verifyRequester(requesterOrgUuid, eService.producerId))
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
         nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
@@ -342,8 +357,11 @@ final case class AgreementApiServiceImpl(
       } yield updated.toApi
 
       onComplete(result) {
-        case Success(agreement) => suspendAgreement200(agreement)
-        case Failure(ex)        =>
+        case Success(agreement)               => suspendAgreement200(agreement)
+        case Failure(ex: OperationNotAllowed) =>
+          logger.error(s"Error while suspending agreement $agreementId", ex)
+          suspendAgreement403(problemOf(StatusCodes.Forbidden, ex))
+        case Failure(ex)                      =>
           logger.error(s"Error while suspending agreement $agreementId", ex)
           val errorResponse: Problem =
             problemOf(StatusCodes.BadRequest, SuspendAgreementError(agreementId))

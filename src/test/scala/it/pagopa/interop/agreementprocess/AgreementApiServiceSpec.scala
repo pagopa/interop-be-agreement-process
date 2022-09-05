@@ -5,6 +5,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementprocess.model._
+import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -72,8 +73,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail on missing certified attributes" in {
       val descriptor = SpecData.publishedDescriptor
       val eService   =
-        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute)
-      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute))
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute())
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute()))
       val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
       mockEServiceRetrieve(eService.id, eService)
@@ -131,7 +132,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
     }
 
     "fail if other Agreements exist in conflicting state" in {
-      val agreement = SpecData.draftAgreement
+      val agreement = SpecData.draftAgreement.copy(consumerId = requesterOrgId)
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Seq(SpecData.agreement))
@@ -158,7 +159,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
     }
 
     "fail if Agreement is not in expected state" in {
-      val agreement = SpecData.pendingAgreement
+      val agreement = SpecData.pendingAgreement.copy(consumerId = requesterOrgId)
 
       mockAgreementRetrieve(agreement)
 
@@ -169,8 +170,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
 
     "fail and invalidate agreement if tenant lost a certified attribute" in {
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr = SpecData.catalogCertifiedAttribute.copy(declared = eServiceDeclAttr.declared)
-      val tenantAttr   = Seq(SpecData.tenantCertifiedAttribute, tenantDeclAttr)
+      val eServiceAttr = SpecData.catalogCertifiedAttribute().copy(declared = eServiceDeclAttr.declared)
+      val tenantAttr   = Seq(SpecData.tenantCertifiedAttribute(), tenantDeclAttr)
 
       val descriptor = SpecData.publishedDescriptor
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
@@ -201,8 +202,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
 
     "fail on missing declared attributes" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val eServiceAttr = SpecData.catalogDeclaredAttribute.copy(certified = eServiceCertAttr.certified)
-      val tenantAttr   = Seq(SpecData.tenantDeclaredAttribute, tenantCertAttr)
+      val eServiceAttr = SpecData.catalogDeclaredAttribute().copy(certified = eServiceCertAttr.certified)
+      val tenantAttr   = Seq(SpecData.tenantDeclaredAttribute(), tenantCertAttr)
 
       val descriptor = SpecData.publishedDescriptor
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
@@ -217,6 +218,75 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "Agreement Activation" should {
+    "succeed on Pending agreement when Consumer has required attributes" in {
+      import AgreementManagement.{CertifiedAttribute, DeclaredAttribute, VerifiedAttribute}
+
+      val certAttr1 = UUID.randomUUID()
+      val certAttr2 = UUID.randomUUID()
+      val declAttr1 = UUID.randomUUID()
+      val declAttr2 = UUID.randomUUID()
+      val verAttr1  = UUID.randomUUID()
+      val verAttr2  = UUID.randomUUID()
+
+      val eServiceCertAttr = SpecData
+        .catalogCertifiedAttribute()
+        .copy(certified =
+          Seq(SpecData.catalogSingleAttribute(certAttr1), SpecData.catalogGroupAttributes(id1 = certAttr2))
+        )
+      val tenantCertAttr   =
+        Seq(SpecData.tenantCertifiedAttribute(certAttr1), SpecData.tenantCertifiedAttribute(certAttr2))
+
+      val eServiceDeclAttr = SpecData
+        .catalogDeclaredAttribute()
+        .copy(declared =
+          Seq(SpecData.catalogSingleAttribute(declAttr1), SpecData.catalogGroupAttributes(id1 = declAttr2))
+        )
+      val tenantDeclAttr   =
+        Seq(SpecData.tenantDeclaredAttribute(declAttr1), SpecData.tenantDeclaredAttribute(declAttr2))
+
+      val eServiceVerAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified =
+          Seq(SpecData.catalogSingleAttribute(verAttr1), SpecData.catalogGroupAttributes(id1 = verAttr2))
+        )
+      val tenantVerAttr   =
+        Seq(SpecData.tenantVerifiedAttribute(verAttr1), SpecData.tenantVerifiedAttribute(verAttr2))
+
+      val eServiceAttr =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr   = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
+
+      val descriptor = SpecData.publishedDescriptor
+      val eService   =
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = requesterOrgId)
+      val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement  =
+        SpecData.pendingAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+
+      val expectedSeed = UpdateAgreementSeed(
+        state = AgreementManagement.AgreementState.ACTIVE,
+        certifiedAttributes = Seq(CertifiedAttribute(certAttr1), CertifiedAttribute(certAttr2)),
+        declaredAttributes = Seq(DeclaredAttribute(declAttr1), DeclaredAttribute(declAttr2)),
+        verifiedAttributes = Seq(VerifiedAttribute(verAttr1), VerifiedAttribute(verAttr2)),
+        suspendedByConsumer = None,
+        suspendedByProducer = None,
+        suspendedByPlatform = Some(false)
+      )
+
+      mockAgreementRetrieve(agreement)
+      mockAgreementsRetrieve(Nil)
+      mockEServiceRetrieve(eService.id, eService)
+      mockTenantRetrieve(consumer.id, consumer)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.OK
       }
     }
   }
