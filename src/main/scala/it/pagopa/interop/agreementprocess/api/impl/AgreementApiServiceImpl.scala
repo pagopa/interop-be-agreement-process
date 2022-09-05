@@ -265,7 +265,8 @@ final case class AgreementApiServiceImpl(
           List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
         )
         eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _                <- verifyRequester(requesterOrgUuid, eService.producerId)
+        _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
+          .recoverWith(_ => verifyRequester(requesterOrgUuid, eService.producerId))
         _                <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
 
         consumer <- tenantManagementService.getTenant(agreement.consumerId)
@@ -301,11 +302,23 @@ final case class AgreementApiServiceImpl(
       } yield updated.toApi
 
       onComplete(result) {
-        case Success(agreement)               => activateAgreement200(agreement)
-        case Failure(ex: OperationNotAllowed) =>
+        case Success(agreement)                        => activateAgreement200(agreement)
+        case Failure(ex: AgreementNotFound)            =>
+          logger.error(s"Error while activating agreement $agreementId", ex)
+          activateAgreement404(problemOf(StatusCodes.NotFound, ex))
+        case Failure(ex: AgreementAlreadyExists)       =>
+          logger.error(s"Error while activating agreement $agreementId", ex)
+          activateAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: AgreementNotInExpectedState)  =>
+          logger.error(s"Error while activating agreement $agreementId", ex)
+          activateAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: OperationNotAllowed)          =>
           logger.error(s"Error while activating agreement $agreementId", ex)
           activateAgreement403(problemOf(StatusCodes.Forbidden, ex))
-        case Failure(ex)                      =>
+        case Failure(ex: DescriptorNotInExpectedState) =>
+          logger.error(s"Error while activating agreement $agreementId", ex)
+          activateAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex)                               =>
           logger.error(s"Error while activating agreement $agreementId", ex)
           internalServerError(ActivateAgreementError(agreementId))
       }

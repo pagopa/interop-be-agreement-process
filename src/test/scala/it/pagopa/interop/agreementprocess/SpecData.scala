@@ -138,10 +138,15 @@ object SpecData {
     certifiedAttributes = Nil,
     declaredAttributes = Nil,
     verifiedAttributes = Nil,
+    suspendedByConsumer = None,
+    suspendedByProducer = None,
+    suspendedByPlatform = None,
     consumerDocuments = Nil,
     createdAt = OffsetDateTime.now()
   )
 
-  def draftAgreement: Agreement   = agreement.copy(state = AgreementState.DRAFT)
-  def pendingAgreement: Agreement = agreement.copy(state = AgreementState.PENDING)
+  def draftAgreement: Agreement     = agreement.copy(state = AgreementState.DRAFT)
+  def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING)
+  def suspendedAgreement: Agreement = agreement.copy(state = AgreementState.SUSPENDED)
+
 }
