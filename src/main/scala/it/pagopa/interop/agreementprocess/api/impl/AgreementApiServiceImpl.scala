@@ -259,6 +259,11 @@ final case class AgreementApiServiceImpl(
         requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
         requesterOrgUuid <- requesterOrgId.toFutureUUID
         agreement        <- agreementManagementService.getAgreementById(agreementId)
+        _                <- Future
+          .failed(OperationNotAllowed(requesterOrgUuid))
+          .whenA(
+            agreement.state == AgreementManagement.AgreementState.PENDING && agreement.consumerId == requesterOrgUuid
+          )
         _                <- verifyRequester(requesterOrgUuid, agreement.consumerId)
           .recoverWith(_ => verifyRequester(requesterOrgUuid, agreement.producerId))
         _                <- agreement.assertActivableState.toFuture
@@ -280,25 +285,57 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer,
           suspendedByPlatform
         )
-        updateSeed            = AgreementManagement.UpdateAgreementSeed(
-          state = newState,
-          certifiedAttributes = matchingCertifiedAttributes(eService, consumer),
-          declaredAttributes = matchingDeclaredAttributes(eService, consumer),
-          verifiedAttributes = matchingVerifiedAttributes(eService, consumer),
-          suspendedByConsumer = suspendedByConsumer,
-          suspendedByProducer = suspendedByProducer,
-          suspendedByPlatform = suspendedByPlatform
-        )
+        firstActivation       =
+          agreement.state == AgreementManagement.AgreementState.PENDING && newState == AgreementManagement.AgreementState.ACTIVE
+        updateSeed            =
+          if (firstActivation)
+            AgreementManagement.UpdateAgreementSeed(
+              state = newState,
+              certifiedAttributes = matchingCertifiedAttributes(eService, consumer),
+              declaredAttributes = matchingDeclaredAttributes(eService, consumer),
+              verifiedAttributes = matchingVerifiedAttributes(eService, consumer),
+              suspendedByConsumer = suspendedByConsumer,
+              suspendedByProducer = suspendedByProducer,
+              suspendedByPlatform = suspendedByPlatform
+            )
+          else
+            AgreementManagement.UpdateAgreementSeed(
+              state = newState,
+              certifiedAttributes = agreement.certifiedAttributes,
+              declaredAttributes = agreement.declaredAttributes,
+              verifiedAttributes = agreement.verifiedAttributes,
+              suspendedByConsumer = suspendedByConsumer,
+              suspendedByProducer = suspendedByProducer,
+              suspendedByPlatform = suspendedByPlatform
+            )
         updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
-        _       <- authorizationManagementService.updateStateOnClients(
-          eServiceId = agreement.eserviceId,
-          consumerId = agreement.consumerId,
-          agreementId = agreement.id,
-          state =
-            if (newState == AgreementManagement.AgreementState.ACTIVE)
-              AuthorizationManagement.ClientComponentState.ACTIVE
-            else AuthorizationManagement.ClientComponentState.INACTIVE
-        )
+        _       <- Future
+          .failed(AgreementActivationFailed(agreement.id))
+          .whenA(
+            Seq(
+              AgreementManagement.AgreementState.DRAFT,
+              AgreementManagement.AgreementState.PENDING,
+              AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
+            ).contains(newState)
+          )
+        _       <- authorizationManagementService
+          .updateStateOnClients(
+            eServiceId = agreement.eserviceId,
+            consumerId = agreement.consumerId,
+            agreementId = agreement.id,
+            state =
+              if (newState == AgreementManagement.AgreementState.ACTIVE)
+                AuthorizationManagement.ClientComponentState.ACTIVE
+              else AuthorizationManagement.ClientComponentState.INACTIVE
+          )
+          .unlessA(
+            Seq(
+              AgreementManagement.AgreementState.DRAFT,
+              AgreementManagement.AgreementState.PENDING,
+              AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
+            ).contains(newState)
+          )
+
       } yield updated.toApi
 
       onComplete(result) {
@@ -307,6 +344,9 @@ final case class AgreementApiServiceImpl(
           logger.error(s"Error while activating agreement $agreementId", ex)
           activateAgreement404(problemOf(StatusCodes.NotFound, ex))
         case Failure(ex: AgreementAlreadyExists)       =>
+          logger.error(s"Error while activating agreement $agreementId", ex)
+          activateAgreement400(problemOf(StatusCodes.BadRequest, ex))
+        case Failure(ex: AgreementActivationFailed)    =>
           logger.error(s"Error while activating agreement $agreementId", ex)
           activateAgreement400(problemOf(StatusCodes.BadRequest, ex))
         case Failure(ex: AgreementNotInExpectedState)  =>

@@ -44,6 +44,12 @@ object AgreementProcessErrors {
   final case class OperationNotAllowed(requesterId: UUID)
       extends ComponentError("00xx", s"Operation not allowed by $requesterId")
 
+  final case class AgreementActivationFailed(agreementId: UUID)
+      extends ComponentError(
+        "00xx",
+        s"Unable to activate agreement. Please check if attributes requirements are satisfied and suspension flags are clear"
+      )
+
   ////
   final case class ActivateAgreementError(agreementId: String)
       extends ComponentError("0001", s"Error while activating agreement $agreementId")

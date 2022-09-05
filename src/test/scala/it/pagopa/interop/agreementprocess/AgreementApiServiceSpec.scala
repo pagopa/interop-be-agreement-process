@@ -525,7 +525,108 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
       }
     }
 
-    "fail on Suspended agreement when requested by Consumer" in {}
+    "fail and invalidate agreement if tenant lost a certified attribute" in {
+      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                         = Seq(tenantVerAttr, tenantDeclAttr)
+
+      val descriptor = SpecData.publishedDescriptor
+      val eService   =
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = requesterOrgId)
+      val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement  =
+        SpecData.pendingAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = eService.producerId
+        )
+
+      val expectedSeed = UpdateAgreementSeed(
+        state = AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+        certifiedAttributes = Nil,
+        declaredAttributes = Nil,
+        verifiedAttributes = Nil,
+        suspendedByConsumer = None,
+        suspendedByProducer = Some(false),
+        suspendedByPlatform = Some(true)
+      )
+
+      mockAgreementRetrieve(agreement)
+      mockAgreementsRetrieve(Nil)
+      mockEServiceRetrieve(eService.id, eService)
+      mockTenantRetrieve(consumer.id, consumer)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail and move to Draft on missing declared attributes" in {
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                         = Seq(tenantVerAttr, tenantCertAttr)
+
+      val descriptor = SpecData.publishedDescriptor
+      val eService   =
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = requesterOrgId)
+      val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement  =
+        SpecData.pendingAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = eService.producerId
+        )
+
+      val expectedSeed = UpdateAgreementSeed(
+        state = AgreementManagement.AgreementState.DRAFT,
+        certifiedAttributes = Nil,
+        declaredAttributes = Nil,
+        verifiedAttributes = Nil,
+        suspendedByConsumer = None,
+        suspendedByProducer = Some(false),
+        // TODO The action is done by the platform, but it's not suspended. What value should it have?
+        suspendedByPlatform = Some(false)
+      )
+
+      mockAgreementRetrieve(agreement)
+      mockAgreementsRetrieve(Nil)
+      mockEServiceRetrieve(eService.id, eService)
+      mockTenantRetrieve(consumer.id, consumer)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail on Pending agreement when requested by Consumer" in {
+      val descriptor = SpecData.publishedDescriptor
+      val eService   =
+        SpecData.eService.copy(descriptors = Seq(descriptor))
+      val consumer   = SpecData.tenant.copy(requesterOrgId)
+      val agreement  =
+        SpecData.pendingAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = eService.producerId
+        )
+
+      mockAgreementRetrieve(agreement)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.Forbidden
+      }
+    }
 
     "fail on missing agreement" in {
       val agreementId = UUID.randomUUID()
@@ -548,7 +649,7 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
     }
 
     "fail if other Agreements exist in conflicting state" in {
-      val agreement = SpecData.pendingAgreement.copy(consumerId = requesterOrgId)
+      val agreement = SpecData.pendingAgreement.copy(producerId = requesterOrgId)
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Seq(SpecData.agreement))
@@ -560,8 +661,8 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
 
     "fail if Descriptor is not in expected state" in {
       val descriptor = SpecData.archivedDescriptor
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
-      val consumer   = SpecData.tenant.copy(id = requesterOrgId)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), producerId = requesterOrgId)
+      val consumer   = SpecData.tenant
       val agreement  =
         SpecData.pendingAgreement.copy(
           eserviceId = eService.id,

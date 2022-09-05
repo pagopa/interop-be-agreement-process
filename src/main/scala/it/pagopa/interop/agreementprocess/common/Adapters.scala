@@ -7,7 +7,8 @@ import it.pagopa.interop.agreementprocess.model._
 
 object Adapters {
 
-  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState]   =
+  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState] =
+    // TODO Can Producer force the activation if descriptor is deprecated?
     Set(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
   val SUSPENDABLE_STATES: Set[AgreementManagement.AgreementState] =
     Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
