@@ -6,12 +6,11 @@ import it.pagopa.interop.attributeregistrymanagement
 import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.model.{Attributes, EService, EServiceTechnology}
-import it.pagopa.interop.selfcare.partymanagement.client.model.{Attribute, Institution}
 import it.pagopa.interop.tenantmanagement.client.model.{ExternalId, Tenant}
 
 import java.time.OffsetDateTime
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
  * Holds fake implementation of dependencies for tests not requiring neither mocks or stubs
@@ -33,32 +32,6 @@ object FakeDependencies {
     override def getAttributeByOriginAndCode(origin: String, code: String)(implicit
       contexts: Seq[(String, String)]
     ): Future[ClientAttribute] = Future.successful(attribute)
-  }
-
-  class FakePartyManagementService extends PartyManagementService {
-    override def getPartyAttributes(
-      partyId: UUID
-    )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Seq[Attribute]] =
-      Future.successful(Seq.empty)
-
-    override def getInstitution(
-      partyId: UUID
-    )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution] =
-      Future.successful(
-        Institution(
-          id = UUID.randomUUID(),
-          externalId = "fake",
-          originId = "fake",
-          description = "fake",
-          digitalAddress = "fake",
-          address = "fake",
-          zipCode = "fake",
-          taxCode = "fake",
-          origin = "fake",
-          institutionType = "fake",
-          attributes = Seq.empty[Attribute]
-        )
-      )
   }
 
   class FakeAgreementManagementService extends AgreementManagementService {

@@ -1,7 +1,6 @@
 package it.pagopa.interop.agreementprocess.service
 
 import it.pagopa.interop.agreementmanagement.client.model._
-import it.pagopa.interop.agreementprocess.{model => AgreementProcess}
 
 import java.util.UUID
 import scala.concurrent.Future
@@ -29,16 +28,4 @@ trait AgreementManagementService {
   def updateAgreement(agreementId: UUID, seed: UpdateAgreementSeed)(implicit
     contexts: Seq[(String, String)]
   ): Future[Agreement]
-}
-
-object AgreementManagementService {
-
-  def agreementStateToApi(status: AgreementState): AgreementProcess.AgreementState = status match {
-    case AgreementState.DRAFT                        => AgreementProcess.AgreementState.DRAFT
-    case AgreementState.PENDING                      => AgreementProcess.AgreementState.PENDING
-    case AgreementState.ACTIVE                       => AgreementProcess.AgreementState.ACTIVE
-    case AgreementState.SUSPENDED                    => AgreementProcess.AgreementState.SUSPENDED
-    case AgreementState.INACTIVE                     => AgreementProcess.AgreementState.INACTIVE
-    case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => AgreementProcess.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-  }
 }

@@ -9,9 +9,7 @@ object ApplicationConfiguration {
   val agreementManagementURL: String     = config.getString("agreement-process.services.agreement-management")
   val catalogManagementURL: String       = config.getString("agreement-process.services.catalog-management")
   val tenantManagementURL: String        = config.getString("agreement-process.services.tenant-management")
-  val partyManagementURL: String         = config.getString("agreement-process.services.party-management")
   val authorizationManagementURL: String = config.getString("agreement-process.services.authorization-management")
-  val partyManagementApiKey: String      = config.getString("agreement-process.api-keys.party-management")
   val jwtAudience: Set[String] = config.getString("agreement-process.jwt.audience").split(",").toSet.filter(_.nonEmpty)
   val attributeRegistryManagementURL: String =
     config.getString("agreement-process.services.attribute-registry-management")

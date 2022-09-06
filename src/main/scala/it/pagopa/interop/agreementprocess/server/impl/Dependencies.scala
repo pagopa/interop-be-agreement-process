@@ -21,14 +21,11 @@ import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, S
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.errors.GenericComponentErrors
 import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
-import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
 import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 trait Dependencies {
-
-  implicit val partyManagementApiKeyValue: PartyManagementApiKeyValue = PartyManagementApiKeyValue()
 
   def agreementManagement(
     blockingEc: ExecutionContextExecutor
@@ -52,12 +49,6 @@ trait Dependencies {
     TenantManagementServiceImpl(
       TenantManagementInvoker(blockingEc)(actorSystem.classicSystem),
       TenantApi(ApplicationConfiguration.tenantManagementURL)
-    )
-
-  def partyManagement(implicit actorSystem: ActorSystem[_]): PartyManagementService =
-    PartyManagementServiceImpl(
-      PartyManagementInvoker()(actorSystem.classicSystem),
-      PartyApi(ApplicationConfiguration.partyManagementURL)
     )
 
   def attributeRegistryManagement(
@@ -96,7 +87,6 @@ trait Dependencies {
       AgreementApiServiceImpl(
         agreementManagement(blockingEc),
         catalogManagement(blockingEc),
-        partyManagement,
         tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
         authorizationManagement(blockingEc)

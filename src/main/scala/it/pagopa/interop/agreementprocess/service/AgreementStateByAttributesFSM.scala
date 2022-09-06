@@ -53,7 +53,7 @@ object AgreementStateByAttributesFSM {
   def verifiedAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
     attributesSatisfied(eService.attributes.verified, consumer.attributes.flatMap(_.verified).map(_.id))
 
-  def attributesSatisfied(requested: Seq[Attribute], assigned: Seq[UUID]): Boolean =
+  private def attributesSatisfied(requested: Seq[Attribute], assigned: Seq[UUID]): Boolean =
     requested.forall {
       case Attribute(Some(single), _) => assigned.contains(single.id)
       case Attribute(_, Some(group))  => group.map(_.id).intersect(assigned).nonEmpty

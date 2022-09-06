@@ -1073,26 +1073,6 @@ class AgreementApiServiceSpec extends AnyWordSpecLike with SpecHelper with Scala
       }
     }
 
-    "fail if Descriptor is not in expected state" in {
-      val descriptor = SpecData.archivedDescriptor
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), producerId = requesterOrgId)
-      val consumer   = SpecData.tenant
-      val agreement  =
-        SpecData.activeAgreement.copy(
-          eserviceId = eService.id,
-          descriptorId = descriptor.id,
-          consumerId = consumer.id,
-          producerId = eService.producerId
-        )
-
-      mockAgreementRetrieve(agreement)
-      mockEServiceRetrieve(eService.id, eService)
-
-      Get() ~> service.suspendAgreement(agreement.id.toString) ~> check {
-        status shouldEqual StatusCodes.BadRequest
-      }
-    }
-
     "fail if requester is not the Consumer or the Producer" in {
       val eService  = SpecData.eService.copy(producerId = UUID.randomUUID())
       val agreement = SpecData.activeAgreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())

@@ -26,7 +26,6 @@ trait SpecHelper extends MockFactory {
 
   val agreementApiMarshaller: AgreementApiMarshaller = AgreementApiMarshallerImpl
 
-  val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
   val mockAgreementManagementService: AgreementManagementService         = mock[AgreementManagementService]
   val mockCatalogManagementService: CatalogManagementService             = mock[CatalogManagementService]
   val mockTenantManagementService: TenantManagementService               = mock[TenantManagementService]
@@ -36,7 +35,6 @@ trait SpecHelper extends MockFactory {
   val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
-    mockPartyManagementService,
     mockTenantManagementService,
     mockAttributeManagementService,
     mockAuthorizationManagementService

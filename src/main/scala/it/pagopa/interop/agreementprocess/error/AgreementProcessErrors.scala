@@ -9,18 +9,19 @@ import java.util.UUID
 
 object AgreementProcessErrors {
 
+  // TODO Define error codes
   final case class UnexpectedError(message: String) extends ComponentError("0000", s"Unexpected error: $message")
 
-  final case class MissingCertifiedAttributes(eServiceId: UUID, descriptorId: UUID, consumerId: UUID)
+  final case class MissingCertifiedAttributes(eServiceId: UUID, consumerId: UUID)
       extends ComponentError(
         "00xx",
-        s"Required certificated attribute is missing. EService $eServiceId, Descriptor $descriptorId, Consumer: $consumerId"
+        s"Required certified attribute is missing. EService $eServiceId, Consumer: $consumerId"
       )
 
-  final case class MissingDeclaredAttributes(eServiceId: UUID, descriptorId: UUID, consumerId: UUID)
+  final case class MissingDeclaredAttributes(eServiceId: UUID, consumerId: UUID)
       extends ComponentError(
         "00xx",
-        s"Required declared attribute is missing. EService $eServiceId, Descriptor $descriptorId, Consumer: $consumerId"
+        s"Required declared attribute is missing. EService $eServiceId, Consumer: $consumerId"
       )
 
   final case class AgreementNotInExpectedState(agreementId: String, state: AgreementManagement.AgreementState)
@@ -50,7 +51,8 @@ object AgreementProcessErrors {
         s"Unable to activate agreement. Please check if attributes requirements are satisfied and suspension flags are clear"
       )
 
-  ////
+  //// end TODO
+
   final case class ActivateAgreementError(agreementId: String)
       extends ComponentError("0001", s"Error while activating agreement $agreementId")
 

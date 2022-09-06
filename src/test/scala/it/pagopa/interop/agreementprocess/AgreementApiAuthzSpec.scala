@@ -17,14 +17,12 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
   val fakeAgreementManagementService: AgreementManagementService         = new FakeAgreementManagementService()
   val fakeCatalogManagementService: CatalogManagementService             = new FakeCatalogManagementService()
   val fakeTenantManagementService: TenantManagementService               = new FakeTenantManagementService()
-  val fakePartyManagementService: PartyManagementService                 = new FakePartyManagementService()
   val fakeAttributeManagementService: AttributeManagementService         = new FakeAttributeManagementService()
   val fakeAuthorizationManagementService: AuthorizationManagementService = new FakeAuthorizationManagementService()
 
   val service: AgreementApiServiceImpl = AgreementApiServiceImpl(
     fakeAgreementManagementService,
     fakeCatalogManagementService,
-    fakePartyManagementService,
     fakeTenantManagementService,
     fakeAttributeManagementService,
     fakeAuthorizationManagementService

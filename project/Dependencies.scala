@@ -31,8 +31,6 @@ object Dependencies {
       namespace %% "interop-be-authorization-management-client" % authorizationManagementVersion
     lazy val catalogManagementClient =
       namespace %% "interop-be-catalog-management-client" % catalogManagementVersion
-    lazy val partyManagementClient =
-      namespace %% "interop-selfcare-party-management-client" % partyManagementVersion
     lazy val attributeRegistryManagementClient =
       namespace %% "interop-be-attribute-registry-management-client" % attributeRegistryManagementVersion
     lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client" % tenantManagementVersion
@@ -111,7 +109,6 @@ object Dependencies {
       pagopa.catalogManagementClient           % Compile,
       pagopa.commons                           % Compile,
       pagopa.commonsJWT                        % Compile,
-      pagopa.partyManagementClient             % Compile,
       pagopa.tenantManagementClient            % Compile,
       akka.httpTestkit                         % Test,
       akka.testkit                             % Test,

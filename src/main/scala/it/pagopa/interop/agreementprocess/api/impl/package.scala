@@ -10,7 +10,6 @@ import it.pagopa.interop.commons.utils.TypeConversions.TryOps
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.errors.ComponentError
 import it.pagopa.interop._
-import it.pagopa.interop.selfcare._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.commons.jwt.{authorizeInterop, hasPermissions}
 import it.pagopa.interop.commons.utils.errors.GenericComponentErrors.OperationForbidden
@@ -20,10 +19,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
 
-  type ManagementEService    = catalogmanagement.client.model.EService
-  type ManagementInstitution = partymanagement.client.model.Institution
-  type ManagementAgreement   = agreementmanagement.client.model.Agreement
-  type ManagementAttributes  = catalogmanagement.client.model.Attributes
+  type ManagementEService   = catalogmanagement.client.model.EService
+  type ManagementAgreement  = agreementmanagement.client.model.Agreement
+  type ManagementAttributes = catalogmanagement.client.model.Attributes
 
   implicit def organizationJsonFormat: RootJsonFormat[Organization]               = jsonFormat2(Organization)
   implicit def activeDescriptorJsonFormat: RootJsonFormat[ActiveDescriptor]       = jsonFormat3(ActiveDescriptor)
