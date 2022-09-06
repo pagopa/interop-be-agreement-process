@@ -411,6 +411,9 @@ final case class AgreementApiServiceImpl(
 
       onComplete(result) {
         case Success(agreement)               => suspendAgreement200(agreement)
+        case Failure(ex: AgreementNotFound)   =>
+          logger.error(s"Error while suspending agreement $agreementId", ex)
+          suspendAgreement404(problemOf(StatusCodes.NotFound, ex))
         case Failure(ex: OperationNotAllowed) =>
           logger.error(s"Error while suspending agreement $agreementId", ex)
           suspendAgreement403(problemOf(StatusCodes.Forbidden, ex))

@@ -148,5 +148,6 @@ object SpecData {
   def draftAgreement: Agreement     = agreement.copy(state = AgreementState.DRAFT)
   def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING)
   def suspendedAgreement: Agreement = agreement.copy(state = AgreementState.SUSPENDED)
+  def activeAgreement: Agreement    = agreement.copy(state = AgreementState.ACTIVE)
 
 }
