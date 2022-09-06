@@ -275,7 +275,7 @@ final case class AgreementApiServiceImpl(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant,
     requesterOrgId: UUID
-  )(implicit contexts: Seq[(String, String)]): Future[ManagementAgreement] = {
+  )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
@@ -335,7 +335,7 @@ final case class AgreementApiServiceImpl(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant,
     requesterOrgId: UUID
-  )(implicit contexts: Seq[(String, String)]): Future[ManagementAgreement] = {
+  )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
@@ -504,7 +504,7 @@ final case class AgreementApiServiceImpl(
     }
 
   private def verifyConflictingAgreements(
-    agreement: ManagementAgreement,
+    agreement: AgreementManagement.Agreement,
     conflictingStates: List[AgreementManagement.AgreementState]
   )(implicit contexts: Seq[(String, String)]): Future[Unit] = verifyConflictingAgreements(
     agreement.producerId,

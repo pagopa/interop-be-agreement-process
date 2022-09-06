@@ -9,7 +9,6 @@ import it.pagopa.interop.commons.utils.AkkaUtils.getFutureBearer
 import it.pagopa.interop.commons.utils.TypeConversions.TryOps
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
 import it.pagopa.interop.commons.utils.errors.ComponentError
-import it.pagopa.interop._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.commons.jwt.{authorizeInterop, hasPermissions}
 import it.pagopa.interop.commons.utils.errors.GenericComponentErrors.OperationForbidden
@@ -19,23 +18,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
 
-  type ManagementEService   = catalogmanagement.client.model.EService
-  type ManagementAgreement  = agreementmanagement.client.model.Agreement
-  type ManagementAttributes = catalogmanagement.client.model.Attributes
-
-  implicit def organizationJsonFormat: RootJsonFormat[Organization]               = jsonFormat2(Organization)
-  implicit def activeDescriptorJsonFormat: RootJsonFormat[ActiveDescriptor]       = jsonFormat3(ActiveDescriptor)
-  implicit def eServiceJsonFormat: RootJsonFormat[EService]                       = jsonFormat4(EService)
-  implicit def agreementAttributesJsonFormat: RootJsonFormat[AgreementAttributes] = jsonFormat2(AgreementAttributes)
-  implicit def verifiedAttributeJsonFormat: RootJsonFormat[VerifiedAttribute]     = jsonFormat1(VerifiedAttribute)
-  implicit def declaredAttributeJsonFormat: RootJsonFormat[DeclaredAttribute]     = jsonFormat1(DeclaredAttribute)
-  implicit def certifiedAttributeJsonFormat: RootJsonFormat[CertifiedAttribute]   = jsonFormat1(CertifiedAttribute)
-  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                     = jsonFormat14(Agreement)
-  implicit def agreementPayloadJsonFormat: RootJsonFormat[AgreementPayload]       = jsonFormat2(AgreementPayload)
-  implicit def attributeJsonFormat: RootJsonFormat[Attribute]                     = jsonFormat9(Attribute)
-  implicit def attributesJsonFormat: RootJsonFormat[Attributes]                   = jsonFormat3(Attributes)
-  implicit def problemErrorFormat: RootJsonFormat[ProblemError]                   = jsonFormat2(ProblemError)
-  implicit def problemFormat: RootJsonFormat[Problem]                             = jsonFormat5(Problem)
+  implicit def verifiedAttributeJsonFormat: RootJsonFormat[VerifiedAttribute]   = jsonFormat1(VerifiedAttribute)
+  implicit def declaredAttributeJsonFormat: RootJsonFormat[DeclaredAttribute]   = jsonFormat1(DeclaredAttribute)
+  implicit def certifiedAttributeJsonFormat: RootJsonFormat[CertifiedAttribute] = jsonFormat1(CertifiedAttribute)
+  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                   = jsonFormat14(Agreement)
+  implicit def agreementPayloadJsonFormat: RootJsonFormat[AgreementPayload]     = jsonFormat2(AgreementPayload)
+  implicit def problemErrorFormat: RootJsonFormat[ProblemError]                 = jsonFormat2(ProblemError)
+  implicit def problemFormat: RootJsonFormat[Problem]                           = jsonFormat5(Problem)
 
   final val serviceErrorCodePrefix: String = "005"
   final val defaultProblemType: String     = "about:blank"
