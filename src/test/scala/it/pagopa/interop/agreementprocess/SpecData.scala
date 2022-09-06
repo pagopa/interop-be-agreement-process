@@ -1,6 +1,12 @@
 package it.pagopa.interop.agreementprocess
 
-import it.pagopa.interop.agreementmanagement.client.model.{Agreement, AgreementState}
+import it.pagopa.interop.agreementmanagement.client.model.{
+  Agreement,
+  AgreementState,
+  CertifiedAttribute,
+  DeclaredAttribute,
+  VerifiedAttribute
+}
 import it.pagopa.interop.catalogmanagement.client.model.{
   Attribute,
   AttributeValue,
@@ -149,5 +155,17 @@ object SpecData {
   def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING)
   def suspendedAgreement: Agreement = agreement.copy(state = AgreementState.SUSPENDED)
   def activeAgreement: Agreement    = agreement.copy(state = AgreementState.ACTIVE)
+
+  def activeAgreementWithAttributes: Agreement = activeAgreement.copy(
+    certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),
+    declaredAttributes = Seq(DeclaredAttribute(UUID.randomUUID()), DeclaredAttribute(UUID.randomUUID())),
+    verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
+  )
+
+  def suspendedAgreementWithAttributes: Agreement = suspendedAgreement.copy(
+    certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),
+    declaredAttributes = Seq(DeclaredAttribute(UUID.randomUUID()), DeclaredAttribute(UUID.randomUUID())),
+    verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
+  )
 
 }
