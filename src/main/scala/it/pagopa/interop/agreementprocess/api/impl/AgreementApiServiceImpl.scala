@@ -139,9 +139,8 @@ final case class AgreementApiServiceImpl(
         _                <- assertRequesterIsConsumerOrProducer(requesterOrgUuid, agreement)
         _                <- agreement.assertSuspendableState.toFuture
         eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
-
-        consumer <- tenantManagementService.getTenant(agreement.consumerId)
-        updated  <- suspend(agreement, eService, consumer, requesterOrgUuid)
+        consumer         <- tenantManagementService.getTenant(agreement.consumerId)
+        updated          <- suspend(agreement, eService, consumer, requesterOrgUuid)
       } yield updated.toApi
 
       onComplete(result) {
@@ -178,6 +177,76 @@ final case class AgreementApiServiceImpl(
         val errorResponse: Problem =
           problemOf(StatusCodes.BadRequest, UpdateAgreementError(agreementId))
         upgradeAgreementById400(errorResponse)
+    }
+  }
+
+  override def getAgreements(
+    producerId: Option[String],
+    consumerId: Option[String],
+    eserviceId: Option[String],
+    descriptorId: Option[String],
+    states: String,
+    latest: Option[Boolean]
+  )(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
+    logger.info(
+      s"Getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
+    )
+    val result: Future[Seq[Agreement]] = for {
+      statesEnums <- parseArrayParameters(states).traverse(AgreementManagement.AgreementState.fromValue).toFuture
+      agreements  <- agreementManagementService.getAgreements(
+        producerId = producerId,
+        consumerId = consumerId,
+        eserviceId = eserviceId,
+        descriptorId = descriptorId,
+        states = statesEnums
+      )
+      filtered    <- latest
+        .filter(_ == true)
+        .fold(Future.successful(agreements))(_ =>
+          AgreementFilter.filterAgreementsByLatestVersion(catalogManagementService, agreements)
+        )
+    } yield filtered.map(_.toApi)
+
+    onComplete(result) {
+      case Success(agreement) => getAgreements200(agreement)
+      case Failure(ex)        =>
+        logger.error(
+          s"Error while getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest",
+          ex
+        )
+        val errorResponse: Problem = problemOf(StatusCodes.BadRequest, RetrieveAgreementsError)
+        getAgreements400(errorResponse)
+    }
+  }
+
+  override def getAgreementById(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
+    logger.info(s"Getting agreement by id $agreementId")
+    val result: Future[Agreement] = for {
+      agreement <- agreementManagementService.getAgreementById(agreementId)
+    } yield agreement.toApi
+
+    onComplete(result) {
+      case Success(agreement) => getAgreementById200(agreement)
+      case Failure(ex)        =>
+        logger.error(s"Error while getting agreement by id $agreementId", ex)
+        ex match {
+          case ex: AgreementNotFound =>
+            val errorResponse: Problem =
+              problemOf(StatusCodes.NotFound, ex)
+            getAgreementById404(errorResponse)
+          case _                     =>
+            val errorResponse: Problem =
+              problemOf(StatusCodes.BadRequest, RetrieveAgreementError(agreementId))
+            getAgreementById400(errorResponse)
+        }
     }
   }
 
@@ -291,76 +360,6 @@ final case class AgreementApiServiceImpl(
         state = AuthorizationManagement.ClientComponentState.INACTIVE
       )
     } yield updated
-  }
-
-  override def getAgreements(
-    producerId: Option[String],
-    consumerId: Option[String],
-    eserviceId: Option[String],
-    descriptorId: Option[String],
-    states: String,
-    latest: Option[Boolean]
-  )(implicit
-    contexts: Seq[(String, String)],
-    toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
-    logger.info(
-      s"Getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
-    )
-    val result: Future[Seq[Agreement]] = for {
-      statesEnums <- parseArrayParameters(states).traverse(AgreementManagement.AgreementState.fromValue).toFuture
-      agreements  <- agreementManagementService.getAgreements(
-        producerId = producerId,
-        consumerId = consumerId,
-        eserviceId = eserviceId,
-        descriptorId = descriptorId,
-        states = statesEnums
-      )
-      filtered    <- latest
-        .filter(_ == true)
-        .fold(Future.successful(agreements))(_ =>
-          AgreementFilter.filterAgreementsByLatestVersion(catalogManagementService, agreements)
-        )
-    } yield filtered.map(_.toApi)
-
-    onComplete(result) {
-      case Success(agreement) => getAgreements200(agreement)
-      case Failure(ex)        =>
-        logger.error(
-          s"Error while getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest",
-          ex
-        )
-        val errorResponse: Problem = problemOf(StatusCodes.BadRequest, RetrieveAgreementsError)
-        getAgreements400(errorResponse)
-    }
-  }
-
-  override def getAgreementById(agreementId: String)(implicit
-    contexts: Seq[(String, String)],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
-    logger.info(s"Getting agreement by id $agreementId")
-    val result: Future[Agreement] = for {
-      agreement <- agreementManagementService.getAgreementById(agreementId)
-    } yield agreement.toApi
-
-    onComplete(result) {
-      case Success(agreement) => getAgreementById200(agreement)
-      case Failure(ex)        =>
-        logger.error(s"Error while getting agreement by id $agreementId", ex)
-        ex match {
-          case ex: AgreementNotFound =>
-            val errorResponse: Problem =
-              problemOf(StatusCodes.NotFound, ex)
-            getAgreementById404(errorResponse)
-          case _                     =>
-            val errorResponse: Problem =
-              problemOf(StatusCodes.BadRequest, RetrieveAgreementError(agreementId))
-            getAgreementById400(errorResponse)
-        }
-    }
   }
 
   def suspendedByConsumerFlag(
