@@ -20,7 +20,7 @@ import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLo
 import it.pagopa.interop.commons.utils.AkkaUtils.getClaimFuture
 import it.pagopa.interop.commons.utils.ORGANIZATION_ID_CLAIM
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
-import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, StringOps}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.util.UUID
@@ -146,7 +146,6 @@ final case class AgreementApiServiceImpl(
       }
     }
 
-  // TODO Test and refactor
   override def upgradeAgreementById(agreementId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
@@ -154,25 +153,20 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE) {
     logger.info(s"Upgrading agreement $agreementId")
     val result = for {
-      agreement                      <- agreementManagementService.getAgreementById(agreementId)
-      eservice                       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-      latestActiveEserviceDescriptor <- eservice.descriptors
-        .find(d => d.state == CatalogManagement.EServiceDescriptorState.PUBLISHED)
-        .toFuture(DescriptorNotFound(agreement.eserviceId.toString, agreement.descriptorId.toString))
-      latestDescriptorVersion = latestActiveEserviceDescriptor.version.toLongOption
-      currentVersion = eservice.descriptors.find(d => d.id == agreement.descriptorId).flatMap(_.version.toLongOption)
-      _ <- CatalogManagementService.hasEserviceNewPublishedVersion(latestDescriptorVersion, currentVersion)
-      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = latestActiveEserviceDescriptor.id)
+      requesterOrgId <- getRequesterOrganizationId(contexts)
+      agreement      <- agreementManagementService.getAgreementById(agreementId)
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+      _              <- agreement.assertUpgradableState.toFuture
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      newerVersion   <- CatalogManagementService.getEServiceNewerPublishedVersion(eService, agreement.descriptorId)
+      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = newerVersion)
       newAgreement <- agreementManagementService.upgradeById(agreement.id, upgradeSeed)
     } yield newAgreement.toApi
 
     onComplete(result) {
-      case Success(agreement) => upgradeAgreementById200(agreement)
-      case Failure(ex)        =>
-        logger.error(s"Error while updating agreement $agreementId", ex)
-        val errorResponse: Problem =
-          problemOf(StatusCodes.BadRequest, UpdateAgreementError(agreementId))
-        upgradeAgreementById400(errorResponse)
+      handleUpgradeError(s"Error while updating agreement $agreementId") orElse { case Success(agreement) =>
+        upgradeAgreementById200(agreement)
+      }
     }
   }
 

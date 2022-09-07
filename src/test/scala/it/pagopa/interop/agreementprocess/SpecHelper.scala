@@ -1,6 +1,11 @@
 package it.pagopa.interop.agreementprocess
 
-import it.pagopa.interop.agreementmanagement.client.model.{Agreement, AgreementState, UpdateAgreementSeed}
+import it.pagopa.interop.agreementmanagement.client.model.{
+  Agreement,
+  AgreementState,
+  UpdateAgreementSeed,
+  UpgradeAgreementSeed
+}
 import it.pagopa.interop.agreementprocess.api.impl.{AgreementApiMarshallerImpl, AgreementApiServiceImpl}
 import it.pagopa.interop.agreementprocess.api.{AgreementApiMarshaller, AgreementApiService}
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{AgreementNotFound, EServiceNotFound}
@@ -92,6 +97,13 @@ trait SpecHelper extends MockFactory {
         _: List[AgreementState]
       )(_: Seq[(String, String)]))
       .expects(*, *, *, *, *, *)
+      .once()
+      .returns(Future.successful(result))
+
+  def mockAgreementUpgrade(agreementId: UUID, seed: UpgradeAgreementSeed, result: Agreement) =
+    (mockAgreementManagementService
+      .upgradeById(_: UUID, _: UpgradeAgreementSeed)(_: Seq[(String, String)]))
+      .expects(agreementId, seed, *)
       .once()
       .returns(Future.successful(result))
 

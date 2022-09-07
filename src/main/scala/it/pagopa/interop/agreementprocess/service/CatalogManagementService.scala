@@ -1,12 +1,18 @@
 package it.pagopa.interop.agreementprocess.service
 
 import cats.implicits._
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.DescriptorNotInExpectedState
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
+  DescriptorNotFound,
+  DescriptorNotInExpectedState,
+  NoNewerDescriptorExists,
+  PublishedDescriptorNotFound,
+  UnexpectedVersionFormat
+}
 import it.pagopa.interop.catalogmanagement.client.model._
 import it.pagopa.interop.commons.utils.TypeConversions._
 
 import java.util.UUID
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait CatalogManagementService {
 
@@ -51,11 +57,24 @@ object CatalogManagementService {
       .toFuture
   }
 
-  def hasEserviceNewPublishedVersion(latestVersion: Option[Long], currentVersion: Option[Long]): Future[Boolean] =
-    (latestVersion, currentVersion) match {
-      case (Some(l), Some(c)) if l > c => Future.successful(true)
-      case (Some(_), None)             => Future.successful(true)
-      case _ => Future.failed[Boolean](new RuntimeException("No new versions exist for this agreement!"))
-    }
+  def getEServiceNewerPublishedVersion(eService: EService, currentDescriptorId: UUID)(implicit
+    ec: ExecutionContext
+  ): Future[UUID] = for {
+    latestActiveEServiceDescriptor <- eService.descriptors
+      .find(_.state == EServiceDescriptorState.PUBLISHED)
+      .toFuture(PublishedDescriptorNotFound(eService.id))
+    latestDescriptorVersion        <- latestActiveEServiceDescriptor.version.toLongOption.toFuture(
+      UnexpectedVersionFormat(eService.id, latestActiveEServiceDescriptor.id)
+    )
+    currentDescriptor              <- eService.descriptors
+      .find(_.id == currentDescriptorId)
+      .toFuture(DescriptorNotFound(eService.id, latestActiveEServiceDescriptor.id))
+    currentVersion                 <- currentDescriptor.version.toLongOption.toFuture(
+      UnexpectedVersionFormat(eService.id, latestActiveEServiceDescriptor.id)
+    )
+    _                              <- Future
+      .failed(NoNewerDescriptorExists(eService.id, currentDescriptorId))
+      .unlessA(latestDescriptorVersion > currentVersion)
+  } yield latestActiveEServiceDescriptor.id
 
 }

@@ -7,14 +7,15 @@ import it.pagopa.interop.agreementprocess.model._
 
 object Adapters {
 
-  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState] =
-    // TODO Can Producer force the activation if descriptor is deprecated?
+  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState]   =
     Set(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
   val SUSPENDABLE_STATES: Set[AgreementManagement.AgreementState] =
     Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
   val ARCHIVABLE_STATES: Set[AgreementManagement.AgreementState]  =
     Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
   val SUBMITTABLE_STATES: Set[AgreementManagement.AgreementState] = Set(AgreementManagement.AgreementState.DRAFT)
+  val UPGRADABLE_STATES: Set[AgreementManagement.AgreementState]  =
+    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
 
   implicit class AgreementWrapper(private val a: AgreementManagement.Agreement) extends AnyVal {
 
@@ -33,6 +34,10 @@ object Adapters {
     def assertArchivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
       .withRight[Unit]
       .unlessA(ARCHIVABLE_STATES.contains(a.state))
+
+    def assertUpgradableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
+      .withRight[Unit]
+      .unlessA(UPGRADABLE_STATES.contains(a.state))
 
     def toApi: Agreement = Agreement(
       id = a.id,

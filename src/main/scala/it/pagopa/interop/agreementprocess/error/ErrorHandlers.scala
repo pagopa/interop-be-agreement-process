@@ -15,7 +15,9 @@ import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
   EServiceNotFound,
   MissingCertifiedAttributes,
   MissingDeclaredAttributes,
+  NoNewerDescriptorExists,
   OperationNotAllowed,
+  PublishedDescriptorNotFound,
   UnexpectedError
 }
 import it.pagopa.interop.agreementprocess.model.Problem
@@ -108,6 +110,19 @@ object ErrorHandlers {
     case Failure(ex: AgreementNotFound)           => notFound(ex)
     case Failure(ex: AgreementNotInExpectedState) => badRequest(ex)
     case Failure(ex: OperationNotAllowed)         => forbidden(ex)
+    case Failure(_)                               => internalServerError(logMessage)
+  }
+
+  def handleUpgradeError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen {
+    case Failure(ex: AgreementNotFound)           => notFound(ex)
+    case Failure(ex: OperationNotAllowed)         => forbidden(ex)
+    case Failure(ex: AgreementNotInExpectedState) => badRequest(ex)
+    case Failure(ex: PublishedDescriptorNotFound) => badRequest(ex)
+    case Failure(ex: NoNewerDescriptorExists)     => badRequest(ex)
     case Failure(_)                               => internalServerError(logMessage)
   }
 }
