@@ -73,6 +73,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       consumerId = consumerId,
       eserviceId = eserviceId,
       descriptorId = descriptorId,
+      attributeId = attributeId,
       states = states
     )(BearerToken(bearerToken))
     result <- invoker.invoke(request, "Retrieving agreements")
