@@ -125,4 +125,21 @@ object ErrorHandlers {
     case Failure(ex: NoNewerDescriptorExists)     => badRequest(ex)
     case Failure(_)                               => internalServerError(logMessage)
   }
+
+  def handleRetrieveError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen {
+    case Failure(ex: AgreementNotFound) => notFound(ex)
+    case Failure(_)                     => internalServerError(logMessage)
+  }
+
+  def handleListingError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen { case Failure(_) =>
+    internalServerError(logMessage)
+  }
 }

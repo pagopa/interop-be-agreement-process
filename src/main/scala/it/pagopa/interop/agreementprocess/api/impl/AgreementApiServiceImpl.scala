@@ -1,7 +1,6 @@
 package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits._
@@ -25,7 +24,7 @@ import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
@@ -202,14 +201,11 @@ final case class AgreementApiServiceImpl(
     } yield filtered.map(_.toApi)
 
     onComplete(result) {
-      case Success(agreement) => getAgreements200(agreement)
-      case Failure(ex)        =>
-        logger.error(
-          s"Error while getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest",
-          ex
-        )
-        val errorResponse: Problem = problemOf(StatusCodes.BadRequest, RetrieveAgreementsError)
-        getAgreements400(errorResponse)
+      handleListingError(
+        s"Error while getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
+      ) orElse { case Success(agreement) =>
+        getAgreements200(agreement)
+      }
     }
   }
 
@@ -224,19 +220,9 @@ final case class AgreementApiServiceImpl(
     } yield agreement.toApi
 
     onComplete(result) {
-      case Success(agreement) => getAgreementById200(agreement)
-      case Failure(ex)        =>
-        logger.error(s"Error while getting agreement by id $agreementId", ex)
-        ex match {
-          case ex: AgreementNotFound =>
-            val errorResponse: Problem =
-              problemOf(StatusCodes.NotFound, ex)
-            getAgreementById404(errorResponse)
-          case _                     =>
-            val errorResponse: Problem =
-              problemOf(StatusCodes.BadRequest, RetrieveAgreementError(agreementId))
-            getAgreementById400(errorResponse)
-        }
+      handleRetrieveError(s"Error while getting agreement by id $agreementId") orElse { case Success(agreement) =>
+        getAgreementById200(agreement)
+      }
     }
   }
 
