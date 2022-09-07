@@ -14,7 +14,7 @@ import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
-import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
+import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.getClaimFuture
 import it.pagopa.interop.commons.utils.ORGANIZATION_ID_CLAIM
@@ -225,6 +225,85 @@ final case class AgreementApiServiceImpl(
       }
     }
   }
+
+  override def computeAgreementsByAttribute(consumerId: String, attributeId: String)(implicit
+    contexts: Seq[(String, String)]
+  ): Route =
+    authorize(INTERNAL_ROLE) {
+      logger.info(s"Recalculating agreements status for attribute $attributeId")
+
+      def calc(agreement: AgreementManagement.Agreement)(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
+        val newSuspendedByPlatform = suspendedByPlatformFlag(fsmState)
+
+        if (newSuspendedByPlatform != agreement.suspendedByPlatform) {
+          val finalState = agreementStateByFlags(
+            fsmState,
+            agreement.suspendedByProducer,
+            agreement.suspendedByConsumer,
+            newSuspendedByPlatform
+          )
+          val seed       = AgreementManagement.UpdateAgreementSeed(
+            state = finalState,
+            certifiedAttributes = agreement.certifiedAttributes,
+            declaredAttributes = agreement.declaredAttributes,
+            verifiedAttributes = agreement.verifiedAttributes,
+            suspendedByConsumer = agreement.suspendedByConsumer,
+            suspendedByProducer = agreement.suspendedByProducer,
+            suspendedByPlatform = suspendedByPlatformFlag(fsmState),
+            consumerNotes = agreement.consumerNotes
+          )
+          agreementManagementService.updateAgreement(agreement.id, seed).as(())
+        } else Future.unit
+      }
+
+      def calc2(consumer: TenantManagement.Tenant, eServices: Map[UUID, CatalogManagement.EService])(
+        agreement: AgreementManagement.Agreement
+      ): Future[Unit] = {
+//        val result = for {
+//          eService <- eServices.get(agreement.eserviceId)
+//        } yield AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
+//        result
+//          .fold {
+//            logger.error(s"Error while recalculating agreements status for attribute $attributeId")
+//            Future.unit
+//          }(calc(agreement))
+        eServices
+          .get(agreement.eserviceId)
+          .map(AgreementStateByAttributesFSM.nextState(agreement.state, _, consumer))
+          .fold {
+            logger.error(s"EService ${agreement.eserviceId} not found for agreement ${agreement.id}")
+            Future.unit
+          }(calc(agreement))
+      }
+
+      val result: Future[Unit] = for {
+        consumerUuid <- consumerId.toFutureUUID
+        agreements   <- agreementManagementService.getAgreements(
+          consumerId = consumerId.some,
+          attributeId = attributeId.some,
+          states = List(
+            AgreementManagement.AgreementState.DRAFT,
+            AgreementManagement.AgreementState.PENDING,
+            AgreementManagement.AgreementState.ACTIVE,
+            AgreementManagement.AgreementState.SUSPENDED,
+            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
+          )
+        )
+        uniqueEServiceIds = agreements.map(_.eserviceId).distinct
+        consumer  <- tenantManagementService.getTenant(consumerUuid)
+        eServices <- Future.traverse(uniqueEServiceIds)(catalogManagementService.getEServiceById)
+        eServicesMap = eServices.map(es => es.id -> es).toMap
+        _            = agreements.map(calc2(consumer, eServicesMap))
+      } yield ()
+
+      onComplete(result) {
+        handleComputeAgreementsStateError(
+          s"Error while recalculating agreements status for attribute $attributeId"
+        ) orElse { case Success(_) =>
+          computeAgreementsByAttribute204
+        }
+      }
+    }
 
   def submit(
     agreement: AgreementManagement.Agreement,

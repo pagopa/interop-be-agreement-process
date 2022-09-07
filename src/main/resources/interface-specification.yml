@@ -319,6 +319,34 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  '/bulk/calcAgreementsState/consumers/{consumerId}/attributes/{attributeId}':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
+    post:
+      tags:
+        - agreement
+      summary: Re-calculate agreements state
+      description: Re-calculate state for all agreements that contain the given attribute
+      operationId: computeAgreementsByAttribute
+      parameters:
+        - name: consumerId
+          in: path
+          description: The identifier of the consumer
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: attributeId
+          in: path
+          description: The identifier of the attribute
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bulk operation executed
 components:
   parameters:
     CorrelationIdHeader:

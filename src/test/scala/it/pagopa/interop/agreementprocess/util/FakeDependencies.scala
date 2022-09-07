@@ -61,7 +61,8 @@ object FakeDependencies {
       consumerId: Option[String],
       eserviceId: Option[String],
       descriptorId: Option[String],
-      states: List[AgreementState]
+      states: List[AgreementState],
+      attributeId: Option[String] = None
     )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]] = Future.successful(Seq.empty)
 
     override def upgradeById(agreementId: UUID, agreementSeed: UpgradeAgreementSeed)(implicit

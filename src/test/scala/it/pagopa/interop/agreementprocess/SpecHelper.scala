@@ -45,6 +45,10 @@ trait SpecHelper extends MockFactory {
     mockAuthorizationManagementService
   )(ExecutionContext.global)
 
+  def contextWithRole(role: String): Seq[(String, String)] = contexts.filter { case (key, _) =>
+    key != USER_ROLES
+  } :+ (USER_ROLES -> role)
+
   def mockEServiceRetrieve(eServiceId: UUID, result: EService) =
     (mockCatalogManagementService
       .getEServiceById(_: UUID)(_: Seq[(String, String)]))
@@ -73,6 +77,13 @@ trait SpecHelper extends MockFactory {
       .once()
       .returns(Future.successful(result))
 
+  def mockAgreementUpdateIgnoreSeed(agreementId: UUID) =
+    (mockAgreementManagementService
+      .updateAgreement(_: UUID, _: UpdateAgreementSeed)(_: Seq[(String, String)]))
+      .expects(agreementId, *, *)
+      .once()
+      .returns(Future.successful(SpecData.agreement))
+
   def mockAgreementRetrieve(result: Agreement) =
     (mockAgreementManagementService
       .getAgreementById(_: String)(_: Seq[(String, String)]))
@@ -94,9 +105,10 @@ trait SpecHelper extends MockFactory {
         _: Option[String],
         _: Option[String],
         _: Option[String],
-        _: List[AgreementState]
+        _: List[AgreementState],
+        _: Option[String]
       )(_: Seq[(String, String)]))
-      .expects(*, *, *, *, *, *)
+      .expects(*, *, *, *, *, *, *)
       .once()
       .returns(Future.successful(result))
 
@@ -108,6 +120,13 @@ trait SpecHelper extends MockFactory {
       .returns(Future.successful(result))
 
   def mockTenantRetrieve(tenantId: UUID, result: Tenant) =
+    (mockTenantManagementService
+      .getTenant(_: UUID)(_: Seq[(String, String)]))
+      .expects(tenantId, *)
+      .once()
+      .returns(Future.successful(result))
+
+  def mockTenantRetrieveNotFound(tenantId: UUID, result: Tenant) =
     (mockTenantManagementService
       .getTenant(_: UUID)(_: Seq[(String, String)]))
       .expects(tenantId, *)
