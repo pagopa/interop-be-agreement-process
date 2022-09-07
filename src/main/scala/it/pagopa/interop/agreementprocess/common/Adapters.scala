@@ -63,7 +63,7 @@ object Adapters {
       case AgreementManagement.AgreementState.PENDING                      => AgreementState.PENDING
       case AgreementManagement.AgreementState.ACTIVE                       => AgreementState.ACTIVE
       case AgreementManagement.AgreementState.SUSPENDED                    => AgreementState.SUSPENDED
-      case AgreementManagement.AgreementState.INACTIVE                     => AgreementState.INACTIVE
+      case AgreementManagement.AgreementState.ARCHIVED                     => AgreementState.ARCHIVED
       case AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES =>
         AgreementState.MISSING_CERTIFIED_ATTRIBUTES
     }

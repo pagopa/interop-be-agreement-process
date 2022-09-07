@@ -448,7 +448,7 @@ components:
       enum:
         - DRAFT
         - ACTIVE
-        - INACTIVE
+        - ARCHIVED
         - PENDING
         - SUSPENDED
         - MISSING_CERTIFIED_ATTRIBUTES
