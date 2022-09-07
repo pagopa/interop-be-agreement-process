@@ -46,16 +46,15 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE) {
     logger.info(s"Creating agreement $payload")
     val result = for {
-      requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
-      requesterOrgUuid <- requesterOrgId.toFutureUUID
-      eService         <- catalogManagementService.getEServiceById(payload.eserviceId)
-      _                <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
-      _                <- verifyCreationConflictingAgreements(eService.producerId, requesterOrgUuid, payload)
-      consumer         <- tenantManagementService.getTenant(requesterOrgUuid)
-      _                <- validateCertifiedAttributes(eService, consumer)
-      agreement        <- agreementManagementService.createAgreement(
+      requesterOrgId <- getRequesterOrganizationId(contexts)
+      eService       <- catalogManagementService.getEServiceById(payload.eserviceId)
+      _              <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
+      _              <- verifyCreationConflictingAgreements(eService.producerId, requesterOrgId, payload)
+      consumer       <- tenantManagementService.getTenant(requesterOrgId)
+      _              <- validateCertifiedAttributes(eService, consumer)
+      agreement      <- agreementManagementService.createAgreement(
         eService.producerId,
-        requesterOrgUuid,
+        requesterOrgId,
         payload.eserviceId,
         payload.descriptorId
       )
@@ -76,18 +75,17 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Submitting agreement {}", agreementId)
       val result = for {
-        requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
-        requesterOrgUuid <- requesterOrgId.toFutureUUID
-        agreement        <- agreementManagementService.getAgreementById(agreementId)
-        _                <- assertRequesterIsConsumer(requesterOrgUuid, agreement)
-        _                <- agreement.assertSubmittableState.toFuture
-        _                <- verifySubmissionConflictingAgreements(agreement)
-        eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _                <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
-        consumer         <- tenantManagementService.getTenant(agreement.consumerId)
-        _                <- validateDeclaredAttributes(eService, consumer)
-        updated          <- submit(agreement, eService, consumer)
-        _                <- validateCertifiedAttributes(eService, consumer) // Just to return the error. TODO required?
+        requesterOrgId <- getRequesterOrganizationId(contexts)
+        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+        _              <- agreement.assertSubmittableState.toFuture
+        _              <- verifySubmissionConflictingAgreements(agreement)
+        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+        _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
+        consumer       <- tenantManagementService.getTenant(agreement.consumerId)
+        _              <- validateDeclaredAttributes(eService, consumer)
+        updated        <- submit(agreement, eService, consumer)
+        _              <- validateCertifiedAttributes(eService, consumer) // Just to return the error. TODO required?
       } yield updated.toApi
 
       onComplete(result) {
@@ -105,17 +103,16 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Activating agreement {}", agreementId)
       val result = for {
-        requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
-        requesterOrgUuid <- requesterOrgId.toFutureUUID
-        agreement        <- agreementManagementService.getAgreementById(agreementId)
-        _                <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgUuid)
-        _                <- assertRequesterIsConsumerOrProducer(requesterOrgUuid, agreement)
-        _                <- agreement.assertActivableState.toFuture
-        _                <- verifyActivationConflictingAgreements(agreement)
-        eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _                <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
-        consumer         <- tenantManagementService.getTenant(agreement.consumerId)
-        updated          <- activate(agreement, eService, consumer, requesterOrgUuid)
+        requesterOrgId <- getRequesterOrganizationId(contexts)
+        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
+        _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
+        _              <- agreement.assertActivableState.toFuture
+        _              <- verifyActivationConflictingAgreements(agreement)
+        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+        _              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
+        consumer       <- tenantManagementService.getTenant(agreement.consumerId)
+        updated        <- activate(agreement, eService, consumer, requesterOrgId)
       } yield updated.toApi
 
       onComplete(result) {
@@ -133,14 +130,13 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Suspending agreement {}", agreementId)
       val result = for {
-        requesterOrgId   <- getClaimFuture(contexts, ORGANIZATION_ID_CLAIM)
-        requesterOrgUuid <- requesterOrgId.toFutureUUID
-        agreement        <- agreementManagementService.getAgreementById(agreementId)
-        _                <- assertRequesterIsConsumerOrProducer(requesterOrgUuid, agreement)
-        _                <- agreement.assertSuspendableState.toFuture
-        eService         <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        consumer         <- tenantManagementService.getTenant(agreement.consumerId)
-        updated          <- suspend(agreement, eService, consumer, requesterOrgUuid)
+        requesterOrgId <- getRequesterOrganizationId(contexts)
+        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
+        _              <- agreement.assertSuspendableState.toFuture
+        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+        consumer       <- tenantManagementService.getTenant(agreement.consumerId)
+        updated        <- suspend(agreement, eService, consumer, requesterOrgId)
       } yield updated.toApi
 
       onComplete(result) {
@@ -534,5 +530,8 @@ final case class AgreementApiServiceImpl(
         .whenA(activeAgreement.nonEmpty)
     } yield ()
   }
+
+  def getRequesterOrganizationId(contexts: Seq[(String, String)]): Future[UUID] =
+    getClaimFuture(contexts, ORGANIZATION_ID_CLAIM).flatMap(_.toFutureUUID)
 
 }
