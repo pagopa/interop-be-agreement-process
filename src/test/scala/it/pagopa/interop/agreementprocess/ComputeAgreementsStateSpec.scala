@@ -11,7 +11,7 @@ import java.util.UUID
 class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
 
   "Agreement State Compute" should {
-    "succeed and update required agreements" in {
+    "succeed and update agreements" in {
       implicit val contexts: Seq[(String, String)] = contextWithRole(INTERNAL_ROLE)
       val consumerId                               = UUID.randomUUID()
       val attributeId                              = UUID.randomUUID()
@@ -20,7 +20,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val eServiceId1  = UUID.randomUUID()
       val eServiceId2  = UUID.randomUUID()
       val eService1    = SpecData.eService.copy(id = eServiceId1, attributes = eServiceAttr)
-      val eService2    = SpecData.eService.copy(id = eServiceId2, attributes = eServiceAttr)
+      val eService2    = SpecData.eService.copy(id = eServiceId2)
 
       val draftAgreement           = SpecData.draftAgreement.copy(eserviceId = eServiceId1)
       val pendingAgreement         = SpecData.pendingAgreement.copy(eserviceId = eServiceId1)
@@ -41,6 +41,35 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       mockAgreementUpdateIgnoreSeed(pendingAgreement.id)
       mockAgreementUpdateIgnoreSeed(activeAgreement.id)
       mockAgreementUpdateIgnoreSeed(suspendedAgreement.id)
+      mockAgreementUpdateIgnoreSeed(missingCertAttrAgreement.id)
+
+      Get() ~> service.computeAgreementsByAttribute(consumerId.toString, attributeId.toString) ~> check {
+        status shouldEqual StatusCodes.NoContent
+      }
+    }
+
+    "succeed and do not update agreements if status has not changed" in {
+      implicit val contexts: Seq[(String, String)] = contextWithRole(INTERNAL_ROLE)
+      val consumerId                               = UUID.randomUUID()
+      val attributeId                              = UUID.randomUUID()
+
+      val eServiceAttr = SpecData.catalogCertifiedAttribute()
+      val eServiceId1  = UUID.randomUUID()
+      val eServiceId2  = UUID.randomUUID()
+      val eService1    = SpecData.eService.copy(id = eServiceId1)
+      val eService2    = SpecData.eService.copy(id = eServiceId2, attributes = eServiceAttr)
+
+      val agreementWithoutChanges1  = SpecData.draftAgreement.copy(eserviceId = eServiceId1)
+      val agreementWithoutChanges2  = SpecData.pendingAgreement.copy(eserviceId = eServiceId1)
+      val agreementAlreadySuspended =
+        SpecData.suspendedAgreement.copy(eserviceId = eServiceId2, suspendedByPlatform = Some(true))
+
+      val agreements = Seq(agreementWithoutChanges1, agreementWithoutChanges2, agreementAlreadySuspended)
+
+      mockAgreementsRetrieve(agreements)
+      mockEServiceRetrieve(eServiceId1, eService1)
+      mockEServiceRetrieve(eServiceId2, eService2)
+      mockTenantRetrieve(consumerId, SpecData.tenant)
 
       Get() ~> service.computeAgreementsByAttribute(consumerId.toString, attributeId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent

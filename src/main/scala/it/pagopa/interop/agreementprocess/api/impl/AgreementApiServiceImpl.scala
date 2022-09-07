@@ -232,68 +232,82 @@ final case class AgreementApiServiceImpl(
     authorize(INTERNAL_ROLE) {
       logger.info(s"Recalculating agreements status for attribute $attributeId")
 
-      def calc(agreement: AgreementManagement.Agreement)(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
+      def updateAgreement(
+        agreement: AgreementManagement.Agreement
+      )(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
         val newSuspendedByPlatform = suspendedByPlatformFlag(fsmState)
 
-        if (newSuspendedByPlatform != agreement.suspendedByPlatform) {
-          val finalState = agreementStateByFlags(
-            fsmState,
-            agreement.suspendedByProducer,
-            agreement.suspendedByConsumer,
-            newSuspendedByPlatform
+        val allowedStateTransitions: Map[AgreementManagement.AgreementState, AgreementManagement.AgreementState] =
+          Map(
+            AgreementManagement.AgreementState.DRAFT                        ->
+              AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+            AgreementManagement.AgreementState.PENDING                      ->
+              AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES ->
+              AgreementManagement.AgreementState.DRAFT,
+            AgreementManagement.AgreementState.ACTIVE    -> AgreementManagement.AgreementState.SUSPENDED,
+            AgreementManagement.AgreementState.SUSPENDED -> AgreementManagement.AgreementState.ACTIVE
           )
-          val seed       = AgreementManagement.UpdateAgreementSeed(
-            state = finalState,
-            certifiedAttributes = agreement.certifiedAttributes,
-            declaredAttributes = agreement.declaredAttributes,
-            verifiedAttributes = agreement.verifiedAttributes,
-            suspendedByConsumer = agreement.suspendedByConsumer,
-            suspendedByProducer = agreement.suspendedByProducer,
-            suspendedByPlatform = suspendedByPlatformFlag(fsmState),
-            consumerNotes = agreement.consumerNotes
+
+        val finalState = agreementStateByFlags(
+          fsmState,
+          agreement.suspendedByProducer,
+          agreement.suspendedByConsumer,
+          newSuspendedByPlatform
+        )
+
+        val seed = AgreementManagement.UpdateAgreementSeed(
+          state = finalState,
+          certifiedAttributes = agreement.certifiedAttributes,
+          declaredAttributes = agreement.declaredAttributes,
+          verifiedAttributes = agreement.verifiedAttributes,
+          suspendedByConsumer = agreement.suspendedByConsumer,
+          suspendedByProducer = agreement.suspendedByProducer,
+          suspendedByPlatform = suspendedByPlatformFlag(fsmState),
+          consumerNotes = agreement.consumerNotes
+        )
+
+        agreementManagementService
+          .updateAgreement(agreement.id, seed)
+          .whenA(
+            newSuspendedByPlatform != agreement.suspendedByPlatform && allowedStateTransitions
+              .get(agreement.state)
+              .contains(finalState)
           )
-          agreementManagementService.updateAgreement(agreement.id, seed).as(())
-        } else Future.unit
       }
 
-      def calc2(consumer: TenantManagement.Tenant, eServices: Map[UUID, CatalogManagement.EService])(
+      def updateStates(consumer: TenantManagement.Tenant, eServices: Map[UUID, CatalogManagement.EService])(
         agreement: AgreementManagement.Agreement
-      ): Future[Unit] = {
-//        val result = for {
-//          eService <- eServices.get(agreement.eserviceId)
-//        } yield AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
-//        result
-//          .fold {
-//            logger.error(s"Error while recalculating agreements status for attribute $attributeId")
-//            Future.unit
-//          }(calc(agreement))
+      ): Future[Unit] =
         eServices
           .get(agreement.eserviceId)
           .map(AgreementStateByAttributesFSM.nextState(agreement.state, _, consumer))
           .fold {
             logger.error(s"EService ${agreement.eserviceId} not found for agreement ${agreement.id}")
             Future.unit
-          }(calc(agreement))
-      }
+          }(updateAgreement(agreement))
+
+      val updatableStates = List(
+        AgreementManagement.AgreementState.DRAFT,
+        AgreementManagement.AgreementState.PENDING,
+        AgreementManagement.AgreementState.ACTIVE,
+        AgreementManagement.AgreementState.SUSPENDED,
+        AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
+      )
 
       val result: Future[Unit] = for {
         consumerUuid <- consumerId.toFutureUUID
         agreements   <- agreementManagementService.getAgreements(
           consumerId = consumerId.some,
           attributeId = attributeId.some,
-          states = List(
-            AgreementManagement.AgreementState.DRAFT,
-            AgreementManagement.AgreementState.PENDING,
-            AgreementManagement.AgreementState.ACTIVE,
-            AgreementManagement.AgreementState.SUSPENDED,
-            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-          )
+          states = updatableStates
         )
+        consumer     <- tenantManagementService.getTenant(consumerUuid)
         uniqueEServiceIds = agreements.map(_.eserviceId).distinct
-        consumer  <- tenantManagementService.getTenant(consumerUuid)
-        eServices <- Future.traverse(uniqueEServiceIds)(catalogManagementService.getEServiceById)
+        // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
+        eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
         eServicesMap = eServices.map(es => es.id -> es).toMap
-        _            = agreements.map(calc2(consumer, eServicesMap))
+        _ <- agreements.traverse(updateStates(consumer, eServicesMap))
       } yield ()
 
       onComplete(result) {
