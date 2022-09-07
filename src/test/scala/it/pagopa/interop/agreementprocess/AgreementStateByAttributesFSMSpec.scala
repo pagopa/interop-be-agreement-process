@@ -53,7 +53,7 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       nextState(PENDING, eService, consumer) shouldBe ACTIVE
     }
 
-    "go to PENDING when Verified attributes are NOT satisfied" in {
+    "stay in PENDING when Verified attributes are NOT satisfied" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
       val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
@@ -161,7 +161,7 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       nextState(SUSPENDED, eService, consumer) shouldBe ACTIVE
     }
 
-    "go to SUSPENDED when Certified attributes are NOT satisfied" in {
+    "stay in SUSPENDED when Certified attributes are NOT satisfied" in {
       val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
       val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
@@ -176,7 +176,7 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       nextState(SUSPENDED, eService, consumer) shouldBe SUSPENDED
     }
 
-    "go to SUSPENDED when Declared attributes are NOT satisfied" in {
+    "stay in SUSPENDED when Declared attributes are NOT satisfied" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
       val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
@@ -191,7 +191,7 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       nextState(SUSPENDED, eService, consumer) shouldBe SUSPENDED
     }
 
-    "go to SUSPENDED when Verified attributes are NOT satisfied" in {
+    "stay in SUSPENDED when Verified attributes are NOT satisfied" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
       val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
@@ -205,6 +205,96 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       nextState(SUSPENDED, eService, consumer) shouldBe SUSPENDED
     }
+  }
+
+  "from ARCHIVED" should {
+    "stay in ARCHIVED when Certified, Declared and Verified attributes are satisfied" in {
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+    }
+
+    "stay in ARCHIVED when Certified attributes are NOT satisfied" in {
+      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+    }
+
+    "stay in ARCHIVED when Declared attributes are NOT satisfied" in {
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+    }
+
+    "stay in ARCHIVED when Verified attributes are NOT satisfied" in {
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr                      = SpecData.tenantVerifiedAttribute()
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+    }
+  }
+
+  "from MISSING_CERTIFIED_ATTRIBUTES" should {
+    "go to DRAFT when Certified attributes are satisfied" in {
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val eServiceAttr                       = eServiceCertAttr
+      val tenantAttr                         = Seq(tenantCertAttr)
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      nextState(MISSING_CERTIFIED_ATTRIBUTES, eService, consumer) shouldBe DRAFT
+    }
+
+    "stay in MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
+      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      nextState(MISSING_CERTIFIED_ATTRIBUTES, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
+    }
+
   }
 
   "Certified attributes check" should {

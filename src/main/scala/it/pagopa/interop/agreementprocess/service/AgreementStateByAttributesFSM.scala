@@ -38,7 +38,7 @@ object AgreementStateByAttributesFSM {
           ACTIVE
         else
           SUSPENDED
-      case INACTIVE                     => INACTIVE
+      case ARCHIVED                     => ARCHIVED
       case MISSING_CERTIFIED_ATTRIBUTES =>
         if (certifiedAttributesSatisfied(eService, consumer)) DRAFT
         else MISSING_CERTIFIED_ATTRIBUTES
