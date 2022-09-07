@@ -8,8 +8,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object AgreementFilter {
 
-  // TODO can we make this function without side effects?
-
   /** Returns only the latest agreement for each EService.
     * The latest agreement is the agreement linked to the most recent descriptor version
     */

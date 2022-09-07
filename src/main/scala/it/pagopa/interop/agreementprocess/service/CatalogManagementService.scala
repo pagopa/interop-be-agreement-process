@@ -22,9 +22,6 @@ trait CatalogManagementService {
 
 object CatalogManagementService {
 
-  // TODO
-  //  Verify eServices states
-  //  Rename
   def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit] = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.DEPRECATED, EServiceDescriptorState.SUSPENDED)
@@ -36,12 +33,10 @@ object CatalogManagementService {
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
   def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]     = {
-    // TODO Check which descriptor states are allowed
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
     validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
   }
-  // TODO end todo
 
   def validateEServiceDescriptorStatus(
     eService: EService,
