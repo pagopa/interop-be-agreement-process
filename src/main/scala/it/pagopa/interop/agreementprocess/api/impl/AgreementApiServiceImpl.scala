@@ -232,22 +232,22 @@ final case class AgreementApiServiceImpl(
     authorize(INTERNAL_ROLE) {
       logger.info(s"Recalculating agreements status for attribute $attributeId")
 
+      val allowedStateTransitions: Map[AgreementManagement.AgreementState, AgreementManagement.AgreementState] =
+        Map(
+          AgreementManagement.AgreementState.DRAFT                        ->
+            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+          AgreementManagement.AgreementState.PENDING                      ->
+            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+          AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES ->
+            AgreementManagement.AgreementState.DRAFT,
+          AgreementManagement.AgreementState.ACTIVE    -> AgreementManagement.AgreementState.SUSPENDED,
+          AgreementManagement.AgreementState.SUSPENDED -> AgreementManagement.AgreementState.ACTIVE
+        )
+
       def updateAgreement(
         agreement: AgreementManagement.Agreement
       )(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
         val newSuspendedByPlatform = suspendedByPlatformFlag(fsmState)
-
-        val allowedStateTransitions: Map[AgreementManagement.AgreementState, AgreementManagement.AgreementState] =
-          Map(
-            AgreementManagement.AgreementState.DRAFT                        ->
-              AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
-            AgreementManagement.AgreementState.PENDING                      ->
-              AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
-            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES ->
-              AgreementManagement.AgreementState.DRAFT,
-            AgreementManagement.AgreementState.ACTIVE    -> AgreementManagement.AgreementState.SUSPENDED,
-            AgreementManagement.AgreementState.SUSPENDED -> AgreementManagement.AgreementState.ACTIVE
-          )
 
         val finalState = agreementStateByFlags(
           fsmState,
@@ -287,13 +287,7 @@ final case class AgreementApiServiceImpl(
             Future.unit
           }(updateAgreement(agreement))
 
-      val updatableStates = List(
-        AgreementManagement.AgreementState.DRAFT,
-        AgreementManagement.AgreementState.PENDING,
-        AgreementManagement.AgreementState.ACTIVE,
-        AgreementManagement.AgreementState.SUSPENDED,
-        AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-      )
+      val updatableStates = allowedStateTransitions.map { case (startingState, _) => startingState }.toList
 
       val result: Future[Unit] = for {
         consumerUuid <- consumerId.toFutureUUID
