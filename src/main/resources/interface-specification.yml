@@ -415,6 +415,12 @@ components:
           type: boolean
         suspendedByPlatform:
           type: boolean
+        consumerNotes:
+          type: string
+        consumerDocuments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
         createdAt:
           type: string
           format: date-time
@@ -431,6 +437,7 @@ components:
         - verifiedAttributes
         - certifiedAttributes
         - declaredAttributes
+        - consumerDocuments
         - createdAt
       description: business representation of an agreement
     VerifiedAttribute:
@@ -480,6 +487,27 @@ components:
         - PENDING
         - SUSPENDED
         - MISSING_CERTIFIED_ATTRIBUTES
+    Document:
+      type: object
+      required:
+        - id
+        - name
+        - prettyName
+        - contentType
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        prettyName:
+          type: string
+        contentType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     Problem:
       properties:
         type:
