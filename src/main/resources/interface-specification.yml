@@ -319,7 +319,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-  '/bulk/calcAgreementsState/consumers/{consumerId}/attributes/{attributeId}':
+  '/compute/agreementsState/consumers/{consumerId}/attributes/{attributeId}':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'
       - $ref: '#/components/parameters/IpAddress'

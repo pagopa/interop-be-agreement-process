@@ -19,7 +19,7 @@ object FakeDependencies {
 
   class FakeAttributeManagementService extends AttributeManagementService {
     val attribute: ClientAttribute = attributeregistrymanagement.client.model.Attribute(
-      id = "String",
+      id = UUID.randomUUID(),
       kind = AttributeKind.DECLARED,
       description = "fake",
       name = "fake",
