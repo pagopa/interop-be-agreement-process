@@ -18,7 +18,8 @@ trait AgreementManagementService {
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
     descriptorId: Option[String] = None,
-    states: List[AgreementState] = Nil
+    states: List[AgreementState] = Nil,
+    attributeId: Option[String] = None
   )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]]
 
   def upgradeById(agreementId: UUID, seed: UpgradeAgreementSeed)(implicit

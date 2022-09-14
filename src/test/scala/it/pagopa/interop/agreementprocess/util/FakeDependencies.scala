@@ -19,7 +19,7 @@ object FakeDependencies {
 
   class FakeAttributeManagementService extends AttributeManagementService {
     val attribute: ClientAttribute = attributeregistrymanagement.client.model.Attribute(
-      id = "String",
+      id = UUID.randomUUID(),
       kind = AttributeKind.DECLARED,
       description = "fake",
       name = "fake",
@@ -61,7 +61,8 @@ object FakeDependencies {
       consumerId: Option[String],
       eserviceId: Option[String],
       descriptorId: Option[String],
-      states: List[AgreementState]
+      states: List[AgreementState],
+      attributeId: Option[String] = None
     )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]] = Future.successful(Seq.empty)
 
     override def upgradeById(agreementId: UUID, agreementSeed: UpgradeAgreementSeed)(implicit

@@ -21,15 +21,17 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def verifiedAttributeJsonFormat: RootJsonFormat[VerifiedAttribute]   = jsonFormat1(VerifiedAttribute)
   implicit def declaredAttributeJsonFormat: RootJsonFormat[DeclaredAttribute]   = jsonFormat1(DeclaredAttribute)
   implicit def certifiedAttributeJsonFormat: RootJsonFormat[CertifiedAttribute] = jsonFormat1(CertifiedAttribute)
-  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                   = jsonFormat14(Agreement)
+  implicit def documentJsonFormat: RootJsonFormat[Document]                     = jsonFormat5(Document)
+  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                   = jsonFormat16(Agreement)
   implicit def agreementPayloadJsonFormat: RootJsonFormat[AgreementPayload]     = jsonFormat2(AgreementPayload)
   implicit def problemErrorFormat: RootJsonFormat[ProblemError]                 = jsonFormat2(ProblemError)
   implicit def problemFormat: RootJsonFormat[Problem]                           = jsonFormat5(Problem)
 
   final val serviceErrorCodePrefix: String = "005"
   final val defaultProblemType: String     = "about:blank"
+  final val defaultErrorMessage: String    = "Unknown error"
 
-  def problemOf(httpError: StatusCode, error: ComponentError, defaultMessage: String = "Unknown error"): Problem =
+  def problemOf(httpError: StatusCode, error: ComponentError): Problem =
     Problem(
       `type` = defaultProblemType,
       status = httpError.intValue,
@@ -37,7 +39,20 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
       errors = Seq(
         ProblemError(
           code = s"$serviceErrorCodePrefix-${error.code}",
-          detail = Option(error.getMessage).getOrElse(defaultMessage)
+          detail = Option(error.getMessage).getOrElse(defaultErrorMessage)
+        )
+      )
+    )
+
+  def problemOf(httpError: StatusCode, errors: List[ComponentError]): Problem =
+    Problem(
+      `type` = defaultProblemType,
+      status = httpError.intValue,
+      title = httpError.defaultMessage,
+      errors = errors.map(error =>
+        ProblemError(
+          code = s"$serviceErrorCodePrefix-${error.code}",
+          detail = Option(error.getMessage).getOrElse(defaultErrorMessage)
         )
       )
     )

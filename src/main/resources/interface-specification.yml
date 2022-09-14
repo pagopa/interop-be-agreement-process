@@ -319,6 +319,34 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  '/compute/agreementsState/consumers/{consumerId}/attributes/{attributeId}':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
+    post:
+      tags:
+        - agreement
+      summary: Re-calculate agreements state
+      description: Re-calculate state for all agreements that contain the given attribute
+      operationId: computeAgreementsByAttribute
+      parameters:
+        - name: consumerId
+          in: path
+          description: The identifier of the consumer
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: attributeId
+          in: path
+          description: The identifier of the attribute
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bulk operation executed
 components:
   parameters:
     CorrelationIdHeader:
@@ -387,6 +415,12 @@ components:
           type: boolean
         suspendedByPlatform:
           type: boolean
+        consumerNotes:
+          type: string
+        consumerDocuments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
         createdAt:
           type: string
           format: date-time
@@ -403,6 +437,7 @@ components:
         - verifiedAttributes
         - certifiedAttributes
         - declaredAttributes
+        - consumerDocuments
         - createdAt
       description: business representation of an agreement
     VerifiedAttribute:
@@ -452,6 +487,27 @@ components:
         - PENDING
         - SUSPENDED
         - MISSING_CERTIFIED_ATTRIBUTES
+    Document:
+      type: object
+      required:
+        - id
+        - name
+        - prettyName
+        - contentType
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        prettyName:
+          type: string
+        contentType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     Problem:
       properties:
         type:

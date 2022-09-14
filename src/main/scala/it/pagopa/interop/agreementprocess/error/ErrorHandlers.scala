@@ -142,4 +142,13 @@ object ErrorHandlers {
   ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen { case Failure(_) =>
     internalServerError(logMessage)
   }
+
+  def handleComputeAgreementsStateError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen { case Failure(_) =>
+    internalServerError(logMessage)
+  }
+
 }

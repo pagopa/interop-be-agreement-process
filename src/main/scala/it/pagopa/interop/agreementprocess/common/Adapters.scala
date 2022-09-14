@@ -52,6 +52,7 @@ object Adapters {
       suspendedByConsumer = a.suspendedByConsumer,
       suspendedByProducer = a.suspendedByProducer,
       suspendedByPlatform = a.suspendedByPlatform,
+      consumerDocuments = a.consumerDocuments.map(_.toApi),
       createdAt = a.createdAt,
       updatedAt = a.updatedAt
     )
@@ -79,6 +80,16 @@ object Adapters {
 
   implicit class DeclaredAttributeWrapper(private val a: AgreementManagement.DeclaredAttribute) extends AnyVal {
     def toApi: DeclaredAttribute = DeclaredAttribute(id = a.id)
+  }
+
+  implicit class DocumentWrapper(private val d: AgreementManagement.Document) extends AnyVal {
+    def toApi: Document = Document(
+      id = d.id,
+      name = d.name,
+      prettyName = d.prettyName,
+      contentType = d.contentType,
+      createdAt = d.createdAt
+    )
   }
 
 }
