@@ -62,7 +62,8 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     consumerId: Option[String] = None,
     eserviceId: Option[String] = None,
     descriptorId: Option[String] = None,
-    states: List[AgreementState] = Nil
+    states: List[AgreementState] = Nil,
+    attributeId: Option[String] = None
   )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]] = for {
     (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
     request = api.getAgreements(
@@ -72,6 +73,7 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       consumerId = consumerId,
       eserviceId = eserviceId,
       descriptorId = descriptorId,
+      attributeId = attributeId,
       states = states
     )(BearerToken(bearerToken))
     result <- invoker.invoke(request, "Retrieving agreements")

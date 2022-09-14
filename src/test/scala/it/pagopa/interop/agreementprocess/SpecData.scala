@@ -152,10 +152,12 @@ object SpecData {
     createdAt = OffsetDateTime.now()
   )
 
-  def draftAgreement: Agreement     = agreement.copy(state = AgreementState.DRAFT)
-  def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING)
-  def suspendedAgreement: Agreement = agreement.copy(state = AgreementState.SUSPENDED)
-  def activeAgreement: Agreement    = agreement.copy(state = AgreementState.ACTIVE)
+  def draftAgreement: Agreement             = agreement.copy(state = AgreementState.DRAFT)
+  def pendingAgreement: Agreement           = agreement.copy(state = AgreementState.PENDING)
+  def suspendedAgreement: Agreement         = agreement.copy(state = AgreementState.SUSPENDED)
+  def activeAgreement: Agreement            = agreement.copy(state = AgreementState.ACTIVE)
+  def archivedAgreement: Agreement          = agreement.copy(state = AgreementState.ARCHIVED)
+  def missingCertifiedAttributes: Agreement = agreement.copy(state = AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
 
   def activeAgreementWithAttributes: Agreement = activeAgreement.copy(
     certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),

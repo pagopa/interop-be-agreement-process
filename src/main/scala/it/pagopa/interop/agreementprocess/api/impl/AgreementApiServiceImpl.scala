@@ -14,7 +14,7 @@ import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
-import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, M2M_ROLE}
+import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.getClaimFuture
 import it.pagopa.interop.commons.utils.ORGANIZATION_ID_CLAIM
@@ -225,6 +225,93 @@ final case class AgreementApiServiceImpl(
       }
     }
   }
+
+  override def computeAgreementsByAttribute(consumerId: String, attributeId: String)(implicit
+    contexts: Seq[(String, String)]
+  ): Route =
+    authorize(INTERNAL_ROLE) {
+      logger.info(s"Recalculating agreements status for attribute $attributeId")
+
+      val allowedStateTransitions: Map[AgreementManagement.AgreementState, AgreementManagement.AgreementState] =
+        Map(
+          AgreementManagement.AgreementState.DRAFT                        ->
+            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+          AgreementManagement.AgreementState.PENDING                      ->
+            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+          AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES ->
+            AgreementManagement.AgreementState.DRAFT,
+          AgreementManagement.AgreementState.ACTIVE    -> AgreementManagement.AgreementState.SUSPENDED,
+          AgreementManagement.AgreementState.SUSPENDED -> AgreementManagement.AgreementState.ACTIVE
+        )
+
+      def updateAgreement(
+        agreement: AgreementManagement.Agreement
+      )(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
+        val newSuspendedByPlatform = suspendedByPlatformFlag(fsmState)
+
+        val finalState = agreementStateByFlags(
+          fsmState,
+          agreement.suspendedByProducer,
+          agreement.suspendedByConsumer,
+          newSuspendedByPlatform
+        )
+
+        val seed = AgreementManagement.UpdateAgreementSeed(
+          state = finalState,
+          certifiedAttributes = agreement.certifiedAttributes,
+          declaredAttributes = agreement.declaredAttributes,
+          verifiedAttributes = agreement.verifiedAttributes,
+          suspendedByConsumer = agreement.suspendedByConsumer,
+          suspendedByProducer = agreement.suspendedByProducer,
+          suspendedByPlatform = suspendedByPlatformFlag(fsmState),
+          consumerNotes = agreement.consumerNotes
+        )
+
+        agreementManagementService
+          .updateAgreement(agreement.id, seed)
+          .whenA(
+            newSuspendedByPlatform != agreement.suspendedByPlatform && allowedStateTransitions
+              .get(agreement.state)
+              .contains(finalState)
+          )
+      }
+
+      def updateStates(consumer: TenantManagement.Tenant, eServices: Map[UUID, CatalogManagement.EService])(
+        agreement: AgreementManagement.Agreement
+      ): Future[Unit] =
+        eServices
+          .get(agreement.eserviceId)
+          .map(AgreementStateByAttributesFSM.nextState(agreement.state, _, consumer))
+          .fold {
+            logger.error(s"EService ${agreement.eserviceId} not found for agreement ${agreement.id}")
+            Future.unit
+          }(updateAgreement(agreement))
+
+      val updatableStates = allowedStateTransitions.map { case (startingState, _) => startingState }.toList
+
+      val result: Future[Unit] = for {
+        consumerUuid <- consumerId.toFutureUUID
+        agreements   <- agreementManagementService.getAgreements(
+          consumerId = consumerId.some,
+          attributeId = attributeId.some,
+          states = updatableStates
+        )
+        consumer     <- tenantManagementService.getTenant(consumerUuid)
+        uniqueEServiceIds = agreements.map(_.eserviceId).distinct
+        // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
+        eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
+        eServicesMap = eServices.map(es => es.id -> es).toMap
+        _ <- agreements.traverse(updateStates(consumer, eServicesMap))
+      } yield ()
+
+      onComplete(result) {
+        handleComputeAgreementsStateError(
+          s"Error while recalculating agreements status for attribute $attributeId"
+        ) orElse { case Success(_) =>
+          computeAgreementsByAttribute204
+        }
+      }
+    }
 
   def submit(
     agreement: AgreementManagement.Agreement,
