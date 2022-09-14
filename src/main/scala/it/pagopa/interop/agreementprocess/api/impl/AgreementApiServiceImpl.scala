@@ -194,7 +194,7 @@ final case class AgreementApiServiceImpl(
         states = statesEnums
       )
       filtered    <- latest
-        .filter(_ == true)
+        .filter(identity)
         .fold(Future.successful(agreements))(_ =>
           AgreementFilter.filterAgreementsByLatestVersion(catalogManagementService, agreements)
         )
