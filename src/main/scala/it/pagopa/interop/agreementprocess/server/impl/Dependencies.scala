@@ -18,17 +18,13 @@ import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
 import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, SerializedKey}
-import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
 import it.pagopa.interop.commons.utils.TypeConversions._
-import it.pagopa.interop.commons.utils.errors.GenericComponentErrors
-import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
+import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
+import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 trait Dependencies {
-
-  implicit val partyManagementApiKeyValue: PartyManagementApiKeyValue = PartyManagementApiKeyValue()
 
   def agreementManagement(
     blockingEc: ExecutionContextExecutor
@@ -46,10 +42,12 @@ trait Dependencies {
       EServiceApi(ApplicationConfiguration.catalogManagementURL)
     )
 
-  def partyManagement(implicit actorSystem: ActorSystem[_]): PartyManagementService =
-    PartyManagementServiceImpl(
-      PartyManagementInvoker()(actorSystem.classicSystem),
-      PartyApi(ApplicationConfiguration.partyManagementURL)
+  def tenantManagement(
+    blockingEc: ExecutionContextExecutor
+  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): TenantManagementService =
+    TenantManagementServiceImpl(
+      TenantManagementInvoker(blockingEc)(actorSystem.classicSystem),
+      TenantApi(ApplicationConfiguration.tenantManagementURL)
     )
 
   def attributeRegistryManagement(
@@ -88,28 +86,11 @@ trait Dependencies {
       AgreementApiServiceImpl(
         agreementManagement(blockingEc),
         catalogManagement(blockingEc),
-        partyManagement,
+        tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
-        authorizationManagement(blockingEc),
-        jwtReader
+        authorizationManagement(blockingEc)
       ),
       AgreementApiMarshallerImpl,
-      jwtReader.OAuth2JWTValidatorAsContexts
-    )
-
-  def consumerApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
-    actorSystem: ActorSystem[_],
-    ec: ExecutionContext
-  ): ConsumerApi =
-    new ConsumerApi(
-      ConsumerApiServiceImpl(
-        agreementManagement(blockingEc),
-        catalogManagement(blockingEc),
-        partyManagement,
-        attributeRegistryManagement(blockingEc),
-        jwtReader
-      ),
-      new ConsumerApiMarshallerImpl(),
       jwtReader.OAuth2JWTValidatorAsContexts
     )
 
@@ -122,10 +103,7 @@ trait Dependencies {
 
   val validationExceptionToRoute: ValidationReport => Route = report => {
     val error =
-      problemOf(
-        StatusCodes.BadRequest,
-        GenericComponentErrors.ValidationRequestError(OpenapiUtils.errorFromRequestValidationReport(report))
-      )
+      problemOf(StatusCodes.BadRequest, OpenapiUtils.errorFromRequestValidationReport(report))
     complete(error.status, error)(HealthApiMarshallerImpl.toEntityMarshallerProblem)
   }
 

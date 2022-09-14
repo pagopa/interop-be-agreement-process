@@ -36,10 +36,7 @@ object Main extends App with CORSSupport with Dependencies {
       val serverBinding = for {
         jwtReader <- getJwtValidator()
         agreement  = agreementApi(jwtReader, blockingEc)
-        consumer   = consumerApi(jwtReader, blockingEc)
-        controller = new Controller(agreement, consumer, healthApi, validationExceptionToRoute.some)(
-          actorSystem.classicSystem
-        )
+        controller = new Controller(agreement, healthApi, validationExceptionToRoute.some)(actorSystem.classicSystem)
         binding <- Http()(actorSystem.classicSystem)
           .newServerAt("0.0.0.0", ApplicationConfiguration.serverPort)
           .bind(corsHandler(controller.routes))
