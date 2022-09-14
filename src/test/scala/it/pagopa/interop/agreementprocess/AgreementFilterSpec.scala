@@ -1,261 +1,55 @@
 package it.pagopa.interop.agreementprocess
 
 import it.pagopa.interop.agreementprocess.api.impl.AgreementFilter
-import it.pagopa.interop.agreementprocess.model.{Agreement, AgreementState, EService, Organization}
+import it.pagopa.interop.catalogmanagement.client.model.{EService, EServiceDescriptor}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.util.UUID
 
-class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
+class AgreementFilterSpec extends AnyWordSpecLike with Matchers with ScalaFutures with SpecHelper {
 
-  private def getTestData: Seq[Agreement] = {
-    val uuid1 = UUID.randomUUID()
-    val uuid2 = UUID.randomUUID()
-    val uuid3 = UUID.randomUUID()
-    val uuid4 = UUID.randomUUID()
+  val agreementId1: UUID = UUID.randomUUID()
+  val agreementId2: UUID = UUID.randomUUID()
+  val agreementId3: UUID = UUID.randomUUID()
+  val agreementId4: UUID = UUID.randomUUID()
+  val agreementId5: UUID = UUID.randomUUID()
 
-    val producerOrg1 = Organization("a1", "a1")
-    val producerOrg2 = Organization("b1", "b1")
-    val producerOrg3 = Organization("c1", "c1")
-    val producerOrg4 = Organization("d1", "d1")
+  val descriptor1_1: EServiceDescriptor = SpecData.descriptor.copy(version = "1")
+  val descriptor1_2: EServiceDescriptor = SpecData.descriptor.copy(version = "2")
+  val descriptor1_3: EServiceDescriptor = SpecData.descriptor.copy(version = "3")
 
-    val consumerOrg1 = Organization("cons1", "cons1")
-    val consumerOrg2 = Organization("cons2", "cons2")
-    val consumerOrg3 = Organization("cons3", "cons3")
-    val consumerOrg4 = Organization("cons4", "cons4")
+  val descriptor2_1: EServiceDescriptor = SpecData.descriptor.copy(version = "1")
+  val descriptor2_2: EServiceDescriptor = SpecData.descriptor.copy(version = "10")
+  val descriptor2_3: EServiceDescriptor = SpecData.descriptor.copy(version = "100")
 
-    val eservice1 = EService(UUID.randomUUID(), "eservice1", "1", None)
-    val eservice2 = EService(UUID.randomUUID(), "eservice2", "2", None)
-    val eservice3 = EService(UUID.randomUUID(), "eservice3", "3", None)
-    val eservice4 = EService(UUID.randomUUID(), "eservice4", "4", None)
+  val eService1: EService = SpecData.eService.copy(descriptors = Seq(descriptor1_1, descriptor1_2, descriptor1_3))
+  val eService2: EService = SpecData.eService.copy(descriptors = Seq(descriptor2_1, descriptor2_2, descriptor2_3))
 
-    Seq(
-      Agreement(
-        id = uuid1,
-        producer = producerOrg1,
-        consumer = consumerOrg1,
-        eservice = eservice1,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid2,
-        producer = producerOrg2,
-        consumer = consumerOrg2,
-        eservice = eservice2,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid3,
-        producer = producerOrg3,
-        consumer = consumerOrg3,
-        eservice = eservice3,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid4,
-        producer = producerOrg4,
-        consumer = consumerOrg4,
-        eservice = eservice4,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      )
-    )
-  }
+  val agreements = Seq(
+    SpecData.agreement.copy(id = agreementId1, eserviceId = eService1.id, descriptorId = descriptor1_1.id),
+    SpecData.agreement.copy(id = agreementId2, eserviceId = eService1.id, descriptorId = descriptor1_2.id),
+    SpecData.agreement.copy(id = agreementId3, eserviceId = eService1.id, descriptorId = descriptor1_3.id),
+    SpecData.agreement.copy(id = agreementId4, eserviceId = eService2.id, descriptorId = descriptor2_1.id),
+    SpecData.agreement.copy(id = agreementId5, eserviceId = eService2.id, descriptorId = descriptor2_3.id)
+  )
 
-  "an Agreement filter" should {
-    "return the same sequence when no latest filter is applied" in {
-      // given
-      val agreements = getTestData
+  "Agreements filter" should {
 
-      // when
-      val filtered = AgreementFilter.filterAgreementsByLatestVersion(None, agreements)
+    "return only the latest version for each agreement when latest filter is TRUE" in {
 
-      // then
-      val expectedId = agreements.map(_.id)
-      filtered.futureValue.map(_.id) should contain only (expectedId: _*)
+      val agreementsToFilter = agreements
+
+      mockEServiceRetrieve(eService1.id, eService1)
+      mockEServiceRetrieve(eService2.id, eService2)
+
+      val filtered = AgreementFilter.filterAgreementsByLatestVersion(mockCatalogManagementService, agreementsToFilter)
+
+      filtered.futureValue.map(_.id) should contain only (agreementId3, agreementId5)
     }
 
-    "return the same sequence when FALSE latest filter is applied" in {
-      // given
-      val agreements = getTestData
-
-      // when
-      val filtered = AgreementFilter.filterAgreementsByLatestVersion(Some(false), agreements)
-
-      // then
-      val expectedId = agreements.map(_.id)
-      filtered.futureValue.map(_.id) should contain only (expectedId: _*)
-    }
   }
 
-  "return only the latest version for each agreement when latest filter is TRUE" in {
-    val uuid1 = UUID.randomUUID()
-    val uuid2 = UUID.randomUUID()
-    val uuid3 = UUID.randomUUID()
-    val uuid4 = UUID.randomUUID()
-
-    val producerOrg1 = Organization("a1", "a1")
-    val producerOrg2 = Organization("b1", "b1")
-    val producerOrg3 = Organization("c1", "c1")
-    val producerOrg4 = Organization("d1", "d1")
-
-    val consumerOrg1 = Organization("cons1", "cons1")
-    val consumerOrg2 = Organization("cons2", "cons2")
-    val consumerOrg3 = Organization("cons3", "cons3")
-    val consumerOrg4 = Organization("cons4", "cons4")
-
-    val eserviceId1 = UUID.randomUUID()
-    val eserviceId2 = UUID.randomUUID()
-    val eservice1   = EService(eserviceId1, "eservice1", "100", None)
-    val eservice2   = EService(eserviceId1, "eservice2", "2", None)
-    val eservice3   = EService(eserviceId2, "eservice2", "30", None)
-    val eservice4   = EService(eserviceId2, "eservice2", "4", None)
-
-    val agreementsToFilter = Seq(
-      Agreement(
-        id = uuid1,
-        producer = producerOrg1,
-        consumer = consumerOrg1,
-        eservice = eservice1,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid2,
-        producer = producerOrg2,
-        consumer = consumerOrg2,
-        eservice = eservice2,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid3,
-        producer = producerOrg3,
-        consumer = consumerOrg3,
-        eservice = eservice3,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid4,
-        producer = producerOrg4,
-        consumer = consumerOrg4,
-        eservice = eservice4,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      )
-    )
-
-    // when
-    val filtered = AgreementFilter.filterAgreementsByLatestVersion(Some(true), agreementsToFilter)
-
-    // then
-    filtered.futureValue.map(_.id) should contain only (uuid1, uuid3)
-  }
-
-  "return only the latest version for each agreement when latest filter is TRUE and some agreement has wrong version values" in {
-    val uuid1 = UUID.randomUUID()
-    val uuid2 = UUID.randomUUID()
-    val uuid3 = UUID.randomUUID()
-    val uuid4 = UUID.randomUUID()
-
-    val producerOrg1 = Organization("a1", "a1")
-    val producerOrg2 = Organization("b1", "b1")
-    val producerOrg3 = Organization("c1", "c1")
-    val producerOrg4 = Organization("d1", "d1")
-
-    val consumerOrg1 = Organization("cons1", "cons1")
-    val consumerOrg2 = Organization("cons2", "cons2")
-    val consumerOrg3 = Organization("cons3", "cons3")
-    val consumerOrg4 = Organization("cons4", "cons4")
-
-    val eserviceId1 = UUID.randomUUID()
-    val eserviceId2 = UUID.randomUUID()
-    val eservice1   = EService(eserviceId1, "eservice1", "100", None)
-    val eservice2   = EService(eserviceId1, "eservice2", "2", None)
-    val eservice3   = EService(eserviceId2, "eservice2", "pippo", None)
-    val eservice4   = EService(eserviceId2, "eservice2", "4", None)
-
-    val agreementsToFilter = Seq(
-      Agreement(
-        id = uuid1,
-        producer = producerOrg1,
-        consumer = consumerOrg1,
-        eservice = eservice1,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid2,
-        producer = producerOrg2,
-        consumer = consumerOrg2,
-        eservice = eservice2,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid3,
-        producer = producerOrg3,
-        consumer = consumerOrg3,
-        eservice = eservice3,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      ),
-      Agreement(
-        id = uuid4,
-        producer = producerOrg4,
-        consumer = consumerOrg4,
-        eservice = eservice4,
-        state = AgreementState.ACTIVE,
-        attributes = Seq.empty,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        eserviceDescriptorId = UUID.randomUUID()
-      )
-    )
-
-    // when
-    val filtered = AgreementFilter.filterAgreementsByLatestVersion(Some(true), agreementsToFilter)
-
-    // then
-    filtered.futureValue.map(_.id) should contain only (uuid1, uuid4)
-  }
 }

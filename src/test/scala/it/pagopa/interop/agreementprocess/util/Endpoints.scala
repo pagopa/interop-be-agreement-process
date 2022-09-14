@@ -4,7 +4,7 @@ import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post, Put}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import it.pagopa.interop.commons.utils.USER_ROLES
+import it.pagopa.interop.commons.utils.{UID, USER_ROLES}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -34,7 +34,7 @@ case class Endpoint(route: String, verb: String, roles: Seq[String]) {
    * returns a sequence of request contexts, each of the entry contains a request context for a specific role
    */
   def rolesInContexts: Seq[Seq[(String, String)]] = {
-    roles.map(role => Seq("bearer" -> "token", "uid" -> UUID.randomUUID().toString, USER_ROLES -> role))
+    roles.map(role => Seq("bearer" -> "token", UID -> UUID.randomUUID().toString, USER_ROLES -> role))
   }
 
   /**
