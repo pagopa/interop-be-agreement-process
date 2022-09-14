@@ -44,14 +44,24 @@ object AgreementStateByAttributesFSM {
         else MISSING_CERTIFIED_ATTRIBUTES
     }
 
+  import cats.implicits._
   def certifiedAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
-    attributesSatisfied(eService.attributes.certified, consumer.attributes.flatMap(_.certified).map(_.id))
+    attributesSatisfied(
+      eService.attributes.certified,
+      consumer.attributes.mapFilter(_.certified).filter(_.revocationTimestamp.isEmpty).map(_.id)
+    )
 
   def declaredAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
-    attributesSatisfied(eService.attributes.declared, consumer.attributes.flatMap(_.declared).map(_.id))
+    attributesSatisfied(
+      eService.attributes.declared,
+      consumer.attributes.mapFilter(_.declared).filter(_.revocationTimestamp.isEmpty).map(_.id)
+    )
 
   def verifiedAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
-    attributesSatisfied(eService.attributes.verified, consumer.attributes.flatMap(_.verified).map(_.id))
+    attributesSatisfied(
+      eService.attributes.verified,
+      consumer.attributes.mapFilter(_.verified).filter(_.verifiedBy.nonEmpty).map(_.id)
+    )
 
   private def attributesSatisfied(requested: Seq[Attribute], assigned: Seq[UUID]): Boolean =
     requested.forall {

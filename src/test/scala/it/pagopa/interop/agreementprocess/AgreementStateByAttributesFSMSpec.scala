@@ -401,6 +401,36 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe false
     }
+
+    "return false if an EService single attribute is assigned but revoked" in {
+      val attr1 = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogCertifiedAttribute()
+        .copy(certified = Seq(SpecData.catalogSingleAttribute(attr1)))
+
+      val tenantAttr = Seq(SpecData.tenantRevokedCertifiedAttribute(attr1))
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      certifiedAttributesSatisfied(eService, consumer) shouldBe false
+    }
+
+    "return false if the EService group attribute is assigned but revoked" in {
+      val attr1 = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogCertifiedAttribute()
+        .copy(certified = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
+
+      val tenantAttr = Seq(SpecData.tenantRevokedCertifiedAttribute(attr1))
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      certifiedAttributesSatisfied(eService, consumer) shouldBe false
+    }
   }
 
   "Declared attributes check" should {
@@ -507,6 +537,35 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       declaredAttributesSatisfied(eService, consumer) shouldBe false
     }
+
+    "return false if an EService single attribute is assigned but revoked" in {
+      val attr1 = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogDeclaredAttribute()
+        .copy(declared = Seq(SpecData.catalogSingleAttribute(attr1)))
+
+      val tenantAttr = Seq(SpecData.tenantRevokedDeclaredAttribute(attr1))
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      declaredAttributesSatisfied(eService, consumer) shouldBe false
+    }
+
+    "return false if the EService group attribute is assigned but revoked" in {
+      val attr1 = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogDeclaredAttribute()
+        .copy(declared = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
+      val tenantAttr   = Seq(SpecData.tenantRevokedDeclaredAttribute(attr1))
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      declaredAttributesSatisfied(eService, consumer) shouldBe false
+    }
   }
 
   "Verified attributes check" should {
@@ -607,6 +666,36 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
         )
 
       val tenantAttr = Seq(SpecData.tenantVerifiedAttribute(attr1), SpecData.tenantVerifiedAttribute())
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(eService, consumer) shouldBe false
+    }
+
+    "return false if an EService single attribute is assigned but not verified" in {
+      val attr1 = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1)))
+
+      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1))
+
+      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(eService, consumer) shouldBe false
+    }
+
+    "return false if the EService group attribute is assigned but not verified" in {
+      val attr1 = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
+
+      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1))
 
       val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
       val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
