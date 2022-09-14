@@ -52,7 +52,7 @@ paths:
         name: agreementId
         in: path
         required: true
-        description: identifier of the pending agreement to be activated
+        description: identifier of the draft agreement to be submitted
     post:
       tags:
         - agreement

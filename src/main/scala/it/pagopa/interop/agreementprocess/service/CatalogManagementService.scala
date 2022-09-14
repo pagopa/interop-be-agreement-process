@@ -46,8 +46,8 @@ object CatalogManagementService {
     val descriptorStatus = eService.descriptors.find(_.id == descriptorId).map(_.state)
 
     // Not using whenA on Future.failed because it requires an ExecutionContext, which is not actually needed here
-    Left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates))
-      .withRight[Unit]
+    Either
+      .left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates))
       .unlessA(descriptorStatus.exists(status => allowedStates.contains(status)))
       .toFuture
   }
