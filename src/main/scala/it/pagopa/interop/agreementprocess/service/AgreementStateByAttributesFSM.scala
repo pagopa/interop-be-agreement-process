@@ -1,5 +1,6 @@
 package it.pagopa.interop.agreementprocess.service
 
+import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.model.AgreementState
 import it.pagopa.interop.agreementmanagement.client.model.AgreementState._
 import it.pagopa.interop.catalogmanagement.client.model.{Attribute, EService}
@@ -44,7 +45,6 @@ object AgreementStateByAttributesFSM {
         else MISSING_CERTIFIED_ATTRIBUTES
     }
 
-  import cats.implicits._
   def certifiedAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
     attributesSatisfied(
       eService.attributes.certified,
