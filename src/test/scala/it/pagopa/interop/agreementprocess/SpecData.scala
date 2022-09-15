@@ -22,6 +22,8 @@ import it.pagopa.interop.tenantmanagement.client.model.{
   ExternalId,
   Tenant,
   TenantAttribute,
+  TenantRevoker,
+  TenantVerifier,
   VerificationRenewal,
   VerifiedTenantAttribute
 }
@@ -105,8 +107,32 @@ object SpecData {
           id = id,
           assignmentTimestamp = timestamp,
           renewal = VerificationRenewal.AUTOMATIC_RENEWAL,
-          verifiedBy = Nil,
+          verifiedBy = Seq(TenantVerifier(id = UUID.randomUUID(), verificationDate = timestamp)),
           revokedBy = Nil
+        )
+      )
+    )
+
+  def tenantRevokedCertifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(certified =
+      Some(CertifiedTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp)))
+    )
+
+  def tenantRevokedDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(declared =
+      Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp)))
+    )
+
+  def tenantRevokedVerifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(verified =
+      Some(
+        VerifiedTenantAttribute(
+          id = id,
+          assignmentTimestamp = timestamp,
+          renewal = VerificationRenewal.AUTOMATIC_RENEWAL,
+          verifiedBy = Nil,
+          revokedBy =
+            Seq(TenantRevoker(id = UUID.randomUUID(), verificationDate = timestamp, revocationDate = timestamp))
         )
       )
     )
