@@ -530,9 +530,25 @@ final case class AgreementApiServiceImpl(
 
   def verifyActivationConflictingAgreements(
     agreement: AgreementManagement.Agreement
+  )(implicit contexts: Seq[(String, String)]): Future[Unit] =
+    verifyFirstActivationConflictingAgreements(agreement)
+      .whenA(agreement.state == AgreementManagement.AgreementState.PENDING) >>
+      verifyReActivationConflictingAgreements(agreement)
+        .whenA(agreement.state != AgreementManagement.AgreementState.PENDING)
+
+  def verifyFirstActivationConflictingAgreements(
+    agreement: AgreementManagement.Agreement
   )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
     val conflictingStates: List[AgreementManagement.AgreementState] =
       List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+    verifyConflictingAgreements(agreement, conflictingStates)
+  }
+
+  def verifyReActivationConflictingAgreements(
+    agreement: AgreementManagement.Agreement
+  )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
+    val conflictingStates: List[AgreementManagement.AgreementState] =
+      List(AgreementManagement.AgreementState.ACTIVE)
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 
