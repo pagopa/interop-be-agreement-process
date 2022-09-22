@@ -104,8 +104,8 @@ final case class AgreementApiServiceImpl(
       val result = for {
         requesterOrgId <- getRequesterOrganizationId(contexts)
         agreement      <- agreementManagementService.getAgreementById(agreementId)
-        _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
         _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
+        _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
         _              <- agreement.assertActivableState.toFuture
         _              <- verifyActivationConflictingAgreements(agreement)
         eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -574,7 +574,11 @@ final case class AgreementApiServiceImpl(
   ): Future[Unit] =
     Future
       .failed(OperationNotAllowed(requesterOrgUuid))
-      .whenA(agreement.state == AgreementManagement.AgreementState.PENDING && agreement.consumerId == requesterOrgUuid)
+      .whenA(
+        agreement.state == AgreementManagement.AgreementState.PENDING &&
+          agreement.consumerId == requesterOrgUuid &&
+          agreement.producerId != agreement.consumerId
+      )
 
   def toClientState(state: AgreementManagement.AgreementState): AuthorizationManagement.ClientComponentState =
     state match {
