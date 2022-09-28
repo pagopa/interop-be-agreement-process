@@ -16,8 +16,7 @@ import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationM
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
 import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
-import it.pagopa.interop.commons.utils.AkkaUtils.getClaimFuture
-import it.pagopa.interop.commons.utils.ORGANIZATION_ID_CLAIM
+import it.pagopa.interop.commons.utils.AkkaUtils.getOrganizationIdFutureUUID
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, StringOps}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
@@ -45,7 +44,7 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE) {
     logger.info(s"Creating agreement $payload")
     val result = for {
-      requesterOrgId <- getRequesterOrganizationId(contexts)
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       eService       <- catalogManagementService.getEServiceById(payload.eserviceId)
       _              <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
       _              <- verifyCreationConflictingAgreements(eService.producerId, requesterOrgId, payload)
@@ -74,7 +73,7 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Submitting agreement {}", agreementId)
       val result = for {
-        requesterOrgId <- getRequesterOrganizationId(contexts)
+        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
         agreement      <- agreementManagementService.getAgreementById(agreementId)
         _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
         _              <- agreement.assertSubmittableState.toFuture
@@ -102,7 +101,7 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Activating agreement {}", agreementId)
       val result = for {
-        requesterOrgId <- getRequesterOrganizationId(contexts)
+        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
         agreement      <- agreementManagementService.getAgreementById(agreementId)
         _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
         _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
@@ -129,7 +128,7 @@ final case class AgreementApiServiceImpl(
     authorize(ADMIN_ROLE) {
       logger.info("Suspending agreement {}", agreementId)
       val result = for {
-        requesterOrgId <- getRequesterOrganizationId(contexts)
+        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
         agreement      <- agreementManagementService.getAgreementById(agreementId)
         _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
         _              <- agreement.assertSuspendableState.toFuture
@@ -152,7 +151,7 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE) {
     logger.info(s"Upgrading agreement $agreementId")
     val result = for {
-      requesterOrgId <- getRequesterOrganizationId(contexts)
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreement      <- agreementManagementService.getAgreementById(agreementId)
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- agreement.assertUpgradableState.toFuture
@@ -617,8 +616,4 @@ final case class AgreementApiServiceImpl(
         .whenA(activeAgreement.nonEmpty)
     } yield ()
   }
-
-  def getRequesterOrganizationId(contexts: Seq[(String, String)]): Future[UUID] =
-    getClaimFuture(contexts, ORGANIZATION_ID_CLAIM).flatMap(_.toFutureUUID)
-
 }
