@@ -7,11 +7,11 @@ import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotFound
 import it.pagopa.interop.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
-import it.pagopa.interop.commons.utils.TypeConversions.EitherOps
-import it.pagopa.interop.commons.utils.extractHeaders
+import it.pagopa.interop.commons.utils.withHeaders
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import it.pagopa.interop.agreementmanagement.client.invoker.ApiRequest
 
 final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, api: AgreementApi)(implicit
   ec: ExecutionContext
@@ -22,20 +22,18 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
 
   override def upgradeById(agreementId: UUID, seed: UpgradeAgreementSeed)(implicit
     contexts: Seq[(String, String)]
-  ): Future[Agreement] = for {
-    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-    request = api.upgradeAgreementById(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
-    result <- invoker.invoke(request, s"Upgrading agreement by id = $agreementId")
-  } yield result
+  ): Future[Agreement] = withHeaders { (bearerToken, correlationId, ip) =>
+    val request = api.upgradeAgreementById(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+    invoker.invoke(request, s"Upgrading agreement by id = $agreementId")
+  }
 
   override def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
-    for {
-      (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-      request = api.getAgreement(correlationId, agreementId, ip)(BearerToken(bearerToken))
-      result <- invoker.invoke(request, s"Retrieving agreement by id = $agreementId").recoverWith {
+    withHeaders { (bearerToken, correlationId, ip) =>
+      val request = api.getAgreement(correlationId, agreementId, ip)(BearerToken(bearerToken))
+      invoker.invoke(request, s"Retrieving agreement by id = $agreementId").recoverWith {
         case err: ApiError[_] if err.code == 404 => Future.failed(AgreementNotFound(agreementId))
       }
-    } yield result
+    }
 
   override def createAgreement(producerId: UUID, consumerId: UUID, eServiceId: UUID, descriptorId: UUID)(implicit
     contexts: Seq[(String, String)]
@@ -50,11 +48,10 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
       declaredAttributes = Nil
     )
 
-    for {
-      (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-      request = api.addAgreement(correlationId, seed, ip)(BearerToken(bearerToken))
-      result <- invoker.invoke(request, "Creating agreement")
-    } yield result
+    withHeaders { (bearerToken, correlationId, ip) =>
+      val request: ApiRequest[Agreement] = api.addAgreement(correlationId, seed, ip)(BearerToken(bearerToken))
+      invoker.invoke(request, "Creating agreement")
+    }
   }
 
   override def getAgreements(
@@ -64,26 +61,26 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     descriptorId: Option[String] = None,
     states: List[AgreementState] = Nil,
     attributeId: Option[String] = None
-  )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]] = for {
-    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-    request = api.getAgreements(
-      correlationId,
-      ip,
-      producerId = producerId,
-      consumerId = consumerId,
-      eserviceId = eserviceId,
-      descriptorId = descriptorId,
-      attributeId = attributeId,
-      states = states
-    )(BearerToken(bearerToken))
-    result <- invoker.invoke(request, "Retrieving agreements")
-  } yield result
+  )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]] =
+    withHeaders { (bearerToken, correlationId, ip) =>
+      val request: ApiRequest[Seq[Agreement]] = api.getAgreements(
+        correlationId,
+        ip,
+        producerId = producerId,
+        consumerId = consumerId,
+        eserviceId = eserviceId,
+        descriptorId = descriptorId,
+        attributeId = attributeId,
+        states = states
+      )(BearerToken(bearerToken))
+      invoker.invoke(request, "Retrieving agreements")
+    }
 
   override def updateAgreement(agreementId: UUID, seed: UpdateAgreementSeed)(implicit
     contexts: Seq[(String, String)]
-  ): Future[Agreement] = for {
-    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-    request = api.updateAgreementById(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
-    result <- invoker.invoke(request, s"Updating agreement with id = $agreementId")
-  } yield result
+  ): Future[Agreement] = withHeaders { (bearerToken, correlationId, ip) =>
+    val request: ApiRequest[Agreement] =
+      api.updateAgreementById(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+    invoker.invoke(request, s"Updating agreement with id = $agreementId")
+  }
 }
