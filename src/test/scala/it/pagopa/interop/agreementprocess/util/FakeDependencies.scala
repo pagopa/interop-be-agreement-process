@@ -210,7 +210,13 @@ object FakeDependencies {
       consumerId: UUID,
       agreementId: UUID,
       state: ClientComponentState
-    )(implicit contexts: Seq[(String, String)]): Future[Unit] = Future.successful(())
+    )(implicit contexts: Seq[(String, String)]): Future[Unit] = Future.unit
+
+    override def updateAgreementAndEServiceStates(
+      eServiceId: UUID,
+      consumerId: UUID,
+      payload: ClientAgreementAndEServiceDetailsUpdate
+    )(implicit contexts: Seq[(String, String)]): Future[Unit] = Future.unit
   }
 
 }

@@ -6,7 +6,11 @@ import it.pagopa.interop.agreementprocess.service.{
   AuthorizationManagementService
 }
 import it.pagopa.interop.authorizationmanagement.client.invoker.BearerToken
-import it.pagopa.interop.authorizationmanagement.client.model.{ClientAgreementDetailsUpdate, ClientComponentState}
+import it.pagopa.interop.authorizationmanagement.client.model.{
+  ClientAgreementAndEServiceDetailsUpdate,
+  ClientAgreementDetailsUpdate,
+  ClientComponentState
+}
 import it.pagopa.interop.commons.utils.extractHeaders
 import it.pagopa.interop.commons.utils.TypeConversions.EitherOps
 import com.typesafe.scalalogging.Logger
@@ -38,6 +42,26 @@ final case class AuthorizationManagementServiceImpl(
       )(BearerToken(bearerToken))
       result <- invoker
         .invoke(request, s"Update Agreement state on all clients")
+        .recoverWith { case _ => Future.unit } // Do not fail because this service should not be blocked by this update
+    } yield result
+  }
+
+  override def updateAgreementAndEServiceStates(
+    eServiceId: UUID,
+    consumerId: UUID,
+    payload: ClientAgreementAndEServiceDetailsUpdate
+  )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
+    for {
+      (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
+      request = api.updateAgreementAndEServiceStates(
+        correlationId,
+        eserviceId = eServiceId,
+        consumerId = consumerId,
+        clientAgreementAndEServiceDetailsUpdate = payload,
+        ip
+      )(BearerToken(bearerToken))
+      result <- invoker
+        .invoke(request, s"Update Agreement and EService states on all clients")
         .recoverWith { case _ => Future.unit } // Do not fail because this service should not be blocked by this update
     } yield result
   }

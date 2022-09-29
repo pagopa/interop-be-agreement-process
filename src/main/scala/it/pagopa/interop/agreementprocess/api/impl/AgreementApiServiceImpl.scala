@@ -14,8 +14,11 @@ import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service.AgreementManagementService.agreementStateToApi
 import it.pagopa.interop.agreementprocess.service.CatalogManagementService.descriptorStateToApi
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAndEServiceDetailsUpdate
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagementDependency}
 import it.pagopa.interop.catalogmanagement.client.model.{
+  EServiceDescriptor,
+  EServiceDescriptorState,
   AttributeValue => CatalogAttributeValue,
   EService => CatalogEService
 }
@@ -402,6 +405,12 @@ final case class AgreementApiServiceImpl(
         )
       )
       newAgreement <- agreementManagementService.upgradeById(agreement.id, agreementSeed)
+      payload = getClientUpgradePayload(newAgreement, latestActiveEserviceDescriptor)
+      _            <- authorizationManagementService.updateAgreementAndEServiceStates(
+        newAgreement.eserviceId,
+        newAgreement.consumerId,
+        payload
+      )
       apiAgreement <- getApiAgreement(newAgreement)
     } yield apiAgreement
 
@@ -414,5 +423,35 @@ final case class AgreementApiServiceImpl(
         upgradeAgreementById400(errorResponse)
     }
   }
+
+  def getClientUpgradePayload(
+    newAgreement: AgreementManagementDependency.Agreement,
+    newDescriptor: EServiceDescriptor
+  ): ClientAgreementAndEServiceDetailsUpdate = {
+    ClientAgreementAndEServiceDetailsUpdate(
+      agreementId = newAgreement.id,
+      agreementState = toClientState(newAgreement.state),
+      descriptorId = newDescriptor.id,
+      audience = newDescriptor.audience,
+      voucherLifespan = newDescriptor.voucherLifespan,
+      eserviceState = toClientState(newDescriptor.state)
+    )
+  }
+
+  def toClientState(
+    state: AgreementManagementDependency.AgreementState
+  ): AuthorizationManagementDependency.ClientComponentState =
+    state match {
+      case AgreementManagementDependency.AgreementState.ACTIVE =>
+        AuthorizationManagementDependency.ClientComponentState.ACTIVE
+      case _ => AuthorizationManagementDependency.ClientComponentState.INACTIVE
+    }
+
+  def toClientState(state: EServiceDescriptorState): AuthorizationManagementDependency.ClientComponentState =
+    state match {
+      case EServiceDescriptorState.PUBLISHED | EServiceDescriptorState.DEPRECATED =>
+        AuthorizationManagementDependency.ClientComponentState.ACTIVE
+      case _ => AuthorizationManagementDependency.ClientComponentState.INACTIVE
+    }
 
 }
