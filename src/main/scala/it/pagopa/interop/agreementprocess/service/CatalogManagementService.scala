@@ -1,13 +1,7 @@
 package it.pagopa.interop.agreementprocess.service
 
 import cats.implicits._
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
-  DescriptorNotFound,
-  DescriptorNotInExpectedState,
-  NoNewerDescriptorExists,
-  PublishedDescriptorNotFound,
-  UnexpectedVersionFormat
-}
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.catalogmanagement.client.model._
 import it.pagopa.interop.commons.utils.TypeConversions._
 
@@ -52,9 +46,9 @@ object CatalogManagementService {
       .toFuture
   }
 
-  def getEServiceNewerPublishedVersion(eService: EService, currentDescriptorId: UUID)(implicit
+  def getEServiceNewerPublishedDescriptor(eService: EService, currentDescriptorId: UUID)(implicit
     ec: ExecutionContext
-  ): Future[UUID] = for {
+  ): Future[EServiceDescriptor] = for {
     latestActiveEServiceDescriptor <- eService.descriptors
       .find(_.state == EServiceDescriptorState.PUBLISHED)
       .toFuture(PublishedDescriptorNotFound(eService.id))
@@ -70,6 +64,6 @@ object CatalogManagementService {
     _                              <- Future
       .failed(NoNewerDescriptorExists(eService.id, currentDescriptorId))
       .unlessA(latestDescriptorVersion > currentVersion)
-  } yield latestActiveEServiceDescriptor.id
+  } yield latestActiveEServiceDescriptor
 
 }

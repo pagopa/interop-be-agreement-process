@@ -10,7 +10,10 @@ import it.pagopa.interop.agreementprocess.api.impl.{AgreementApiMarshallerImpl, 
 import it.pagopa.interop.agreementprocess.api.{AgreementApiMarshaller, AgreementApiService}
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{AgreementNotFound, EServiceNotFound}
 import it.pagopa.interop.agreementprocess.service._
-import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
+import it.pagopa.interop.authorizationmanagement.client.model.{
+  ClientAgreementAndEServiceDetailsUpdate,
+  ClientComponentState
+}
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, USER_ROLES}
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
@@ -137,6 +140,19 @@ trait SpecHelper extends MockFactory {
     (mockAuthorizationManagementService
       .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: ClientComponentState)(_: Seq[(String, String)]))
       .expects(eServiceId, consumerId, agreementId, state, *)
+      .once()
+      .returns(Future.unit)
+
+  def mockUpdateAgreementAndEServiceStates(
+    eServiceId: UUID,
+    consumerId: UUID,
+    payload: ClientAgreementAndEServiceDetailsUpdate
+  ) =
+    (mockAuthorizationManagementService
+      .updateAgreementAndEServiceStates(_: UUID, _: UUID, _: ClientAgreementAndEServiceDetailsUpdate)(
+        _: Seq[(String, String)]
+      ))
+      .expects(eServiceId, consumerId, payload, *)
       .once()
       .returns(Future.unit)
 }
