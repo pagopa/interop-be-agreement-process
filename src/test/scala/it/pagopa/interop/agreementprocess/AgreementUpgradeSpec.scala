@@ -3,6 +3,10 @@ package it.pagopa.interop.agreementprocess
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.model.UpgradeAgreementSeed
+import it.pagopa.interop.authorizationmanagement.client.model.{
+  ClientAgreementAndEServiceDetailsUpdate,
+  ClientComponentState
+}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -23,12 +27,31 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
           descriptorId = currentDescriptor.id,
           consumerId = consumer.id
         )
+      val newAgreement      =
+        agreement.copy(
+          id = UUID.randomUUID(),
+          eserviceId = eService.id,
+          descriptorId = newerDescriptor.id,
+          consumerId = consumer.id
+        )
 
       val seed = UpgradeAgreementSeed(descriptorId = newerDescriptor.id)
 
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
-      mockAgreementUpgrade(agreement.id, seed, agreement)
+      mockAgreementUpgrade(agreement.id, seed, newAgreement)
+      mockUpdateAgreementAndEServiceStates(
+        eService.id,
+        agreement.consumerId,
+        ClientAgreementAndEServiceDetailsUpdate(
+          agreementId = newAgreement.id,
+          agreementState = ClientComponentState.ACTIVE,
+          descriptorId = newAgreement.descriptorId,
+          audience = newerDescriptor.audience,
+          voucherLifespan = newerDescriptor.voucherLifespan,
+          eserviceState = ClientComponentState.ACTIVE
+        )
+      )
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK

@@ -12,7 +12,9 @@ import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.error.ErrorHandlers._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAndEServiceDetailsUpdate
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
+import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
 import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
@@ -156,9 +158,15 @@ final case class AgreementApiServiceImpl(
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- agreement.assertUpgradableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-      newerVersion   <- CatalogManagementService.getEServiceNewerPublishedVersion(eService, agreement.descriptorId)
-      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = newerVersion)
+      newDescriptor  <- CatalogManagementService.getEServiceNewerPublishedDescriptor(eService, agreement.descriptorId)
+      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = newDescriptor.id)
       newAgreement <- agreementManagementService.upgradeById(agreement.id, upgradeSeed)
+      payload = getClientUpgradePayload(newAgreement, newDescriptor)
+      _ <- authorizationManagementService.updateAgreementAndEServiceStates(
+        newAgreement.eserviceId,
+        newAgreement.consumerId,
+        payload
+      )
     } yield newAgreement.toApi
 
     onComplete(result) {
@@ -166,6 +174,20 @@ final case class AgreementApiServiceImpl(
         upgradeAgreementById200(agreement)
       }
     }
+  }
+
+  def getClientUpgradePayload(
+    newAgreement: AgreementManagement.Agreement,
+    newDescriptor: EServiceDescriptor
+  ): ClientAgreementAndEServiceDetailsUpdate = {
+    ClientAgreementAndEServiceDetailsUpdate(
+      agreementId = newAgreement.id,
+      agreementState = toClientState(newAgreement.state),
+      descriptorId = newDescriptor.id,
+      audience = newDescriptor.audience,
+      voucherLifespan = newDescriptor.voucherLifespan,
+      eserviceState = toClientState(newDescriptor.state)
+    )
   }
 
   override def getAgreements(
@@ -598,6 +620,12 @@ final case class AgreementApiServiceImpl(
       case _                                         => AuthorizationManagement.ClientComponentState.INACTIVE
     }
 
+  def toClientState(state: EServiceDescriptorState): AuthorizationManagement.ClientComponentState =
+    state match {
+      case EServiceDescriptorState.PUBLISHED | EServiceDescriptorState.DEPRECATED =>
+        AuthorizationManagement.ClientComponentState.ACTIVE
+      case _ => AuthorizationManagement.ClientComponentState.INACTIVE
+    }
   private def verifyConflictingAgreements(
     agreement: AgreementManagement.Agreement,
     conflictingStates: List[AgreementManagement.AgreementState]
