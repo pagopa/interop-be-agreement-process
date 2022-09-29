@@ -266,13 +266,26 @@ final case class AgreementApiServiceImpl(
           consumerNotes = agreement.consumerNotes
         )
 
-        agreementManagementService
-          .updateAgreement(agreement.id, seed)
+        lazy val updateAgreement   = agreementManagementService.updateAgreement(agreement.id, seed)
+        lazy val updateClientState = authorizationManagementService
+          .updateStateOnClients(
+            eServiceId = agreement.eserviceId,
+            consumerId = agreement.consumerId,
+            agreementId = agreement.id,
+            state = toClientState(finalState)
+          )
+          .whenA(
+            List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+              .contains(finalState)
+          )
+
+        (updateAgreement >> updateClientState)
           .whenA(
             newSuspendedByPlatform != agreement.suspendedByPlatform && allowedStateTransitions
               .get(agreement.state)
               .contains(finalState)
           )
+
       }
 
       def updateStates(consumer: TenantManagement.Tenant, eServices: Map[UUID, CatalogManagement.EService])(

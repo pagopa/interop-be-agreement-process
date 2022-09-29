@@ -2,6 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 import it.pagopa.interop.commons.jwt.INTERNAL_ROLE
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -42,6 +43,19 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       mockAgreementUpdateIgnoreSeed(activeAgreement.id)
       mockAgreementUpdateIgnoreSeed(suspendedAgreement.id)
       mockAgreementUpdateIgnoreSeed(missingCertAttrAgreement.id)
+
+      mockClientStateUpdate(
+        activeAgreement.eserviceId,
+        activeAgreement.consumerId,
+        activeAgreement.id,
+        ClientComponentState.INACTIVE
+      )
+      mockClientStateUpdate(
+        suspendedAgreement.eserviceId,
+        suspendedAgreement.consumerId,
+        suspendedAgreement.id,
+        ClientComponentState.ACTIVE
+      )
 
       Get() ~> service.computeAgreementsByAttribute(consumerId.toString, attributeId.toString) ~> check {
         status shouldEqual StatusCodes.NoContent
