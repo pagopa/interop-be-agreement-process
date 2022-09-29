@@ -1,5 +1,6 @@
 package it.pagopa.interop.agreementprocess.service.impl
 
+import cats.implicits._
 import it.pagopa.interop.agreementprocess.service.{
   AttributeManagementService,
   AttributeRegistryManagementInvoker,
@@ -7,8 +8,8 @@ import it.pagopa.interop.agreementprocess.service.{
 }
 import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
 import it.pagopa.interop.attributeregistrymanagement.client.invoker.BearerToken
-import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, StringOps}
-import it.pagopa.interop.commons.utils.extractHeaders
+import it.pagopa.interop.commons.utils.TypeConversions.StringOps
+import it.pagopa.interop.commons.utils.withHeaders
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,24 +23,19 @@ final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManage
   implicit val logger = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 
   override def getAttribute(attributeId: String)(implicit contexts: Seq[(String, String)]): Future[ClientAttribute] =
-    for {
-      uuid      <- attributeId.toFutureUUID
-      attribute <- attributeByUUID(uuid)
-    } yield attribute
+    attributeId.toFutureUUID >>= attributeByUUID
 
   private def attributeByUUID(attributeId: UUID)(implicit contexts: Seq[(String, String)]): Future[ClientAttribute] =
-    for {
-      (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-      request = api.getAttributeById(correlationId, attributeId, ip)(BearerToken(bearerToken))
-      result <- invoker.invoke(request, s"Retrieving attribute by id = $attributeId")
-    } yield result
+    withHeaders { (bearerToken, correlationId, ip) =>
+      val request = api.getAttributeById(correlationId, attributeId, ip)(BearerToken(bearerToken))
+      invoker.invoke(request, s"Retrieving attribute by id = $attributeId")
+    }
 
   override def getAttributeByOriginAndCode(origin: String, code: String)(implicit
     contexts: Seq[(String, String)]
-  ): Future[ClientAttribute] = for {
-    (bearerToken, correlationId, ip) <- extractHeaders(contexts).toFuture
-    request = api.getAttributeByOriginAndCode(correlationId, origin, code, ip)(BearerToken(bearerToken))
-    result <- invoker.invoke(request, s"Retrieving attribute by origin = $origin and code = $code")
-  } yield result
+  ): Future[ClientAttribute] = withHeaders { (bearerToken, correlationId, ip) =>
+    val request = api.getAttributeByOriginAndCode(correlationId, origin, code, ip)(BearerToken(bearerToken))
+    invoker.invoke(request, s"Retrieving attribute by origin = $origin and code = $code")
+  }
 
 }

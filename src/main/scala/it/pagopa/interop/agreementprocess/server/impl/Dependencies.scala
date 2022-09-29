@@ -44,7 +44,7 @@ trait Dependencies {
 
   def tenantManagement(
     blockingEc: ExecutionContextExecutor
-  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): TenantManagementService =
+  )(implicit actorSystem: ActorSystem[_]): TenantManagementService =
     TenantManagementServiceImpl(
       TenantManagementInvoker(blockingEc)(actorSystem.classicSystem),
       TenantApi(ApplicationConfiguration.tenantManagementURL)
