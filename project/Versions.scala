@@ -22,7 +22,7 @@ object Versions {
 object PagopaVersion {
   lazy val agreementManagementVersion         = "1.0.1"
   lazy val attributeRegistryManagementVersion = "1.0.1"
-  lazy val authorizationManagementVersion     = "1.0.1"
+  lazy val authorizationManagementVersion     = "1.0.4"
   lazy val catalogManagementVersion           = "1.0.2"
   lazy val commonsVersion                     = "1.0.3"
   lazy val partyManagementVersion             = "1.0.0"
