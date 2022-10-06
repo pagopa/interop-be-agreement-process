@@ -3,6 +3,7 @@ package it.pagopa.interop.agreementprocess.service
 import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.model.{Agreement, AgreementState}
 import it.pagopa.interop.agreementmanagement.client.model.AgreementState._
+import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
 import it.pagopa.interop.catalogmanagement.client.model.{Attribute, EService}
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
 
@@ -14,6 +15,11 @@ object AgreementStateByAttributesFSM {
     agreement.state match {
       case DRAFT                        =>
         if (!certifiedAttributesSatisfied(eService, consumer)) MISSING_CERTIFIED_ATTRIBUTES
+        else if (
+          eService.descriptors.exists(d => d.id == agreement.descriptorId && d.agreementApprovalPolicy == AUTOMATIC) &&
+          declaredAttributesSatisfied(eService, consumer) &&
+          verifiedAttributesSatisfied(agreement, eService, consumer)
+        ) ACTIVE
         else if (declaredAttributesSatisfied(eService, consumer)) PENDING
         else DRAFT
       case PENDING                      =>
