@@ -100,14 +100,19 @@ object SpecData {
   def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
     TenantAttribute(declared = Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp)))
 
-  def tenantVerifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+  def tenantVerifiedAttribute(id: UUID = UUID.randomUUID(), verifierId: UUID = UUID.randomUUID()): TenantAttribute =
     TenantAttribute(verified =
       Some(
         VerifiedTenantAttribute(
           id = id,
           assignmentTimestamp = timestamp,
-          renewal = VerificationRenewal.AUTOMATIC_RENEWAL,
-          verifiedBy = Seq(TenantVerifier(id = UUID.randomUUID(), verificationDate = timestamp)),
+          verifiedBy = Seq(
+            TenantVerifier(
+              id = verifierId,
+              verificationDate = timestamp,
+              renewal = VerificationRenewal.AUTOMATIC_RENEWAL
+            )
+          ),
           revokedBy = Nil
         )
       )
@@ -123,16 +128,24 @@ object SpecData {
       Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp)))
     )
 
-  def tenantRevokedVerifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+  def tenantRevokedVerifiedAttribute(
+    id: UUID = UUID.randomUUID(),
+    revokerId: UUID = UUID.randomUUID()
+  ): TenantAttribute =
     TenantAttribute(verified =
       Some(
         VerifiedTenantAttribute(
           id = id,
           assignmentTimestamp = timestamp,
-          renewal = VerificationRenewal.AUTOMATIC_RENEWAL,
           verifiedBy = Nil,
-          revokedBy =
-            Seq(TenantRevoker(id = UUID.randomUUID(), verificationDate = timestamp, revocationDate = timestamp))
+          revokedBy = Seq(
+            TenantRevoker(
+              id = revokerId,
+              verificationDate = timestamp,
+              revocationDate = timestamp,
+              renewal = VerificationRenewal.AUTOMATIC_RENEWAL
+            )
+          )
         )
       )
     )
@@ -153,10 +166,10 @@ object SpecData {
     (eServiceAttribute, tenantAttribute)
   }
 
-  def matchingVerifiedAttributes: (Attributes, TenantAttribute) = {
+  def matchingVerifiedAttributes(verifierId: UUID = UUID.randomUUID()): (Attributes, TenantAttribute) = {
     val attributeId       = UUID.randomUUID()
     val eServiceAttribute = catalogCertifiedAttribute(attributeId)
-    val tenantAttribute   = tenantVerifiedAttribute(attributeId)
+    val tenantAttribute   = tenantVerifiedAttribute(attributeId, verifierId)
 
     (eServiceAttribute, tenantAttribute)
   }

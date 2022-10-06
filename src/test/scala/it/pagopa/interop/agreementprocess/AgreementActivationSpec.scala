@@ -18,12 +18,13 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "succeed on Pending agreement when Consumer has required attributes" in {
       import AgreementManagement.{CertifiedAttribute, DeclaredAttribute, VerifiedAttribute}
 
-      val certAttr1 = UUID.randomUUID()
-      val certAttr2 = UUID.randomUUID()
-      val declAttr1 = UUID.randomUUID()
-      val declAttr2 = UUID.randomUUID()
-      val verAttr1  = UUID.randomUUID()
-      val verAttr2  = UUID.randomUUID()
+      val producerId = requesterOrgId
+      val certAttr1  = UUID.randomUUID()
+      val certAttr2  = UUID.randomUUID()
+      val declAttr1  = UUID.randomUUID()
+      val declAttr2  = UUID.randomUUID()
+      val verAttr1   = UUID.randomUUID()
+      val verAttr2   = UUID.randomUUID()
 
       val eServiceCertAttr = SpecData
         .catalogCertifiedAttribute()
@@ -47,7 +48,10 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           Seq(SpecData.catalogSingleAttribute(verAttr1), SpecData.catalogGroupAttributes(id1 = verAttr2))
         )
       val tenantVerAttr   =
-        Seq(SpecData.tenantVerifiedAttribute(verAttr1), SpecData.tenantVerifiedAttribute(verAttr2))
+        Seq(
+          SpecData.tenantVerifiedAttribute(verAttr1, producerId),
+          SpecData.tenantVerifiedAttribute(verAttr2, producerId)
+        )
 
       val eServiceAttr =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
@@ -55,7 +59,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       val descriptor = SpecData.publishedDescriptor
       val eService   =
-        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = requesterOrgId)
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = producerId)
       val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
       val agreement  =
         SpecData.pendingAgreement.copy(
@@ -303,16 +307,17 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     }
 
     "fail and invalidate agreement if tenant lost a certified attribute" in {
+      val producerId: UUID                   = requesterOrgId
       val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantVerAttr, tenantDeclAttr)
 
       val descriptor = SpecData.publishedDescriptor
       val eService   =
-        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = requesterOrgId)
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = producerId)
       val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
       val agreement  =
         SpecData.pendingAgreement.copy(
@@ -344,9 +349,10 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     }
 
     "fail and move to Draft on missing declared attributes" in {
+      val producerId                         = requesterOrgId
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantVerAttr, tenantCertAttr)

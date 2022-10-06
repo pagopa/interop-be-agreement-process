@@ -1,5 +1,6 @@
 package it.pagopa.interop.agreementprocess
 
+import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementmanagement.client.model.AgreementState._
 import it.pagopa.interop.agreementprocess.service.AgreementStateByAttributesFSM._
 import it.pagopa.interop.catalogmanagement.client.model.EService
@@ -18,10 +19,11 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(DRAFT, eService, consumer) shouldBe PENDING
+      nextState(agreement, eService, consumer) shouldBe PENDING
     }
 
     "go to MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
@@ -31,26 +33,29 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(DRAFT, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
+      nextState(agreement, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
     }
   }
 
   "from PENDING" should {
     "go to ACTIVE when Certified, Declared and Verified attributes are satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(PENDING, eService, consumer) shouldBe ACTIVE
+      nextState(agreement, eService, consumer) shouldBe ACTIVE
     }
 
     "stay in PENDING when Verified attributes are NOT satisfied" in {
@@ -62,72 +67,81 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = PENDING)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(PENDING, eService, consumer) shouldBe PENDING
+      nextState(agreement, eService, consumer) shouldBe PENDING
     }
 
     "go to DRAFT when Declared attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
       val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(PENDING, eService, consumer) shouldBe DRAFT
+      nextState(agreement, eService, consumer) shouldBe DRAFT
     }
 
     "go to MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
       val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(PENDING, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
+      nextState(agreement, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
     }
   }
 
   "from ACTIVE" should {
     "go to SUSPENDED when Certified attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
       val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(ACTIVE, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, eService, consumer) shouldBe SUSPENDED
     }
 
     "go to SUSPENDED when Declared attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
       val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(ACTIVE, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, eService, consumer) shouldBe SUSPENDED
     }
 
     "go to SUSPENDED when Verified attributes are NOT satisfied" in {
@@ -139,56 +153,63 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(ACTIVE, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, eService, consumer) shouldBe SUSPENDED
     }
   }
 
   "from SUSPENDED" should {
     "go to ACTIVE when Certified, Declared and Verified attributes are satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(SUSPENDED, eService, consumer) shouldBe ACTIVE
+      nextState(agreement, eService, consumer) shouldBe ACTIVE
     }
 
     "stay in SUSPENDED when Certified attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
       val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(SUSPENDED, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, eService, consumer) shouldBe SUSPENDED
     }
 
     "stay in SUSPENDED when Declared attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
       val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(SUSPENDED, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, eService, consumer) shouldBe SUSPENDED
     }
 
     "stay in SUSPENDED when Verified attributes are NOT satisfied" in {
@@ -200,56 +221,63 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(SUSPENDED, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, eService, consumer) shouldBe SUSPENDED
     }
   }
 
   "from ARCHIVED" should {
     "stay in ARCHIVED when Certified, Declared and Verified attributes are satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, eService, consumer) shouldBe ARCHIVED
     }
 
     "stay in ARCHIVED when Certified attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
       val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, eService, consumer) shouldBe ARCHIVED
     }
 
     "stay in ARCHIVED when Declared attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
       val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, eService, consumer) shouldBe ARCHIVED
     }
 
     "stay in ARCHIVED when Verified attributes are NOT satisfied" in {
@@ -261,10 +289,11 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(ARCHIVED, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, eService, consumer) shouldBe ARCHIVED
     }
   }
 
@@ -274,25 +303,28 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val eServiceAttr                       = eServiceCertAttr
       val tenantAttr                         = Seq(tenantCertAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = MISSING_CERTIFIED_ATTRIBUTES)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(MISSING_CERTIFIED_ATTRIBUTES, eService, consumer) shouldBe DRAFT
+      nextState(agreement, eService, consumer) shouldBe DRAFT
     }
 
     "stay in MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
+      val producerId: UUID                   = UUID.randomUUID()
       val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
       val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val eServiceAttr                       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(state = MISSING_CERTIFIED_ATTRIBUTES, producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(MISSING_CERTIFIED_ATTRIBUTES, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
+      nextState(agreement, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
     }
 
   }
@@ -570,28 +602,31 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
   "Verified attributes check" should {
     "return true if all EService single attributes are satisfied" in {
-      val attr1 = UUID.randomUUID()
-      val attr2 = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
       val tenantAttr = Seq(
-        SpecData.tenantVerifiedAttribute(attr1),
-        SpecData.tenantVerifiedAttribute(attr2),
-        SpecData.tenantVerifiedAttribute()
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(attr2, producerId),
+        SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(eService, consumer) shouldBe true
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe true
     }
 
     "return true if at least one attribute in every EService group attribute is satisfied" in {
-      val attr1 = UUID.randomUUID()
-      val attr2 = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogVerifiedAttribute()
@@ -603,20 +638,22 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
         )
 
       val tenantAttr = Seq(
-        SpecData.tenantVerifiedAttribute(attr1),
-        SpecData.tenantVerifiedAttribute(attr2),
-        SpecData.tenantVerifiedAttribute()
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(attr2, producerId),
+        SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(eService, consumer) shouldBe true
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe true
     }
 
     "return true if EService single and group attributes are satisfied" in {
-      val attr1 = UUID.randomUUID()
-      val attr2 = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogVerifiedAttribute()
@@ -625,36 +662,43 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
         )
 
       val tenantAttr = Seq(
-        SpecData.tenantVerifiedAttribute(attr1),
-        SpecData.tenantVerifiedAttribute(attr2),
-        SpecData.tenantVerifiedAttribute()
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(attr2, producerId),
+        SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(eService, consumer) shouldBe true
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe true
     }
 
     "return false if at least one EService single attribute is not satisfied" in {
-      val attr1 = UUID.randomUUID()
-      val attr2 = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(SpecData.tenantVerifiedAttribute(attr1), SpecData.tenantVerifiedAttribute())
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(verifierId = producerId)
+      )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(eService, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
     "return false if at least one EService group attribute is not satisfied" in {
-      val attr1 = UUID.randomUUID()
-      val attr2 = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogVerifiedAttribute()
@@ -665,42 +709,90 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(SpecData.tenantVerifiedAttribute(attr1), SpecData.tenantVerifiedAttribute())
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(verifierId = producerId)
+      )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(eService, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
     "return false if an EService single attribute is assigned but not verified" in {
-      val attr1 = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1)))
 
-      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1))
+      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(eService, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
     "return false if the EService group attribute is assigned but not verified" in {
-      val attr1 = UUID.randomUUID()
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
 
-      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1))
+      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(eService, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
+    }
+
+    "return false if a single attribute is verified but not by the Agreement producer" in {
+      val producerId  = UUID.randomUUID()
+      val attributeId = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified = Seq(SpecData.catalogSingleAttribute(attributeId)))
+
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attributeId, UUID.randomUUID()),
+        SpecData.tenantVerifiedAttribute(verifierId = producerId)
+      )
+
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
+    }
+
+    "return false if a group attribute is verified but not by the Agreement producer" in {
+      val producerId  = UUID.randomUUID()
+      val attributeId = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified = Seq(SpecData.catalogGroupAttributes(attributeId, UUID.randomUUID())))
+
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attributeId, UUID.randomUUID()),
+        SpecData.tenantVerifiedAttribute(verifierId = producerId)
+      )
+
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
   }
 }
