@@ -3,6 +3,8 @@ package it.pagopa.interop.agreementprocess
 import it.pagopa.interop.agreementmanagement.client.model.{
   Agreement,
   AgreementState,
+  Stamp,
+  Stamps,
   UpdateAgreementSeed,
   UpgradeAgreementSeed
 }
@@ -18,7 +20,11 @@ import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, USER_ROLES}
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import org.scalamock.scalatest.MockFactory
+import cats.implicits._
+import it.pagopa.interop.commons.files.service.FileManager
+import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 
+import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,8 +33,13 @@ trait SpecHelper extends MockFactory {
   final lazy val url: String =
     s"http://localhost:8088/agreement-process/${buildinfo.BuildInfo.interfaceVersion}"
 
-  val bearerToken: String                      = "bearerToken"
-  val requesterOrgId: UUID                     = UUID.randomUUID()
+  val bearerToken: String         = "bearerToken"
+  val requesterOrgId: UUID        = UUID.randomUUID()
+  val who: UUID                   = UUID.randomUUID()
+  val when: OffsetDateTime        = OffsetDateTime.now()
+  val defaultStamps: Stamps       = Stamps()
+  val defaultStamp: Option[Stamp] = Stamp(who, when).some
+
   implicit val contexts: Seq[(String, String)] =
     Seq("bearer" -> "bearerToken", ORGANIZATION_ID_CLAIM -> requesterOrgId.toString, USER_ROLES -> "admin")
 
@@ -39,13 +50,25 @@ trait SpecHelper extends MockFactory {
   val mockTenantManagementService: TenantManagementService               = mock[TenantManagementService]
   val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
   val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
+  val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
+  val mockUserRegistryService: UserRegistryService                       = mock[UserRegistryService]
+  val mockPDFCreator: PDFCreator                                         = mock[PDFCreator]
+  val mockFileManager: FileManager                                       = mock[FileManager]
+  val mockOffsetDateTimeSupplier: OffsetDateTimeSupplier                 = () => OffsetDateTime.now()
+  val mockUUIDSupplier: UUIDSupplier                                     = () => UUID.randomUUID()
 
   val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
     mockTenantManagementService,
     mockAttributeManagementService,
-    mockAuthorizationManagementService
+    mockAuthorizationManagementService,
+    mockPartyManagementService,
+    mockUserRegistryService,
+    mockPDFCreator,
+    mockFileManager,
+    mockOffsetDateTimeSupplier,
+    mockUUIDSupplier
   )(ExecutionContext.global)
 
   def contextWithRole(role: String): Seq[(String, String)] = contexts.filter { case (key, _) =>

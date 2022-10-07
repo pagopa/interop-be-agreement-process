@@ -29,4 +29,8 @@ trait AgreementManagementService {
   def updateAgreement(agreementId: UUID, seed: UpdateAgreementSeed)(implicit
     contexts: Seq[(String, String)]
   ): Future[Agreement]
+
+  def addAgreementContract(agreementId: UUID, seed: DocumentSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Document]
 }

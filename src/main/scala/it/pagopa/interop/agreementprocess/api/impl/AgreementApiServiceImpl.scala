@@ -1,13 +1,16 @@
 package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
+import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
+import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, DocumentSeed, Stamp, UpdateAgreementSeed}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.error.ErrorHandlers._
 import it.pagopa.interop.agreementprocess.model._
@@ -16,15 +19,20 @@ import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAnd
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
-import it.pagopa.interop.commons.utils.AkkaUtils.getOrganizationIdFutureUUID
+import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, getUidFutureUUID}
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, StringOps}
+import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 import scala.util.Success
 
 final case class AgreementApiServiceImpl(
@@ -32,12 +40,25 @@ final case class AgreementApiServiceImpl(
   catalogManagementService: CatalogManagementService,
   tenantManagementService: TenantManagementService,
   attributeManagementService: AttributeManagementService,
-  authorizationManagementService: AuthorizationManagementService
+  authorizationManagementService: AuthorizationManagementService,
+  partyManagementService: PartyManagementService,
+  userRegistry: UserRegistryService,
+  pdfCreator: PDFCreator,
+  fileManager: FileManager,
+  offsetDateTimeSupplier: OffsetDateTimeSupplier,
+  uuidSupplier: UUIDSupplier
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
   implicit val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
+
+  private[this] val agreementTemplate = Source
+    .fromResource("agreementTemplate/index.html")
+    .getLines()
+    .mkString(System.lineSeparator())
+
+  private val agreementDocumentSuffix: String = "_richiesta_di_fruizione.pdf"
 
   override def createAgreement(payload: AgreementPayload)(implicit
     contexts: Seq[(String, String)],
@@ -159,7 +180,9 @@ final case class AgreementApiServiceImpl(
       _              <- agreement.assertUpgradableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       newDescriptor  <- CatalogManagementService.getEServiceNewerPublishedDescriptor(eService, agreement.descriptorId)
-      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = newDescriptor.id)
+      uid            <- getUidFutureUUID(contexts)
+      stamp       = Stamp(uid, offsetDateTimeSupplier.get())
+      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = newDescriptor.id, stamp)
       newAgreement <- agreementManagementService.upgradeById(agreement.id, upgradeSeed)
       payload = getClientUpgradePayload(newAgreement, newDescriptor)
       _ <- authorizationManagementService.updateAgreementAndEServiceStates(
@@ -285,7 +308,8 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer = agreement.suspendedByConsumer,
           suspendedByProducer = agreement.suspendedByProducer,
           suspendedByPlatform = suspendedByPlatformFlag(fsmState),
-          consumerNotes = agreement.consumerNotes
+          consumerNotes = agreement.consumerNotes,
+          stamps = agreement.stamps
         )
 
         lazy val updateAgreement   = agreementManagementService.updateAgreement(agreement.id, seed)
@@ -355,16 +379,21 @@ final case class AgreementApiServiceImpl(
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
     val newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
-    val updateSeed            = AgreementManagement.UpdateAgreementSeed(
-      state = newState,
-      certifiedAttributes = Nil,
-      declaredAttributes = Nil,
-      verifiedAttributes = Nil,
-      suspendedByConsumer = None,
-      suspendedByProducer = None,
-      suspendedByPlatform = suspendedByPlatform
-    )
-    agreementManagementService.updateAgreement(agreement.id, updateSeed)
+    for {
+      uid <- getUidFutureUUID(contexts)
+      updateSeed = AgreementManagement.UpdateAgreementSeed(
+        state = newState,
+        certifiedAttributes = Nil,
+        declaredAttributes = Nil,
+        verifiedAttributes = Nil,
+        suspendedByConsumer = None,
+        suspendedByProducer = None,
+        suspendedByPlatform = suspendedByPlatform,
+        stamps = agreement.stamps.copy(submission = Stamp(uid, offsetDateTimeSupplier.get()).some)
+      )
+      updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
+    } yield updated
+
   }
 
   def activate(
@@ -381,7 +410,10 @@ final case class AgreementApiServiceImpl(
       agreementStateByFlags(nextStateByAttributes, suspendedByProducer, suspendedByConsumer, suspendedByPlatform)
     val firstActivation       =
       agreement.state == AgreementManagement.AgreementState.PENDING && newState == AgreementManagement.AgreementState.ACTIVE
-    val updateSeed            =
+
+    def getUpdateSeed(): Future[UpdateAgreementSeed] = getUidFutureUUID(contexts).map { uid =>
+      val stamp = Stamp(uid, offsetDateTimeSupplier.get()).some
+
       if (firstActivation)
         AgreementManagement.UpdateAgreementSeed(
           state = newState,
@@ -390,7 +422,8 @@ final case class AgreementApiServiceImpl(
           verifiedAttributes = matchingVerifiedAttributes(eService, consumer),
           suspendedByConsumer = suspendedByConsumer,
           suspendedByProducer = suspendedByProducer,
-          suspendedByPlatform = suspendedByPlatform
+          suspendedByPlatform = suspendedByPlatform,
+          stamps = agreement.stamps.copy(activation = stamp)
         )
       else
         AgreementManagement.UpdateAgreementSeed(
@@ -400,8 +433,10 @@ final case class AgreementApiServiceImpl(
           verifiedAttributes = agreement.verifiedAttributes,
           suspendedByConsumer = suspendedByConsumer,
           suspendedByProducer = suspendedByProducer,
-          suspendedByPlatform = suspendedByPlatform
+          suspendedByPlatform = suspendedByPlatform,
+          stamps = agreement.stamps.copy(suspension = None)
         )
+    }
 
     val failureStates = List(
       AgreementManagement.AgreementState.DRAFT,
@@ -414,9 +449,26 @@ final case class AgreementApiServiceImpl(
       .whenA(failureStates.contains(newState))
 
     for {
-      updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
-      _       <- failOnActivationFailure()
-      _       <- authorizationManagementService
+      producerParty <- partyManagementService.getInstitution(agreement.producerId)
+      consumerParty <- partyManagementService.getInstitution(agreement.consumerId)
+      document      <- pdfCreator.create(
+        agreementTemplate,
+        eService.name,
+        producerParty.description,
+        consumerParty.description
+      )
+      path          <- fileManager.storeBytes(
+        ApplicationConfiguration.storageContainer,
+        ApplicationConfiguration.agreementDocPath
+      )(uuidSupplier.get().toString(), createAgreementDocumentName, document)
+      _             <- agreementManagementService.addAgreementContract(
+        agreement.id,
+        DocumentSeed("", "", MediaTypes.`application/pdf`.value, path)
+      )
+      seed          <- getUpdateSeed()
+      updated       <- agreementManagementService.updateAgreement(agreement.id, seed)
+      _             <- failOnActivationFailure()
+      _             <- authorizationManagementService
         .updateStateOnClients(
           eServiceId = agreement.eserviceId,
           consumerId = agreement.consumerId,
@@ -426,6 +478,9 @@ final case class AgreementApiServiceImpl(
         .unlessA(failureStates.contains(newState))
     } yield updated
   }
+
+  private def createAgreementDocumentName: String =
+    s"${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))}$agreementDocumentSuffix"
 
   def suspend(
     agreement: AgreementManagement.Agreement,
@@ -439,16 +494,20 @@ final case class AgreementApiServiceImpl(
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
     val newState              =
       agreementStateByFlags(nextStateByAttributes, suspendedByProducer, suspendedByConsumer, suspendedByPlatform)
-    val updateSeed            = AgreementManagement.UpdateAgreementSeed(
-      state = newState,
-      certifiedAttributes = agreement.certifiedAttributes,
-      declaredAttributes = agreement.declaredAttributes,
-      verifiedAttributes = agreement.verifiedAttributes,
-      suspendedByConsumer = suspendedByConsumer,
-      suspendedByProducer = suspendedByProducer,
-      suspendedByPlatform = suspendedByPlatform
-    )
+
     for {
+      uid <- getUidFutureUUID(contexts)
+      stamp      = Stamp(uid, offsetDateTimeSupplier.get()).some
+      updateSeed = AgreementManagement.UpdateAgreementSeed(
+        state = newState,
+        certifiedAttributes = agreement.certifiedAttributes,
+        declaredAttributes = agreement.declaredAttributes,
+        verifiedAttributes = agreement.verifiedAttributes,
+        suspendedByConsumer = suspendedByConsumer,
+        suspendedByProducer = suspendedByProducer,
+        suspendedByPlatform = suspendedByPlatform,
+        stamps = agreement.stamps.copy(suspension = stamp)
+      )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- authorizationManagementService.updateStateOnClients(
         eServiceId = agreement.eserviceId,

@@ -46,6 +46,16 @@ object FakeDependencies {
       declaredAttributes = Nil,
       verifiedAttributes = Nil,
       consumerDocuments = Nil,
+      createdAt = OffsetDateTime.now(),
+      stamps = Stamps()
+    )
+
+    val document: Document = Document(
+      id = UUID.randomUUID(),
+      name = "name",
+      prettyName = "prettyName",
+      contentType = "contentType",
+      path = "path",
       createdAt = OffsetDateTime.now()
     )
 
@@ -72,6 +82,10 @@ object FakeDependencies {
     override def updateAgreement(agreementId: UUID, seed: UpdateAgreementSeed)(implicit
       contexts: Seq[(String, String)]
     ): Future[Agreement] = Future.successful(agreement)
+
+    override def addAgreementContract(agreementId: UUID, seed: DocumentSeed)(implicit
+      contexts: Seq[(String, String)]
+    ): Future[Document] = Future.successful(document)
   }
 
   class FakeCatalogManagementService       extends CatalogManagementService       {
