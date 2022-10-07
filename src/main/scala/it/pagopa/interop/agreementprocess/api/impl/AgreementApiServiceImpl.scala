@@ -339,7 +339,7 @@ final case class AgreementApiServiceImpl(
       ): Future[Unit] =
         eServices
           .get(agreement.eserviceId)
-          .map(AgreementStateByAttributesFSM.nextState(agreement.state, _, consumer))
+          .map(AgreementStateByAttributesFSM.nextState(agreement, _, consumer))
           .fold {
             logger.error(s"EService ${agreement.eserviceId} not found for agreement ${agreement.id}")
             Future.unit
@@ -376,7 +376,7 @@ final case class AgreementApiServiceImpl(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
-    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
+    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
     val newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
     for {
@@ -402,7 +402,7 @@ final case class AgreementApiServiceImpl(
     consumer: TenantManagement.Tenant,
     requesterOrgId: UUID
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
-    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
+    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
@@ -488,7 +488,7 @@ final case class AgreementApiServiceImpl(
     consumer: TenantManagement.Tenant,
     requesterOrgId: UUID
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
-    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement.state, eService, consumer)
+    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
