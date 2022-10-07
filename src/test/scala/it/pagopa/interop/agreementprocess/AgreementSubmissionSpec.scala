@@ -34,7 +34,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = None,
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = defaultStamps.copy(submission = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -128,7 +129,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = None,
-        suspendedByPlatform = Some(true)
+        suspendedByPlatform = Some(true),
+        stamps = defaultStamps
       )
 
       mockAgreementRetrieve(agreement)

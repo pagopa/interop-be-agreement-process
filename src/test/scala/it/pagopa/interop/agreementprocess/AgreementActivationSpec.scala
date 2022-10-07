@@ -76,7 +76,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Seq(VerifiedAttribute(verAttr1), VerifiedAttribute(verAttr2)),
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -110,7 +111,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(false),
         suspendedByProducer = None,
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -145,7 +147,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -180,7 +183,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(true),
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -215,7 +219,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(false),
         suspendedByProducer = Some(true),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -251,7 +256,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(false),
         suspendedByProducer = None,
-        suspendedByPlatform = Some(true)
+        suspendedByPlatform = Some(true),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -291,7 +297,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(true)
+        suspendedByPlatform = Some(true),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -334,7 +341,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(true)
+        suspendedByPlatform = Some(true),
+        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)
@@ -377,7 +385,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
         // TODO The action is done by the platform, but it's not suspended. What value should it have?
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = defaultStamps.copy(submission = defaultStamp)
       )
 
       mockAgreementRetrieve(agreement)

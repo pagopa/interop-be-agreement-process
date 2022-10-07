@@ -5,6 +5,7 @@ import it.pagopa.interop.agreementmanagement.client.model.{
   AgreementState,
   CertifiedAttribute,
   DeclaredAttribute,
+  Stamps,
   VerifiedAttribute
 }
 import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
@@ -190,7 +191,9 @@ object SpecData {
     suspendedByProducer = None,
     suspendedByPlatform = None,
     consumerDocuments = Nil,
-    createdAt = OffsetDateTime.now()
+    createdAt = OffsetDateTime.now(),
+    contract = None,
+    stamps = Stamps()
   )
 
   def draftAgreement: Agreement             = agreement.copy(state = AgreementState.DRAFT)
