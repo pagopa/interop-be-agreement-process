@@ -7,6 +7,7 @@ import it.pagopa.interop.agreementmanagement.client.model.{
   DeclaredAttribute,
   VerifiedAttribute
 }
+import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
 import it.pagopa.interop.catalogmanagement.client.model.{
   Attribute,
   AttributeValue,
@@ -45,7 +46,8 @@ object SpecData {
     dailyCallsTotal = 1000,
     interface = None,
     docs = Nil,
-    state = EServiceDescriptorState.PUBLISHED
+    state = EServiceDescriptorState.PUBLISHED,
+    agreementApprovalPolicy = AUTOMATIC
   )
 
   def publishedDescriptor: EServiceDescriptor  = descriptor.copy(state = EServiceDescriptorState.PUBLISHED)

@@ -3,6 +3,7 @@ package it.pagopa.interop.agreementprocess
 import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementmanagement.client.model.AgreementState._
 import it.pagopa.interop.agreementprocess.service.AgreementStateByAttributesFSM._
+import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.{AUTOMATIC, MANUAL}
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import org.scalatest.matchers.should.Matchers._
@@ -13,14 +14,29 @@ import java.util.UUID
 class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
   "from DRAFT" should {
-    "go to PENDING when Certified and Declared attributes are satisfied" in {
+    "go to ACTIVE when Certified, Declared and Verified attributes are satisfied and Agreement Approval Policy is AUTOMATIC" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
       val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
 
+      val descriptor           = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = AUTOMATIC)
       val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, descriptors = Seq(descriptor))
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+
+      nextState(agreement, eService, consumer) shouldBe PENDING
+    }
+
+    "go to PENDING when Certified and Declared attributes are satisfied and Agreement Approval Policy is not AUTOMATIC" in {
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
+
+      val descriptor           = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL)
+      val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, descriptors = Seq(descriptor))
       val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       nextState(agreement, eService, consumer) shouldBe PENDING
