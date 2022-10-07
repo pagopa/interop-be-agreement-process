@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
+import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.MANUAL
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -20,7 +21,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
 
-      val descriptor = SpecData.publishedDescriptor
+      val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
