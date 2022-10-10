@@ -233,7 +233,8 @@ final case class AgreementApiServiceImpl(
       _              <- agreement.assertRejectableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-      updated        <- reject(agreement, eService, consumer)
+      uid            <- getUidFutureUUID(contexts)
+      updated        <- reject(agreement, eService, consumer, Stamp(uid, offsetDateTimeSupplier.get()))
     } yield updated.toApi
 
     onComplete(result) {
@@ -634,7 +635,8 @@ final case class AgreementApiServiceImpl(
   def reject(
     agreement: AgreementManagement.Agreement,
     eService: CatalogManagement.EService,
-    consumer: TenantManagement.Tenant
+    consumer: TenantManagement.Tenant,
+    stamp: Stamp
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val updateSeed = AgreementManagement.UpdateAgreementSeed(
       state = AgreementManagement.AgreementState.REJECTED,
@@ -643,8 +645,9 @@ final case class AgreementApiServiceImpl(
       verifiedAttributes = matchingVerifiedAttributes(eService, consumer),
       suspendedByConsumer = None,
       suspendedByProducer = None,
-      suspendedByPlatform = None
-    )
+      suspendedByPlatform = None,
+      stamps = agreement.stamps.copy(rejection = stamp.some)
+    ) // TODO why rejectionReason is not set?
     agreementManagementService.updateAgreement(agreement.id, updateSeed)
   }
 

@@ -78,7 +78,8 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
         verifiedAttributes = Seq(VerifiedAttribute(verAttr1), VerifiedAttribute(verAttr2)),
         suspendedByConsumer = None,
         suspendedByProducer = None,
-        suspendedByPlatform = None
+        suspendedByPlatform = None,
+        stamps = SpecData.rejectionStamps
       )
 
       mockAgreementRetrieve(agreement)

@@ -47,15 +47,10 @@ object SpecData {
   final val defaultStamp: Option[Stamp] = Stamp(who, when).some
 
   final val submissionStamps = defaultStamps.copy(submission = defaultStamp)
-  final val activationStamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
-  final val suspensionStamps =
-    defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
-  final val archivingStamps  = defaultStamps.copy(
-    submission = defaultStamp,
-    activation = defaultStamp,
-    suspension = defaultStamp,
-    archiving = defaultStamp
-  )
+  final val rejectionStamps  = submissionStamps.copy(rejection = defaultStamp)
+  final val activationStamps = submissionStamps.copy(activation = defaultStamp)
+  final val suspensionStamps = activationStamps.copy(suspension = defaultStamp)
+  final val archivingStamps  = suspensionStamps.copy(archiving = defaultStamp)
 
   def descriptor: EServiceDescriptor = EServiceDescriptor(
     id = UUID.randomUUID(),
