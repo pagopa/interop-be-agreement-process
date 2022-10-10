@@ -21,6 +21,11 @@
       "roles": ["admin"]
     },
     {
+      "route": "rejectAgreement",
+      "verb": "POST",
+      "roles": ["admin"]
+    },
+    {
       "route": "getAgreements",
       "verb": "GET",
       "roles": ["admin", "m2m"]
