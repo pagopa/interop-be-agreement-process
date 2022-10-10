@@ -345,47 +345,53 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
     "from REJECTED" should {
       "stay in REJECTED when Certified, Declared and Verified attributes are satisfied" in {
+        val producerId: UUID                   = UUID.randomUUID()
         val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
         val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
         val eServiceAttr                       =
           eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
         val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
+        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(REJECTED, eService, consumer) shouldBe REJECTED
+        nextState(agreement, eService, consumer) shouldBe REJECTED
       }
 
       "stay in REJECTED when Certified attributes are NOT satisfied" in {
+        val producerId: UUID                   = UUID.randomUUID()
         val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
         val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
         val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
         val eServiceAttr                       =
           eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
         val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
+        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(REJECTED, eService, consumer) shouldBe REJECTED
+        nextState(agreement, eService, consumer) shouldBe REJECTED
       }
 
       "stay in REJECTED when Declared attributes are NOT satisfied" in {
+        val producerId: UUID                   = UUID.randomUUID()
         val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
         val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
         val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes
+        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
         val eServiceAttr                       =
           eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
         val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
+        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(REJECTED, eService, consumer) shouldBe REJECTED
+        nextState(agreement, eService, consumer) shouldBe REJECTED
       }
 
       "stay in REJECTED when Verified attributes are NOT satisfied" in {
@@ -397,13 +403,13 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
           eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
         val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED)
+        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(REJECTED, eService, consumer) shouldBe REJECTED
+        nextState(agreement, eService, consumer) shouldBe REJECTED
       }
     }
-
   }
 
   "Certified attributes check" should {
