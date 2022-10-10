@@ -93,7 +93,7 @@ trait Dependencies {
         tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
         authorizationManagement(blockingEc),
-        fileManager = fileManager(blockingEc)
+        fileManager(blockingEc)
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts
