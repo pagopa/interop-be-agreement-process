@@ -49,6 +49,7 @@ object AgreementStateByAttributesFSM {
       case MISSING_CERTIFIED_ATTRIBUTES =>
         if (certifiedAttributesSatisfied(eService, consumer)) DRAFT
         else MISSING_CERTIFIED_ATTRIBUTES
+      case REJECTED                     => REJECTED
     }
 
   def certifiedAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =

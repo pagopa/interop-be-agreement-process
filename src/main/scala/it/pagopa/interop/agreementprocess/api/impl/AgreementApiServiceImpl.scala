@@ -211,6 +211,29 @@ final case class AgreementApiServiceImpl(
     )
   }
 
+  override def rejectAgreement(agreementId: String, payload: AgreementRejectionPayload)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route = authorize(ADMIN_ROLE) {
+    logger.info(s"Rejecting agreement $agreementId")
+    val result = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreement      <- agreementManagementService.getAgreementById(agreementId)
+      _              <- assertRequesterIsProducer(requesterOrgId, agreement)
+      _              <- agreement.assertRejectableState.toFuture
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      consumer       <- tenantManagementService.getTenant(agreement.consumerId)
+      updated        <- reject(agreement, eService, consumer)
+    } yield updated.toApi
+
+    onComplete(result) {
+      handleRejectionError(s"Error while rejecting agreement $agreementId") orElse { case Success(agreement) =>
+        rejectAgreement200(agreement)
+      }
+    }
+  }
+
   override def getAgreements(
     producerId: Option[String],
     consumerId: Option[String],
@@ -478,6 +501,23 @@ final case class AgreementApiServiceImpl(
         state = AuthorizationManagement.ClientComponentState.INACTIVE
       )
     } yield updated
+  }
+
+  def reject(
+    agreement: AgreementManagement.Agreement,
+    eService: CatalogManagement.EService,
+    consumer: TenantManagement.Tenant
+  )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
+    val updateSeed = AgreementManagement.UpdateAgreementSeed(
+      state = AgreementManagement.AgreementState.REJECTED,
+      certifiedAttributes = matchingCertifiedAttributes(eService, consumer),
+      declaredAttributes = matchingDeclaredAttributes(eService, consumer),
+      verifiedAttributes = matchingVerifiedAttributes(eService, consumer),
+      suspendedByConsumer = None,
+      suspendedByProducer = None,
+      suspendedByPlatform = None
+    )
+    agreementManagementService.updateAgreement(agreement.id, updateSeed)
   }
 
   def suspendedByConsumerFlag(
