@@ -1,19 +1,27 @@
 package it.pagopa.interop.agreementprocess.service
 
 import com.openhtmltopdf.util.XRLog
+import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.commons.files.model.PDFConfiguration
 import it.pagopa.interop.commons.files.service.PDFManager
 import it.pagopa.interop.commons.utils.TypeConversions.TryOps
+import it.pagopa.interop.commons.utils.service.OffsetDateTimeSupplier
+import it.pagopa.interop.tenantmanagement.client.model.{
+  CertifiedTenantAttribute,
+  DeclaredTenantAttribute,
+  VerifiedTenantAttribute
+}
 
 import java.io.ByteArrayOutputStream
-import java.time.LocalDate
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Try
 
 trait PDFCreator {
-  def create(template: String, eservice: String, producer: String, consumer: String): Future[Array[Byte]]
+  def create(template: String, pdfPayload: PDFPayload): Future[Array[Byte]]
+
 }
 
 object PDFCreator extends PDFCreator with PDFManager {
@@ -24,22 +32,85 @@ object PDFCreator extends PDFCreator with PDFManager {
   )
   private[this] val pdfConfigs: PDFConfiguration = PDFConfiguration(resourcesBaseUrl = Some("/agreementTemplate/"))
   private[this] val printedDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+  private[this] val printedTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
 
-  override def create(template: String, eservice: String, producer: String, consumer: String): Future[Array[Byte]] = {
+  override def create(template: String, pdfPayload: PDFPayload): Future[Array[Byte]] = {
     def toByteArray: ByteArrayOutputStream => Try[Array[Byte]] =
-      getPDF[ByteArrayOutputStream, Array[Byte]](template, setupData(eservice, producer, consumer), pdfConfigs)(
-        _.toByteArray
-      )
+      getPDF[ByteArrayOutputStream, Array[Byte]](template, setupData(pdfPayload), pdfConfigs)(_.toByteArray)
 
     toByteArray(new ByteArrayOutputStream()).toFuture
   }
 
-  private def setupData(eservice: String, producer: String, consumer: String): Map[String, String] =
+  private def setupData(pdfPayload: PDFPayload): Map[String, String] = {
+    val today     = OffsetDateTimeSupplier.get()
+    val todayDate = getDateText(today)
+    val todayTime = getUTCTimeText(today)
+
+    val submissionDate = getDateText(pdfPayload.submissionTimestamp)
+    val submissionTime = getUTCTimeText(pdfPayload.submissionTimestamp)
+
+    val activationDate = getDateText(pdfPayload.activationTimestamp)
+    val activationTime = getUTCTimeText(pdfPayload.activationTimestamp)
+
     Map(
-      "eserviceName" -> eservice,
-      "producerName" -> producer,
-      "consumerName" -> consumer,
-      "today"        -> LocalDate.now().format(printedDateFormatter)
+      "todayDate"           -> todayDate,
+      "todayTime"           -> todayTime,
+      "agreementId"         -> pdfPayload.agreementId.toString(),
+      "submitter"           -> pdfPayload.submitter,
+      "declaredAttributes"  -> getDeclaredAttributesText(pdfPayload.declared),
+      "verifiedAttributes"  -> getVerifiedAttributesText(pdfPayload.verified),
+      "certifiedAttributes" -> getCertifiedAttributesText(pdfPayload.certified),
+      "submissionDate"      -> submissionDate,
+      "submissionTime"      -> submissionTime,
+      "activationDate"      -> activationDate,
+      "activationTime"      -> activationTime,
+      "activator"           -> pdfPayload.activator,
+      "eServiceName"        -> pdfPayload.eService,
+      "producerName"        -> pdfPayload.producer.description,
+      "consumerName"        -> pdfPayload.consumer.description
     )
+  }
+
+  private def getDeclaredAttributesText(declared: Seq[(ClientAttribute, DeclaredTenantAttribute)]): String =
+    declared.map { case (clientAttribute, tenantAttribute) =>
+      val date = getDateText(tenantAttribute.assignmentTimestamp)
+      val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
+      s"""
+         |In data $date alle ore $time, 
+         |l’Infrastruttura ha registrato la dichiarazione del Fruitore di possedere il seguente attributo ${clientAttribute.name} dichiarato
+         |ed avente il seguente periodo di validità ________,
+         |necessario a soddisfare il requisito di fruizione stabilito dall’Erogatore per l’accesso all’E-service.
+         |""".stripMargin
+    }.mkString
+
+  private def getCertifiedAttributesText(certified: Seq[(ClientAttribute, CertifiedTenantAttribute)]): String =
+    certified.map { case (clientAttribute, tenantAttribute) =>
+      val date = getDateText(tenantAttribute.assignmentTimestamp)
+      val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
+      s"""
+         |In data $date alle ore $time, 
+         |l’Infrastruttura ha registrato il possesso da parte del Fruitore del seguente attributo ${clientAttribute.name} certificato,
+         |necessario a soddisfare il requisito di fruizione stabilito dall’Erogatore per l’accesso all’E-service.
+         |""".stripMargin
+    }.mkString
+
+  private def getVerifiedAttributesText(verified: Seq[(ClientAttribute, VerifiedTenantAttribute)]): String =
+    verified.map { case (clientAttribute, tenantAttribute) =>
+      val date = getDateText(tenantAttribute.assignmentTimestamp)
+      val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
+      // TODO add implicit verifier when ready
+      s"""
+         |In data $date alle ore $time, 
+         |l’Infrastruttura ha registrato la dichiarazione del Fruitore di possedere il seguente attributo ${clientAttribute.name},
+         |verificata dall’aderente ________ OPPURE dall’Erogatore stesso in data $date, 
+         |necessario a soddisfare il requisito di fruizione stabilito dall’Erogatore per l’accesso all’E-service.
+         |
+         |""".stripMargin
+    }.mkString
+
+  private def getDateText(timestamp: OffsetDateTime): String = timestamp.toLocalDate.format(printedDateFormatter)
+
+  private def getUTCTimeText(timestamp: OffsetDateTime): String =
+    s"${timestamp.toLocalTime.format(printedTimeFormatter)} UTC"
 
 }

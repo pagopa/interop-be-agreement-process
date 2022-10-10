@@ -73,4 +73,9 @@ object AgreementProcessErrors {
   final case class DescriptorNotFound(eServiceId: UUID, descriptorId: UUID)
       extends ComponentError("0014", s"Descriptor $descriptorId not found in EService $eServiceId")
 
+  final case class StampNotFound(stamp: String) extends ComponentError("0015", s"Agreement stamp $stamp not found")
+
+  final case class MissingUserInfo(user: UUID)
+      extends ComponentError("0016", s"Some mandatory info are missing for user ${user.toString()}")
+
 }

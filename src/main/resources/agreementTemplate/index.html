@@ -38,34 +38,28 @@
 <h1>Richiesta di fruizione</h1>
 
 <!-- Intro legale -->
-<div class="legal-intro">Ai sensi dell’art. 26, comma 11, del decreto-legge, PagoPA s.p.a. nella sua qualità di gestore ex lege della Piattaforma Interoperabilità PDND di cui allo stesso art. 26, con ogni valore legale per l'opponibilità a terzi, ATTESTA CHE [TBC Lorem ipsum]:</div>
+<div class="legal-intro">
 
-<!-- Informazioni di contesto -->
-<div class="agreement-info">
-  <div class="item">
-    <div class="label">E-Service</div>
-    <div class="value">${eserviceName}</div>
-  </div>
+  Riepilogo richiesta di fruizione di un e-service 
+  In data ${todayDate} alle ore ${todayTime}, 
+  l’Infrastruttura ha ricevuto la richiesta di fruizione ${agreementId} (di seguito “Richiesta di Fruizione”), inviata dall’aderente ${consumerName} (di seguito “Fruitore”), tramite l’operatore amministrativo ${submitter}, per l’E-service ${eServiceName} reso disponibile dall’aderente ${producerName} (di seguito “Erogatore”) di cui il Fruitore soddisfa i seguenti requisiti di fruizione per lo stesso previsti dall’Erogatore.
 
-  <div class="item">
-    <div class="label">Ente Erogatore</div>
-    <div class="value">${producerName}</div>
-  </div>
+  ${declaredAttributes}
 
-  <div class="item">
-    <div class="label">Ente Fruitore</div>
-    <div class="value">${consumerName}</div>
-  </div>
+  ${verifiedAttributes}
+
+  ${certifiedAttributes}
+
+  In data ${submissionDate} alle ore ${submissionTime}, l’Infrastruttura ha trasmesso all’Erogatore la Richiesta di Fruizione.
+
+  In data ${activationDate} alle ore ${activationTime}, l’Infrastruttura ha ricevuto la dichiarazione di accettazione della Richiesta di Fruizione (di seguito “Dichiarazione Accettazione”) inviata dall’Erogatore, tramite l’operatore amministrativo ${activator}.
+
+  In data ${activationDate} alle ore ${activationTime}, l’Infrastruttura ha comunicato al Fruitore la Dichiarazione Accettazione inviata dall’Erogatore.
+
+  In data ${activationDate} alle ore ${activationTime}, l’Infrastruttura ha registrato il Fruitore quale soggetto titolato ad accedere all’E-service.
+
 </div>
 
-<!-- Blocco legale -->
-<div class="legal-block">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia, justo quis gravida luctus, mauris dui sollicitudin mi, eget maximus ligula ligula quis lacus. Suspendisse potenti. Fusce vel euismod augue. Praesent suscipit, ante quis placerat vulputate, eros orci lacinia nisi, sed euismod urna ipsum scelerisque nisl. Nullam dui nibh, suscipit eget lectus non, iaculis bibendum arcu. Praesent nec aliquet felis, in gravida enim. Fusce placerat, ex in hendrerit rhoncus, nisl ligula eleifend dui, venenatis porttitor orci quam ut sem. Ut nec vehicula augue. Sed blandit hendrerit nisi pulvinar luctus. Vivamus in erat bibendum, scelerisque erat at, commodo sapien.</div>
-
-<!-- Sigla documento -->
-<div class="signature">
-  <div class="date">${today}</div>
-  <div class="message">Firmato digitalmente da PagoPA S.p.A.</div>
-</div>
 
 </body>
 </html>
