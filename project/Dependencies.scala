@@ -12,7 +12,7 @@ object Dependencies {
     lazy val stream              = namespace                       %% "akka-stream"            % akkaVersion
     lazy val http                = namespace                       %% "akka-http"              % akkaHttpVersion
     lazy val httpJson            = namespace                       %% "akka-http-spray-json"   % akkaHttpVersion
-    lazy val httpJson4s          = "de.heikoseeberger"             %% "akka-http-json4s"       % "1.38.2"
+    lazy val httpJson4s          = "de.heikoseeberger"             %% "akka-http-json4s"       % "1.39.2"
     lazy val management          = "com.lightbend.akka.management" %% "akka-management"        % akkaManagementVersion
     lazy val managementLogLevels =
       "com.lightbend.akka.management" %% "akka-management-loglevels-logback" % akkaManagementVersion
