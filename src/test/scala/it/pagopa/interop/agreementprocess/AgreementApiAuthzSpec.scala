@@ -2,7 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import it.pagopa.interop.agreementprocess.api.impl.AgreementApiMarshallerImpl._
 import it.pagopa.interop.agreementprocess.api.impl.AgreementApiServiceImpl
-import it.pagopa.interop.agreementprocess.model.AgreementPayload
+import it.pagopa.interop.agreementprocess.model.{AgreementPayload, AgreementRejectionPayload}
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.util.FakeDependencies._
 import it.pagopa.interop.agreementprocess.util.{AuthorizedRoutes, AuthzScalatestRouteTest}
@@ -48,6 +48,14 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     "accept authorized roles for activateAgreement" in {
       val endpoint = AuthorizedRoutes.endpoints("activateAgreement")
       validateAuthorization(endpoint, { implicit c: Seq[(String, String)] => service.activateAgreement("fake") })
+    }
+
+    "accept authorized roles for rejectAgreement" in {
+      val endpoint = AuthorizedRoutes.endpoints("rejectAgreement")
+      validateAuthorization(
+        endpoint,
+        { implicit c: Seq[(String, String)] => service.rejectAgreement("fake", AgreementRejectionPayload("reason")) }
+      )
     }
 
     "accept authorized roles for suspendAgreement" in {

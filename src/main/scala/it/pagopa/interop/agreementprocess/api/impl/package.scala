@@ -22,10 +22,12 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def declaredAttributeJsonFormat: RootJsonFormat[DeclaredAttribute]   = jsonFormat1(DeclaredAttribute)
   implicit def certifiedAttributeJsonFormat: RootJsonFormat[CertifiedAttribute] = jsonFormat1(CertifiedAttribute)
   implicit def documentJsonFormat: RootJsonFormat[Document]                     = jsonFormat5(Document)
-  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                   = jsonFormat16(Agreement)
+  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                   = jsonFormat17(Agreement)
   implicit def agreementPayloadJsonFormat: RootJsonFormat[AgreementPayload]     = jsonFormat2(AgreementPayload)
-  implicit def problemErrorFormat: RootJsonFormat[ProblemError]                 = jsonFormat2(ProblemError)
-  implicit def problemFormat: RootJsonFormat[Problem]                           = jsonFormat5(Problem)
+  implicit def agreementRejectionPayloadJsonFormat: RootJsonFormat[AgreementRejectionPayload] =
+    jsonFormat1(AgreementRejectionPayload)
+  implicit def problemErrorFormat: RootJsonFormat[ProblemError] = jsonFormat2(ProblemError)
+  implicit def problemFormat: RootJsonFormat[Problem]           = jsonFormat5(Problem)
 
   final val serviceErrorCodePrefix: String = "005"
   final val defaultProblemType: String     = "about:blank"
