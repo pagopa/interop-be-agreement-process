@@ -178,7 +178,7 @@ paths:
         name: agreementId
         in: path
         required: true
-        description: identifier of the pending agreement to be suspended
+        description: identifier of the pending agreement to be rejected
     post:
       summary: Reject Agreement
       operationId: rejectAgreement
