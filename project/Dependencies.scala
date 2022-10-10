@@ -38,6 +38,9 @@ object Dependencies {
     lazy val commons =
       namespace %% "interop-commons-utils" % commonsVersion
 
+    lazy val commonsFileManager =
+      namespace %% "interop-commons-file-manager" % commonsVersion
+
     lazy val commonsJWT =
       namespace %% "interop-commons-jwt" % commonsVersion
   }
@@ -108,6 +111,7 @@ object Dependencies {
       pagopa.authorizationManagementClient     % Compile,
       pagopa.catalogManagementClient           % Compile,
       pagopa.commons                           % Compile,
+      pagopa.commonsFileManager                % Compile,
       pagopa.commonsJWT                        % Compile,
       pagopa.tenantManagementClient            % Compile,
       akka.httpTestkit                         % Test,

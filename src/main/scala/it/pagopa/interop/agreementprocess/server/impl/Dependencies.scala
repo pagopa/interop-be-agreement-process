@@ -15,6 +15,8 @@ import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
 import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
 import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
+import it.pagopa.interop.commons.files.service.FileManager
+import it.pagopa.interop.commons.files.service.impl.S3ManagerImpl
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
 import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, SerializedKey}
@@ -78,6 +80,8 @@ trait Dependencies {
     )
     .toFuture
 
+  def fileManager(blockingEc: ExecutionContextExecutor): FileManager = new S3ManagerImpl(blockingEc)
+
   def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
     actorSystem: ActorSystem[_],
     ec: ExecutionContext
@@ -88,7 +92,8 @@ trait Dependencies {
         catalogManagement(blockingEc),
         tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
-        authorizationManagement(blockingEc)
+        authorizationManagement(blockingEc),
+        fileManager = fileManager(blockingEc)
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts

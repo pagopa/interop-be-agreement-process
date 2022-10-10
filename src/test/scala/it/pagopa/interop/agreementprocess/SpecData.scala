@@ -5,6 +5,7 @@ import it.pagopa.interop.agreementmanagement.client.model.{
   AgreementState,
   CertifiedAttribute,
   DeclaredAttribute,
+  Document,
   VerifiedAttribute
 }
 import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
@@ -213,4 +214,12 @@ object SpecData {
     verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
   )
 
+  def document(id: UUID = UUID.randomUUID()): Document = Document(
+    id = id,
+    name = s"name_$id",
+    prettyName = s"prettyName_$id",
+    contentType = "application/json",
+    path = s"path_$id",
+    createdAt = timestamp
+  )
 }
