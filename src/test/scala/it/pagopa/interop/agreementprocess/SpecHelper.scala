@@ -73,6 +73,13 @@ trait SpecHelper extends MockFactory {
       .once()
       .returns(Future.successful(result))
 
+  def mockAgreementDeletion(agreementId: UUID) =
+    (mockAgreementManagementService
+      .deleteAgreement(_: UUID)(_: Seq[(String, String)]))
+      .expects(agreementId, *)
+      .once()
+      .returns(Future.unit)
+
   def mockAgreementUpdate(agreementId: UUID, seed: UpdateAgreementSeed, result: Agreement) =
     (mockAgreementManagementService
       .updateAgreement(_: UUID, _: UpdateAgreementSeed)(_: Seq[(String, String)]))

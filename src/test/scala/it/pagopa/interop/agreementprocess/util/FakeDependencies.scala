@@ -72,6 +72,9 @@ object FakeDependencies {
     override def updateAgreement(agreementId: UUID, seed: UpdateAgreementSeed)(implicit
       contexts: Seq[(String, String)]
     ): Future[Agreement] = Future.successful(agreement)
+
+    override def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit] =
+      Future.unit
   }
 
   class FakeCatalogManagementService       extends CatalogManagementService       {

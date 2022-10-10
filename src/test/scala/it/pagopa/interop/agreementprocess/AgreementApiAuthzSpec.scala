@@ -40,6 +40,11 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
       )
     }
 
+    "accept authorized roles for deleteAgreement" in {
+      val endpoint = AuthorizedRoutes.endpoints("deleteAgreement")
+      validateAuthorization(endpoint, { implicit c: Seq[(String, String)] => service.deleteAgreement("fake") })
+    }
+
     "accept authorized roles for submitAgreement" in {
       val endpoint = AuthorizedRoutes.endpoints("submitAgreement")
       validateAuthorization(endpoint, { implicit c: Seq[(String, String)] => service.submitAgreement("fake") })

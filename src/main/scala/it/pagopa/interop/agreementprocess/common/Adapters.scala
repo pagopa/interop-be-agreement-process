@@ -16,6 +16,8 @@ object Adapters {
   val SUBMITTABLE_STATES: Set[AgreementManagement.AgreementState] = Set(AgreementManagement.AgreementState.DRAFT)
   val UPGRADABLE_STATES: Set[AgreementManagement.AgreementState]  =
     Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+  val DELETABLE_STATES: Set[AgreementManagement.AgreementState]   =
+    Set(AgreementManagement.AgreementState.DRAFT, AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
 
   implicit class AgreementWrapper(private val a: AgreementManagement.Agreement) extends AnyVal {
 
@@ -38,6 +40,10 @@ object Adapters {
     def assertUpgradableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
       .withRight[Unit]
       .unlessA(UPGRADABLE_STATES.contains(a.state))
+
+    def assertDeletableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
+      .withRight[Unit]
+      .unlessA(DELETABLE_STATES.contains(a.state))
 
     def toApi: Agreement = Agreement(
       id = a.id,

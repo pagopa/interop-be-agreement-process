@@ -176,6 +176,27 @@ final case class AgreementApiServiceImpl(
     }
   }
 
+  override def deleteAgreement(
+    agreementId: String
+  )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
+    authorize(ADMIN_ROLE) {
+      logger.info(s"Deleting agreement $agreementId")
+      val result = for {
+        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+        _              <- agreement.assertDeletableState.toFuture
+        // TODO Delete documents
+        _              <- agreementManagementService.deleteAgreement(agreement.id)
+      } yield ()
+
+      onComplete(result) {
+        handleDeletionError(s"Error while deleting agreement $agreementId") orElse { case Success(_) =>
+          deleteAgreement204
+        }
+      }
+    }
+
   def getClientUpgradePayload(
     newAgreement: AgreementManagement.Agreement,
     newDescriptor: EServiceDescriptor
