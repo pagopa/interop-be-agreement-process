@@ -3,6 +3,7 @@ package it.pagopa.interop.agreementprocess.util
 import akka.http.scaladsl.server.directives.FileInfo
 import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.attributeregistrymanagement
 import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
@@ -174,8 +175,7 @@ object FakeDependencies {
   }
 
   class FakePDFCreator extends PDFCreator {
-    override def create(template: String, eservice: String, producer: String, consumer: String): Future[Array[Byte]] =
-      Future.successful(Array.empty)
+    override def create(template: String, pdfPayload: PDFPayload): Future[Array[Byte]] = Future.successful(Array.empty)
   }
 
   class FakeFileManager extends FileManager {

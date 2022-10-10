@@ -5,6 +5,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
+//import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
+//import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
+//import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -36,13 +39,13 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, SpecData.suspendedAgreement)
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.suspendAgreement(agreement.id.toString) ~> check {
@@ -71,7 +74,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -105,7 +108,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -140,7 +143,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -175,7 +178,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -210,7 +213,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -246,7 +249,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = None,
         suspendedByPlatform = Some(true),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -286,7 +289,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(true),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -329,7 +332,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(true),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -372,7 +375,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(true),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.suspendedAgreement.stamps
       )
 
       mockAgreementRetrieve(agreement)

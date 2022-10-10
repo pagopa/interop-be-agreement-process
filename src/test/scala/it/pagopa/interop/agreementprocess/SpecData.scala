@@ -5,6 +5,8 @@ import it.pagopa.interop.agreementmanagement.client.model.{
   AgreementState,
   CertifiedAttribute,
   DeclaredAttribute,
+  Document,
+  Stamp,
   Stamps,
   VerifiedAttribute
 }
@@ -18,6 +20,7 @@ import it.pagopa.interop.catalogmanagement.client.model.{
   EServiceDescriptorState
 }
 import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
+import it.pagopa.interop.attributeregistrymanagement.client.{model => AttributeManagement}
 import it.pagopa.interop.tenantmanagement.client.model.{
   CertifiedTenantAttribute,
   DeclaredTenantAttribute,
@@ -32,10 +35,27 @@ import it.pagopa.interop.tenantmanagement.client.model.{
 
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
+import cats.implicits._
+import it.pagopa.interop.agreementprocess.service.ClientAttribute
 
 object SpecData {
 
-  final val timestamp: OffsetDateTime = OffsetDateTime.of(2022, 12, 31, 11, 22, 33, 0, ZoneOffset.UTC)
+  final val timestamp: OffsetDateTime   = OffsetDateTime.of(2022, 12, 31, 11, 22, 33, 0, ZoneOffset.UTC)
+  final val defaultStamps: Stamps       = Stamps()
+  val who: UUID                         = UUID.randomUUID()
+  val when: OffsetDateTime              = OffsetDateTime.now()
+  final val defaultStamp: Option[Stamp] = Stamp(who, when).some
+
+  final val submissionStamps = defaultStamps.copy(submission = defaultStamp)
+  final val activationStamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
+  final val suspensionStamps =
+    defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+  final val archivingStamps  = defaultStamps.copy(
+    submission = defaultStamp,
+    activation = defaultStamp,
+    suspension = defaultStamp,
+    archiving = defaultStamp
+  )
 
   def descriptor: EServiceDescriptor = EServiceDescriptor(
     id = UUID.randomUUID(),
@@ -196,11 +216,11 @@ object SpecData {
     stamps = Stamps()
   )
 
-  def draftAgreement: Agreement             = agreement.copy(state = AgreementState.DRAFT)
-  def pendingAgreement: Agreement           = agreement.copy(state = AgreementState.PENDING)
-  def suspendedAgreement: Agreement         = agreement.copy(state = AgreementState.SUSPENDED)
-  def activeAgreement: Agreement            = agreement.copy(state = AgreementState.ACTIVE)
-  def archivedAgreement: Agreement          = agreement.copy(state = AgreementState.ARCHIVED)
+  def draftAgreement: Agreement     = agreement.copy(state = AgreementState.DRAFT)
+  def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING, stamps = submissionStamps)
+  def suspendedAgreement: Agreement = agreement.copy(state = AgreementState.SUSPENDED, stamps = suspensionStamps)
+  def activeAgreement: Agreement    = agreement.copy(state = AgreementState.ACTIVE, stamps = activationStamps)
+  def archivedAgreement: Agreement  = agreement.copy(state = AgreementState.ARCHIVED, stamps = archivingStamps)
   def missingCertifiedAttributes: Agreement = agreement.copy(state = AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
 
   def activeAgreementWithAttributes: Agreement = activeAgreement.copy(
@@ -215,4 +235,22 @@ object SpecData {
     verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
   )
 
+  def clientAttribute(id: UUID): ClientAttribute = AttributeManagement.Attribute(
+    id = id,
+    code = "code".some,
+    kind = AttributeManagement.AttributeKind.CERTIFIED,
+    description = "description",
+    origin = "origin".some,
+    name = "attr",
+    creationTime = OffsetDateTime.now()
+  )
+
+  def document: Document = Document(
+    id = UUID.randomUUID(),
+    name = "",
+    prettyName = "",
+    contentType = "",
+    path = "",
+    createdAt = OffsetDateTime.now()
+  )
 }

@@ -5,6 +5,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
+import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
+import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
+import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -69,6 +72,48 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           producerId = eService.producerId
         )
 
+      val consumerInstitution = Institution(
+        id = UUID.randomUUID(),
+        externalId = UUID.randomUUID().toString(),
+        originId = consumer.externalId.value,
+        description = "consumer",
+        digitalAddress = UUID.randomUUID().toString(),
+        address = UUID.randomUUID().toString(),
+        zipCode = UUID.randomUUID().toString(),
+        taxCode = UUID.randomUUID().toString(),
+        origin = consumer.externalId.origin,
+        institutionType = UUID.randomUUID().toString(),
+        attributes = Seq.empty
+      )
+
+      val consumerAdmin = UserResource(
+        familyName = Some(CertifiableFieldResourceOfstring(Certification.SPID, "admin")),
+        fiscalCode = Some(UUID.randomUUID().toString()),
+        id = SpecData.who,
+        name = Some(CertifiableFieldResourceOfstring(Certification.SPID, "consumer"))
+      )
+
+      val producerAdmin = UserResource(
+        familyName = Some(CertifiableFieldResourceOfstring(Certification.SPID, "admin")),
+        fiscalCode = Some(UUID.randomUUID().toString()),
+        id = SpecData.who,
+        name = Some(CertifiableFieldResourceOfstring(Certification.SPID, "producer"))
+      )
+
+      val producerInstitution = Institution(
+        id = UUID.randomUUID(),
+        externalId = UUID.randomUUID().toString(),
+        originId = UUID.randomUUID().toString(),
+        description = "producer",
+        digitalAddress = UUID.randomUUID().toString(),
+        address = UUID.randomUUID().toString(),
+        zipCode = UUID.randomUUID().toString(),
+        taxCode = UUID.randomUUID().toString(),
+        origin = UUID.randomUUID().toString(),
+        institutionType = UUID.randomUUID().toString(),
+        attributes = Seq.empty
+      )
+
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
         certifiedAttributes = Seq(CertifiedAttribute(certAttr1), CertifiedAttribute(certAttr2)),
@@ -77,12 +122,25 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
+      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+      mockPDFCreatorCreate
+      mockFileManagerWrite
+      mockAgreementContract
+      mockPartyManagementRetrieve(producerInstitution)
+      mockPartyManagementRetrieve(consumerInstitution)
+      mockUserRegistryRetrieve(consumerAdmin)
+      mockUserRegistryRetrieve(producerAdmin)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
@@ -112,7 +170,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(false),
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -148,7 +206,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp)
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -184,7 +242,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = Some(false),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -220,7 +278,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(false),
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -257,7 +315,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(false),
         suspendedByProducer = None,
         suspendedByPlatform = Some(true),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -298,7 +356,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
         suspendedByPlatform = Some(true),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -342,7 +400,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
         suspendedByPlatform = Some(true),
-        stamps = defaultStamps.copy(submission = defaultStamp, activation = defaultStamp, suspension = defaultStamp)
+        stamps = SpecData.submissionStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -386,7 +444,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByProducer = Some(false),
         // TODO The action is done by the platform, but it's not suspended. What value should it have?
         suspendedByPlatform = Some(false),
-        stamps = defaultStamps.copy(submission = defaultStamp)
+        stamps = SpecData.submissionStamps
       )
 
       mockAgreementRetrieve(agreement)
