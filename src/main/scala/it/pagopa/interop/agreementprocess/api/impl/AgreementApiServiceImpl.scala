@@ -346,19 +346,23 @@ final case class AgreementApiServiceImpl(
 
       val updatableStates = allowedStateTransitions.map { case (startingState, _) => startingState }.toList
 
+      def eServiceContainsAttribute(attributeId: UUID)(eService: CatalogManagement.EService): Boolean =
+        (eService.attributes.certified ++ eService.attributes.declared ++ eService.attributes.verified)
+          .flatMap(attr => attr.single.map(_.id).toSeq ++ attr.group.traverse(_.map(_.id)).flatten)
+          .contains(attributeId)
+
       val result: Future[Unit] = for {
-        consumerUuid <- consumerId.toFutureUUID
-        agreements   <- agreementManagementService.getAgreements(
-          consumerId = consumerId.some,
-          attributeId = attributeId.some,
-          states = updatableStates
-        )
-        consumer     <- tenantManagementService.getTenant(consumerUuid)
+        consumerUuid  <- consumerId.toFutureUUID
+        attributeUuid <- attributeId.toFutureUUID
+        agreements <- agreementManagementService.getAgreements(consumerId = consumerId.some, states = updatableStates)
+        consumer   <- tenantManagementService.getTenant(consumerUuid)
         uniqueEServiceIds = agreements.map(_.eserviceId).distinct
         // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
         eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
-        eServicesMap = eServices.map(es => es.id -> es).toMap
-        _ <- agreements.traverse(updateStates(consumer, eServicesMap))
+        filteredEServices = eServices.filter(eServiceContainsAttribute(attributeUuid))
+        eServicesMap      = filteredEServices.fproductLeft(_.id).toMap
+        filteredAgreement = agreements.filter(a => filteredEServices.exists(_.id == a.eserviceId))
+        _ <- filteredAgreement.traverse(updateStates(consumer, eServicesMap))
       } yield ()
 
       onComplete(result) {

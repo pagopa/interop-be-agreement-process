@@ -12,49 +12,81 @@ import java.util.UUID
 class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
 
   "Agreement State Compute" should {
-    "succeed and update agreements" in {
+    "succeed and update agreements whose EServices contain the attribute when Tenant gained the attribute" in {
       implicit val contexts: Seq[(String, String)] = contextWithRole(INTERNAL_ROLE)
       val consumerId                               = UUID.randomUUID()
-      val attributeId                              = UUID.randomUUID()
 
-      val eServiceAttr = SpecData.catalogCertifiedAttribute()
-      val eServiceId1  = UUID.randomUUID()
-      val eServiceId2  = UUID.randomUUID()
-      val eService1    = SpecData.eService.copy(id = eServiceId1, attributes = eServiceAttr)
-      val eService2    = SpecData.eService.copy(id = eServiceId2)
+      val (eServiceAttr, tenantAttr) = SpecData.matchingCertifiedAttributes
+      val attributeId                = tenantAttr.certified.get.id
 
-      val draftAgreement           = SpecData.draftAgreement.copy(eserviceId = eServiceId1)
-      val pendingAgreement         = SpecData.pendingAgreement.copy(eserviceId = eServiceId1)
-      val activeAgreement          = SpecData.activeAgreement.copy(eserviceId = eServiceId1)
-      val suspendedAgreement       = SpecData.suspendedAgreement.copy(eserviceId = eServiceId2)
+      val eServiceId1 = UUID.randomUUID()
+      val eServiceId2 = UUID.randomUUID()
+      val eService1   = SpecData.eService.copy(id = eServiceId1, attributes = eServiceAttr)
+      val eService2   = SpecData.eService.copy(id = eServiceId2)
+      val tenant      = SpecData.tenant.copy(attributes = Seq(tenantAttr))
+
+      val suspendedAgreement       = SpecData.suspendedAgreement.copy(eserviceId = eServiceId1)
       val missingCertAttrAgreement =
-        SpecData.missingCertifiedAttributes.copy(eserviceId = eServiceId2, suspendedByPlatform = Some(true))
+        SpecData.missingCertifiedAttributes.copy(eserviceId = eServiceId1, suspendedByPlatform = Some(true))
+      val suspendedAgreement2      = SpecData.suspendedAgreement.copy(eserviceId = eServiceId2)
 
       val agreements =
-        Seq(draftAgreement, pendingAgreement, activeAgreement, suspendedAgreement, missingCertAttrAgreement)
+        Seq(suspendedAgreement, missingCertAttrAgreement, suspendedAgreement2)
 
       mockAgreementsRetrieve(agreements)
       mockEServiceRetrieve(eServiceId1, eService1)
       mockEServiceRetrieve(eServiceId2, eService2)
-      mockTenantRetrieve(consumerId, SpecData.tenant)
+      mockTenantRetrieve(consumerId, tenant)
+
+      mockAgreementUpdateIgnoreSeed(suspendedAgreement.id)
+      mockAgreementUpdateIgnoreSeed(missingCertAttrAgreement.id)
+
+      mockClientStateUpdate(
+        suspendedAgreement.eserviceId,
+        suspendedAgreement.consumerId,
+        suspendedAgreement.id,
+        ClientComponentState.ACTIVE
+      )
+
+      Get() ~> service.computeAgreementsByAttribute(consumerId.toString, attributeId.toString) ~> check {
+        status shouldEqual StatusCodes.NoContent
+      }
+    }
+
+    "succeed and update agreements whose EServices contain the attribute when Tenant lost the attribute" in {
+      implicit val contexts: Seq[(String, String)] = contextWithRole(INTERNAL_ROLE)
+      val consumerId                               = UUID.randomUUID()
+      val attributeId                              = UUID.randomUUID()
+
+      val eServiceAttr = SpecData.catalogCertifiedAttribute(attributeId)
+      val eServiceId1  = UUID.randomUUID()
+      val eServiceId2  = UUID.randomUUID()
+      val eService1    = SpecData.eService.copy(id = eServiceId1, attributes = eServiceAttr)
+      val eService2    = SpecData.eService.copy(id = eServiceId2)
+      val tenant       = SpecData.tenant
+
+      val draftAgreement   = SpecData.draftAgreement.copy(eserviceId = eServiceId1)
+      val pendingAgreement = SpecData.pendingAgreement.copy(eserviceId = eServiceId1)
+      val activeAgreement  = SpecData.activeAgreement.copy(eserviceId = eServiceId1)
+      val activeAgreement2 = SpecData.activeAgreement.copy(eserviceId = eServiceId2)
+
+      val agreements =
+        Seq(draftAgreement, pendingAgreement, activeAgreement, activeAgreement2)
+
+      mockAgreementsRetrieve(agreements)
+      mockEServiceRetrieve(eServiceId1, eService1)
+      mockEServiceRetrieve(eServiceId2, eService2)
+      mockTenantRetrieve(consumerId, tenant)
 
       mockAgreementUpdateIgnoreSeed(draftAgreement.id)
       mockAgreementUpdateIgnoreSeed(pendingAgreement.id)
       mockAgreementUpdateIgnoreSeed(activeAgreement.id)
-      mockAgreementUpdateIgnoreSeed(suspendedAgreement.id)
-      mockAgreementUpdateIgnoreSeed(missingCertAttrAgreement.id)
 
       mockClientStateUpdate(
         activeAgreement.eserviceId,
         activeAgreement.consumerId,
         activeAgreement.id,
         ClientComponentState.INACTIVE
-      )
-      mockClientStateUpdate(
-        suspendedAgreement.eserviceId,
-        suspendedAgreement.consumerId,
-        suspendedAgreement.id,
-        ClientComponentState.ACTIVE
       )
 
       Get() ~> service.computeAgreementsByAttribute(consumerId.toString, attributeId.toString) ~> check {
