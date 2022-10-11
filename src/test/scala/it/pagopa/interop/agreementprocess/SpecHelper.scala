@@ -17,6 +17,7 @@ import it.pagopa.interop.authorizationmanagement.client.model.{
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, USER_ROLES}
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
+import it.pagopa.interop.commons.files.service.FileManager
 import org.scalamock.scalatest.MockFactory
 
 import java.util.UUID
@@ -39,13 +40,15 @@ trait SpecHelper extends MockFactory {
   val mockTenantManagementService: TenantManagementService               = mock[TenantManagementService]
   val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
   val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
+  val mockFileManager: FileManager                                       = mock[FileManager]
 
   val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
     mockTenantManagementService,
     mockAttributeManagementService,
-    mockAuthorizationManagementService
+    mockAuthorizationManagementService,
+    mockFileManager
   )(ExecutionContext.global)
 
   def contextWithRole(role: String): Seq[(String, String)] = contexts.filter { case (key, _) =>
@@ -72,6 +75,13 @@ trait SpecHelper extends MockFactory {
       .expects(*, *, *, *, *)
       .once()
       .returns(Future.successful(result))
+
+  def mockAgreementDeletion(agreementId: UUID) =
+    (mockAgreementManagementService
+      .deleteAgreement(_: UUID)(_: Seq[(String, String)]))
+      .expects(agreementId, *)
+      .once()
+      .returns(Future.unit)
 
   def mockAgreementUpdate(agreementId: UUID, seed: UpdateAgreementSeed, result: Agreement) =
     (mockAgreementManagementService
@@ -155,4 +165,11 @@ trait SpecHelper extends MockFactory {
       .expects(eServiceId, consumerId, payload, *)
       .once()
       .returns(Future.unit)
+
+  def mockFileDeletion(containerPath: String, filePath: String) =
+    (mockFileManager
+      .delete(_: String)(_: String))
+      .expects(containerPath, filePath)
+      .once()
+      .returns(Future.successful(true))
 }

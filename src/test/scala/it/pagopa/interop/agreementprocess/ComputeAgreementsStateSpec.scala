@@ -28,7 +28,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val activeAgreement          = SpecData.activeAgreement.copy(eserviceId = eServiceId1)
       val suspendedAgreement       = SpecData.suspendedAgreement.copy(eserviceId = eServiceId2)
       val missingCertAttrAgreement =
-        SpecData.missingCertifiedAttributes.copy(eserviceId = eServiceId2, suspendedByPlatform = Some(true))
+        SpecData.missingCertifiedAttributesAgreement.copy(eserviceId = eServiceId2, suspendedByPlatform = Some(true))
 
       val agreements =
         Seq(draftAgreement, pendingAgreement, activeAgreement, suspendedAgreement, missingCertAttrAgreement)

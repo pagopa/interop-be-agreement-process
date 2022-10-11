@@ -6,6 +6,7 @@ import it.pagopa.interop.agreementprocess.model.{AgreementPayload, AgreementReje
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.util.FakeDependencies._
 import it.pagopa.interop.agreementprocess.util.{AuthorizedRoutes, AuthzScalatestRouteTest}
+import it.pagopa.interop.commons.files.service.FileManager
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -19,13 +20,15 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
   val fakeTenantManagementService: TenantManagementService               = new FakeTenantManagementService()
   val fakeAttributeManagementService: AttributeManagementService         = new FakeAttributeManagementService()
   val fakeAuthorizationManagementService: AuthorizationManagementService = new FakeAuthorizationManagementService()
+  val fakeFileManager: FileManager                                       = new FakeFileManager()
 
   val service: AgreementApiServiceImpl = AgreementApiServiceImpl(
     fakeAgreementManagementService,
     fakeCatalogManagementService,
     fakeTenantManagementService,
     fakeAttributeManagementService,
-    fakeAuthorizationManagementService
+    fakeAuthorizationManagementService,
+    fakeFileManager
   )(ExecutionContext.global)
 
   "Agreement api operation authorization spec" should {
@@ -38,6 +41,11 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
         endpoint,
         { implicit c: Seq[(String, String)] => service.createAgreement(agreementPayload) }
       )
+    }
+
+    "accept authorized roles for deleteAgreement" in {
+      val endpoint = AuthorizedRoutes.endpoints("deleteAgreement")
+      validateAuthorization(endpoint, { implicit c: Seq[(String, String)] => service.deleteAgreement("fake") })
     }
 
     "accept authorized roles for submitAgreement" in {

@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.error.ErrorHandlers._
 import it.pagopa.interop.agreementprocess.model._
@@ -16,6 +17,7 @@ import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAnd
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.getOrganizationIdFutureUUID
@@ -32,7 +34,8 @@ final case class AgreementApiServiceImpl(
   catalogManagementService: CatalogManagementService,
   tenantManagementService: TenantManagementService,
   attributeManagementService: AttributeManagementService,
-  authorizationManagementService: AuthorizationManagementService
+  authorizationManagementService: AuthorizationManagementService,
+  fileManager: FileManager
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
@@ -175,6 +178,29 @@ final case class AgreementApiServiceImpl(
       }
     }
   }
+
+  override def deleteAgreement(
+    agreementId: String
+  )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
+    authorize(ADMIN_ROLE) {
+      logger.info(s"Deleting agreement $agreementId")
+      val result = for {
+        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+        _              <- agreement.assertDeletableState.toFuture
+        _              <- Future.traverse(agreement.consumerDocuments)(doc =>
+          fileManager.delete(ApplicationConfiguration.consumerDocumentsPath)(doc.path)
+        )
+        _              <- agreementManagementService.deleteAgreement(agreement.id)
+      } yield ()
+
+      onComplete(result) {
+        handleDeletionError(s"Error while deleting agreement $agreementId") orElse { case Success(_) =>
+          deleteAgreement204
+        }
+      }
+    }
 
   def getClientUpgradePayload(
     newAgreement: AgreementManagement.Agreement,

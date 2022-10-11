@@ -1,13 +1,16 @@
 package it.pagopa.interop.agreementprocess.util
 
+import akka.http.scaladsl.server.directives.FileInfo
 import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.attributeregistrymanagement
 import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.model.{Attributes, EService, EServiceTechnology}
+import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.tenantmanagement.client.model.{ExternalId, Tenant}
 
+import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.Future
@@ -72,6 +75,9 @@ object FakeDependencies {
     override def updateAgreement(agreementId: UUID, seed: UpdateAgreementSeed)(implicit
       contexts: Seq[(String, String)]
     ): Future[Agreement] = Future.successful(agreement)
+
+    override def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit] =
+      Future.unit
   }
 
   class FakeCatalogManagementService       extends CatalogManagementService       {
@@ -116,5 +122,27 @@ object FakeDependencies {
           updatedAt = None
         )
       )
+  }
+
+  class FakeFileManager extends FileManager {
+    override def store(containerPath: String, path: String)(
+      resourceId: String,
+      fileParts: (FileInfo, File)
+    ): Future[StorageFilePath] = Future.successful("")
+
+    override def storeBytes(
+      containerPath: String,
+      path: String
+    )(resourceId: String, fileName: String, fileContent: Array[Byte]): Future[StorageFilePath] = Future.successful("")
+
+    override def copy(
+      containerPath: String,
+      path: String
+    )(filePathToCopy: String, resourceId: String, fileName: String): Future[StorageFilePath] = Future.successful("")
+
+    override def get(containerPath: String)(filePath: StorageFilePath): Future[ByteArrayOutputStream] =
+      Future.successful(new ByteArrayOutputStream())
+
+    override def delete(containerPath: String)(filePath: StorageFilePath): Future[Boolean] = Future.successful(true)
   }
 }
