@@ -11,6 +11,7 @@ import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
   AgreementAlreadyExists,
   AgreementNotFound,
   AgreementNotInExpectedState,
+  ContractNotFound,
   DescriptorNotInExpectedState,
   EServiceNotFound,
   MissingCertifiedAttributes,
@@ -144,6 +145,17 @@ object ErrorHandlers {
   ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen {
     case Failure(ex: AgreementNotFound) => notFound(ex)
     case Failure(_)                     => internalServerError(logMessage)
+  }
+
+  def handleDownloadError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen {
+    case Failure(ex: AgreementNotFound)   => notFound(ex)
+    case Failure(ex: ContractNotFound)    => notFound(ex)
+    case Failure(ex: OperationNotAllowed) => forbidden(ex)
+    case Failure(_)                       => internalServerError(logMessage)
   }
 
   def handleListingError(logMessage: String)(implicit

@@ -1,8 +1,8 @@
 package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.server.Directives.onComplete
+import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes}
+import akka.http.scaladsl.server.Directives.{complete, onComplete}
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
@@ -35,6 +35,7 @@ import it.pagopa.interop.tenantmanagement.client.model.{
 }
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
+import java.io.File
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -297,6 +298,27 @@ final case class AgreementApiServiceImpl(
     onComplete(result) {
       handleRetrieveError(s"Error while getting agreement by id $agreementId") orElse { case Success(agreement) =>
         getAgreementById200(agreement)
+      }
+    }
+  }
+
+  override def getAgreementContract(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerFile: ToEntityMarshaller[File]
+  ): Route = authorize(ADMIN_ROLE) {
+    logger.info(s"Retrieving contract for agreement $agreementId")
+
+    val result: Future[HttpEntity.Strict] =
+      for {
+        agreement  <- agreementManagementService.getAgreementById(agreementId)
+        contract   <- agreement.contract.toFuture(ContractNotFound(agreementId))
+        byteStream <- fileManager.get(ApplicationConfiguration.storageContainer)(contract.path)
+      } yield HttpEntity(ContentType(MediaTypes.`application/pdf`), byteStream.toByteArray())
+
+    onComplete(result) {
+      handleDownloadError(s"Error downloading contract fro agreement $agreementId") orElse { case Success(contract) =>
+        complete(contract)
       }
     }
   }

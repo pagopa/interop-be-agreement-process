@@ -78,4 +78,7 @@ object AgreementProcessErrors {
   final case class MissingUserInfo(user: UUID)
       extends ComponentError("0016", s"Some mandatory info are missing for user ${user.toString()}")
 
+  final case class ContractNotFound(agreementId: String)
+      extends ComponentError("0017", s"Contract not found for agreement $agreementId")
+
 }
