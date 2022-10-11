@@ -6,6 +6,11 @@
       "roles": ["admin"]
     },
     {
+      "route": "deleteAgreement",
+      "verb": "DELETE",
+      "roles": ["admin"]
+    },
+    {
       "route": "submitAgreement",
       "verb": "POST",
       "roles": ["admin"]

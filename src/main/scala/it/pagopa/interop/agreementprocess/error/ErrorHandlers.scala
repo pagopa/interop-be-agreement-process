@@ -124,6 +124,17 @@ object ErrorHandlers {
     case Failure(_)                               => internalServerError(logMessage)
   }
 
+  def handleDeletionError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen {
+    case Failure(ex: AgreementNotFound)           => notFound(ex)
+    case Failure(ex: AgreementNotInExpectedState) => badRequest(ex)
+    case Failure(ex: OperationNotAllowed)         => forbidden(ex)
+    case Failure(_)                               => internalServerError(logMessage)
+  }
+
   def handleUpgradeError(logMessage: String)(implicit
     contexts: Seq[(String, String)],
     logger: LoggerTakingImplicit[ContextFieldsToLog],
