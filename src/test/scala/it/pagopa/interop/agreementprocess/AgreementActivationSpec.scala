@@ -5,9 +5,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
-import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
-import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
-import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -72,48 +69,6 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           producerId = eService.producerId
         )
 
-      val consumerInstitution = Institution(
-        id = UUID.randomUUID(),
-        externalId = UUID.randomUUID().toString(),
-        originId = consumer.externalId.value,
-        description = "consumer",
-        digitalAddress = UUID.randomUUID().toString(),
-        address = UUID.randomUUID().toString(),
-        zipCode = UUID.randomUUID().toString(),
-        taxCode = UUID.randomUUID().toString(),
-        origin = consumer.externalId.origin,
-        institutionType = UUID.randomUUID().toString(),
-        attributes = Seq.empty
-      )
-
-      val consumerAdmin = UserResource(
-        familyName = Some(CertifiableFieldResourceOfstring(Certification.SPID, "admin")),
-        fiscalCode = Some(UUID.randomUUID().toString()),
-        id = SpecData.who,
-        name = Some(CertifiableFieldResourceOfstring(Certification.SPID, "consumer"))
-      )
-
-      val producerAdmin = UserResource(
-        familyName = Some(CertifiableFieldResourceOfstring(Certification.SPID, "admin")),
-        fiscalCode = Some(UUID.randomUUID().toString()),
-        id = SpecData.who,
-        name = Some(CertifiableFieldResourceOfstring(Certification.SPID, "producer"))
-      )
-
-      val producerInstitution = Institution(
-        id = UUID.randomUUID(),
-        externalId = UUID.randomUUID().toString(),
-        originId = UUID.randomUUID().toString(),
-        description = "producer",
-        digitalAddress = UUID.randomUUID().toString(),
-        address = UUID.randomUUID().toString(),
-        zipCode = UUID.randomUUID().toString(),
-        taxCode = UUID.randomUUID().toString(),
-        origin = UUID.randomUUID().toString(),
-        institutionType = UUID.randomUUID().toString(),
-        attributes = Seq.empty
-      )
-
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
         certifiedAttributes = Seq(CertifiedAttribute(certAttr1), CertifiedAttribute(certAttr2)),
@@ -137,10 +92,10 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockPDFCreatorCreate
       mockFileManagerWrite
       mockAgreementContract
-      mockPartyManagementRetrieve(producerInstitution)
-      mockPartyManagementRetrieve(consumerInstitution)
-      mockUserRegistryRetrieve(consumerAdmin)
-      mockUserRegistryRetrieve(producerAdmin)
+      mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+      mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+      mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
+      mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)

@@ -76,10 +76,12 @@ object PDFCreator extends PDFCreator with PDFManager {
       val date = getDateText(tenantAttribute.assignmentTimestamp)
       val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
       s"""
-         |In data $date alle ore $time, 
-         |l’Infrastruttura ha registrato la dichiarazione del Fruitore di possedere il seguente attributo ${clientAttribute.name} dichiarato
+         |<div>
+         |In data <strong>$date</strong> alle ore <strong>$time</strong>,
+         |l’Infrastruttura ha registrato la dichiarazione del Fruitore di possedere il seguente attributo <strong>${clientAttribute.name}</strong> dichiarato
          |ed avente il seguente periodo di validità ________,
          |necessario a soddisfare il requisito di fruizione stabilito dall’Erogatore per l’accesso all’E-service.
+         |</div>
          |""".stripMargin
     }.mkString
 
@@ -88,9 +90,11 @@ object PDFCreator extends PDFCreator with PDFManager {
       val date = getDateText(tenantAttribute.assignmentTimestamp)
       val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
       s"""
-         |In data $date alle ore $time, 
-         |l’Infrastruttura ha registrato il possesso da parte del Fruitore del seguente attributo ${clientAttribute.name} certificato,
+         |<div>
+         |In data <strong>$date</strong> alle ore <strong>$time</strong>,
+         |l’Infrastruttura ha registrato il possesso da parte del Fruitore del seguente attributo <strong>${clientAttribute.name}</strong> certificato,
          |necessario a soddisfare il requisito di fruizione stabilito dall’Erogatore per l’accesso all’E-service.
+         |</div>
          |""".stripMargin
     }.mkString
 
@@ -100,11 +104,12 @@ object PDFCreator extends PDFCreator with PDFManager {
       val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
       // TODO add implicit verifier when ready
       s"""
-         |In data $date alle ore $time, 
-         |l’Infrastruttura ha registrato la dichiarazione del Fruitore di possedere il seguente attributo ${clientAttribute.name},
-         |verificata dall’aderente ________ OPPURE dall’Erogatore stesso in data $date, 
+         |<div>
+         |In data <strong>$date</strong> alle ore <strong>$time</strong>,
+         |l’Infrastruttura ha registrato la dichiarazione del Fruitore di possedere il seguente attributo <strong>${clientAttribute.name}</strong>,
+         |verificata dall’aderente ________ OPPURE dall’Erogatore stesso in data <strong>$date</strong>,
          |necessario a soddisfare il requisito di fruizione stabilito dall’Erogatore per l’accesso all’E-service.
-         |
+         |</div>
          |""".stripMargin
     }.mkString
 

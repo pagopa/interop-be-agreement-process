@@ -1,22 +1,3 @@
-.agreement-info {
-  margin: 16px 0;
-}
-
-.agreement-info .label {
-  float: left;
-}
-
-.agreement-info .label,
-.agreement-info .value {
-  width: 50%;
-  display: inline-block;
-}
-
-.agreement-info .value {
-  font-weight: 600;
-}
-
-
 /* Load fonts */
 @font-face {
   font-family: 'Montserrat';
@@ -83,6 +64,10 @@ body {
   margin: 0;
 }
 
+strong {
+  font-weight: 600;
+}
+
 .header img {
   width: 85px;
 }
@@ -98,28 +83,11 @@ h1 {
   font-weight: 700;
 }
 
-.signature {
-  margin: 32px 0;
-}
-
-.signature::after {
-  content: '';
-  display: block;
-  clear: both;
-}
-
-.signature .date {
-  float: left;
-}
-
-.signature .date,
-.signature .message {
-  display: inline-block;
-  width: 50%;
-}
-
-.signature .message {
-  font-weight: 500;
+h2 {
+  font-size: 12px;
+  line-height: 15px;
+  margin: 16px 0 8px;
+  font-weight: 700;
 }
 
 .footer hr {
@@ -154,4 +122,8 @@ h1 {
   margin-bottom: 12px;
   font-size: 6px;
   line-height: 7.5px;
+}
+
+.content > div {
+ margin-bottom: 8px;
 }
