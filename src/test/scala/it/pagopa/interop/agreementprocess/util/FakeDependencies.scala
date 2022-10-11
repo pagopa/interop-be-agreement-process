@@ -89,6 +89,9 @@ object FakeDependencies {
       contexts: Seq[(String, String)]
     ): Future[Agreement] = Future.successful(agreement)
 
+    override def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit] =
+      Future.unit
+
     override def addAgreementContract(agreementId: UUID, seed: DocumentSeed)(implicit
       contexts: Seq[(String, String)]
     ): Future[Document] = Future.successful(document)

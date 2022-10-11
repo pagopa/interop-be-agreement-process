@@ -1,42 +1,16 @@
 package it.pagopa.interop.agreementprocess
 
-import it.pagopa.interop.agreementmanagement.client.model.{
-  Agreement,
-  AgreementState,
-  CertifiedAttribute,
-  DeclaredAttribute,
-  Document,
-  Stamp,
-  Stamps,
-  VerifiedAttribute
-}
-import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
-import it.pagopa.interop.catalogmanagement.client.model.{
-  Attribute,
-  AttributeValue,
-  Attributes,
-  EService,
-  EServiceDescriptor,
-  EServiceDescriptorState
-}
-import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
+import cats.implicits._
+import it.pagopa.interop.agreementmanagement.client.model._
+import it.pagopa.interop.agreementprocess.service.ClientAttribute
 import it.pagopa.interop.attributeregistrymanagement.client.{model => AttributeManagement}
-import it.pagopa.interop.tenantmanagement.client.model.{
-  CertifiedTenantAttribute,
-  DeclaredTenantAttribute,
-  ExternalId,
-  Tenant,
-  TenantAttribute,
-  TenantRevoker,
-  TenantVerifier,
-  VerificationRenewal,
-  VerifiedTenantAttribute
-}
+import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
+import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
+import it.pagopa.interop.catalogmanagement.client.model._
+import it.pagopa.interop.tenantmanagement.client.model._
 
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
-import cats.implicits._
-import it.pagopa.interop.agreementprocess.service.ClientAttribute
 
 object SpecData {
 
@@ -216,7 +190,8 @@ object SpecData {
   def suspendedAgreement: Agreement = agreement.copy(state = AgreementState.SUSPENDED, stamps = suspensionStamps)
   def activeAgreement: Agreement    = agreement.copy(state = AgreementState.ACTIVE, stamps = activationStamps)
   def archivedAgreement: Agreement  = agreement.copy(state = AgreementState.ARCHIVED, stamps = archivingStamps)
-  def missingCertifiedAttributes: Agreement = agreement.copy(state = AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
+  def missingCertifiedAttributesAgreement: Agreement =
+    agreement.copy(state = AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
 
   def activeAgreementWithAttributes: Agreement = activeAgreement.copy(
     certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),
@@ -240,12 +215,12 @@ object SpecData {
     creationTime = OffsetDateTime.now()
   )
 
-  def document: Document = Document(
-    id = UUID.randomUUID(),
-    name = "",
-    prettyName = "",
-    contentType = "",
-    path = "",
-    createdAt = OffsetDateTime.now()
+  def document(id: UUID = UUID.randomUUID()): Document = Document(
+    id = id,
+    name = s"name_$id",
+    prettyName = s"prettyName_$id",
+    contentType = "application/json",
+    path = s"path_$id",
+    createdAt = timestamp
   )
 }

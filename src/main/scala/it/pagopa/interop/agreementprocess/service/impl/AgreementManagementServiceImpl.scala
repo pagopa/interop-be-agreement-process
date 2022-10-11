@@ -90,4 +90,11 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
       api.addAgreementContract(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
     invoker.invoke(request, s"Adding  agreement with id = $agreementId")
   }
+
+  override def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit] =
+    withHeaders { (bearerToken, correlationId, ip) =>
+      val request = api.deleteAgreement(correlationId, agreementId.toString, ip)(BearerToken(bearerToken))
+      invoker.invoke(request, s"Deleting agreement by id = $agreementId")
+    }
+
 }

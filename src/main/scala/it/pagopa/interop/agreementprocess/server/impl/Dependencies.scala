@@ -107,17 +107,17 @@ trait Dependencies {
   ): AgreementApi =
     new AgreementApi(
       AgreementApiServiceImpl(
-        agreementManagementService = agreementManagement(blockingEc),
-        catalogManagementService = catalogManagement(blockingEc),
-        tenantManagementService = tenantManagement(blockingEc),
-        attributeManagementService = attributeRegistryManagement(blockingEc),
-        authorizationManagementService = authorizationManagement(blockingEc),
-        partyManagementService = partyManagement,
-        userRegistry = userRegistry,
-        pdfCreator = PDFCreator,
-        fileManager = fileManager(blockingEc),
-        offsetDateTimeSupplier = OffsetDateTimeSupplier,
-        uuidSupplier = UUIDSupplier
+        agreementManagement(blockingEc),
+        catalogManagement(blockingEc),
+        tenantManagement(blockingEc),
+        attributeRegistryManagement(blockingEc),
+        authorizationManagement(blockingEc),
+        partyManagement,
+        userRegistry,
+        PDFCreator,
+        fileManager(blockingEc),
+        OffsetDateTimeSupplier,
+        UUIDSupplier
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts
