@@ -66,7 +66,7 @@ final case class AgreementApiServiceImpl(
     .getLines()
     .mkString(System.lineSeparator())
 
-  private val agreementDocumentSuffix: String = "_richiesta_di_fruizione.pdf"
+  private val agreementDocumentSuffix: String = "_agreement_contract.pdf"
 
   override def createAgreement(payload: AgreementPayload)(implicit
     contexts: Seq[(String, String)],
