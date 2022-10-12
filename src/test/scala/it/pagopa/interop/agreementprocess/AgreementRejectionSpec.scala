@@ -2,6 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.implicits.catsSyntaxOptionId
 import it.pagopa.interop.agreementmanagement.client.model.{
   CertifiedAttribute,
   DeclaredAttribute,
@@ -69,7 +70,9 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
           producerId = eService.producerId
         )
 
-      val payload = AgreementRejectionPayload("Document not valid")
+      val rejectionReason = "Document not valid"
+
+      val payload = AgreementRejectionPayload(rejectionReason)
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.REJECTED,
@@ -79,13 +82,18 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
         suspendedByConsumer = None,
         suspendedByProducer = None,
         suspendedByPlatform = None,
-        stamps = SpecData.rejectionStamps
+        stamps = SpecData.rejectionStamps,
+        rejectionReason = rejectionReason.some
       )
 
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.rejectionStamps))
+      mockAgreementUpdate(
+        agreement.id,
+        expectedSeed,
+        agreement.copy(stamps = SpecData.rejectionStamps, rejectionReason = rejectionReason.some)
+      )
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK

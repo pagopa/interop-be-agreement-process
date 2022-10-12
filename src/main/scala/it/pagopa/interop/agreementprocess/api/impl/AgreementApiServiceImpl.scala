@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives.{complete, onComplete}
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, Stamp, UpdateAgreementSeed}
+import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, Stamp, Stamps, UpdateAgreementSeed}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.common.Adapters._
@@ -252,7 +252,7 @@ final case class AgreementApiServiceImpl(
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
       uid            <- getUidFutureUUID(contexts)
-      updated        <- reject(agreement, eService, consumer, Stamp(uid, offsetDateTimeSupplier.get()))
+      updated        <- reject(agreement, eService, consumer, payload, Stamp(uid, offsetDateTimeSupplier.get()))
     } yield updated.toApi
 
     onComplete(result) {
@@ -453,8 +453,19 @@ final case class AgreementApiServiceImpl(
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
     val newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
+
+    def calculateStamps(state: AgreementState, stamp: Stamp): Future[Stamps] = state match {
+      case AgreementState.PENDING   => Future.successful(agreement.stamps.copy(submission = stamp.some))
+      case AgreementState.ACTIVE    =>
+        Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
+      case AgreementState.SUSPENDED =>
+        Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
+      case _                        => Future.failed(AgreementNotInExpectedState(agreement.id.toString(), newState))
+    }
+
     for {
-      uid <- getUidFutureUUID(contexts)
+      uid    <- getUidFutureUUID(contexts)
+      stamps <- calculateStamps(newState, Stamp(uid, offsetDateTimeSupplier.get()))
       updateSeed = AgreementManagement.UpdateAgreementSeed(
         state = newState,
         certifiedAttributes = Nil,
@@ -463,7 +474,7 @@ final case class AgreementApiServiceImpl(
         suspendedByConsumer = None,
         suspendedByProducer = None,
         suspendedByPlatform = suspendedByPlatform,
-        stamps = agreement.stamps.copy(submission = Stamp(uid, offsetDateTimeSupplier.get()).some)
+        stamps = stamps
       )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
     } yield updated
@@ -580,6 +591,7 @@ final case class AgreementApiServiceImpl(
     agreement: AgreementManagement.Agreement,
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant,
+    payload: AgreementRejectionPayload,
     stamp: Stamp
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val updateSeed = AgreementManagement.UpdateAgreementSeed(
@@ -590,6 +602,7 @@ final case class AgreementApiServiceImpl(
       suspendedByConsumer = None,
       suspendedByProducer = None,
       suspendedByPlatform = None,
+      rejectionReason = payload.reason.some,
       stamps = agreement.stamps.copy(rejection = stamp.some)
     ) // TODO why rejectionReason is not set?
     agreementManagementService.updateAgreement(agreement.id, updateSeed)
