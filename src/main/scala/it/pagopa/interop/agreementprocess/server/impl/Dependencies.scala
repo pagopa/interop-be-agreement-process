@@ -14,24 +14,30 @@ import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
 import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
+import it.pagopa.interop.authorizationmanagement.client.api.PurposeApi
 import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
 import it.pagopa.interop.commons.files.service.FileManager
-import it.pagopa.interop.commons.files.service.impl.S3ManagerImpl
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
 import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, SerializedKey}
 import it.pagopa.interop.commons.utils.TypeConversions._
+import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
+import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
+import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
 import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 trait Dependencies {
 
+  implicit val partyManagementApiKeyValue: PartyManagementApiKeyValue = PartyManagementApiKeyValue()
+  implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue       = UserRegistryApiKeyValue()
+
   def agreementManagement(
     blockingEc: ExecutionContextExecutor
   )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AgreementManagementService =
-    AgreementManagementServiceImpl(
+    new AgreementManagementServiceImpl(
       AgreementManagementInvoker(blockingEc)(actorSystem.classicSystem),
       AgreementManagementApi(ApplicationConfiguration.agreementManagementURL)
     )
@@ -39,7 +45,7 @@ trait Dependencies {
   def catalogManagement(
     blockingEc: ExecutionContextExecutor
   )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): CatalogManagementService =
-    CatalogManagementServiceImpl(
+    new CatalogManagementServiceImpl(
       CatalogManagementInvoker(blockingEc)(actorSystem.classicSystem),
       EServiceApi(ApplicationConfiguration.catalogManagementURL)
     )
@@ -47,7 +53,7 @@ trait Dependencies {
   def tenantManagement(
     blockingEc: ExecutionContextExecutor
   )(implicit actorSystem: ActorSystem[_]): TenantManagementService =
-    TenantManagementServiceImpl(
+    new TenantManagementServiceImpl(
       TenantManagementInvoker(blockingEc)(actorSystem.classicSystem),
       TenantApi(ApplicationConfiguration.tenantManagementURL)
     )
@@ -55,7 +61,7 @@ trait Dependencies {
   def attributeRegistryManagement(
     blockingEc: ExecutionContextExecutor
   )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AttributeManagementService =
-    AttributeManagementServiceImpl(
+    new AttributeManagementServiceImpl(
       AttributeRegistryManagementInvoker(blockingEc)(actorSystem.classicSystem),
       AttributeApi(ApplicationConfiguration.attributeRegistryManagementURL)
     )
@@ -63,9 +69,21 @@ trait Dependencies {
   def authorizationManagement(
     blockingEc: ExecutionContextExecutor
   )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AuthorizationManagementService =
-    AuthorizationManagementServiceImpl(
+    new AuthorizationManagementServiceImpl(
       AuthorizationManagementInvoker(blockingEc)(actorSystem.classicSystem),
-      new AuthorizationManagementPurposeApi(ApplicationConfiguration.authorizationManagementURL)
+      new PurposeApi(ApplicationConfiguration.authorizationManagementURL)
+    )
+
+  def partyManagement(implicit actorSystem: ActorSystem[_]): PartyManagementService =
+    new PartyManagementServiceImpl(
+      PartyManagementInvoker()(actorSystem.classicSystem),
+      PartyApi(ApplicationConfiguration.partyManagementURL)
+    )
+
+  def userRegistry(implicit actorSystem: ActorSystem[_]): UserRegistryService =
+    new UserRegistryServiceImpl(
+      UserRegistryManagementInvoker()(actorSystem.classicSystem),
+      UserApi(ApplicationConfiguration.userRegistryURL)
     )
 
   def getJwtValidator(): Future[JWTReader] = JWTConfiguration.jwtReader
@@ -80,7 +98,12 @@ trait Dependencies {
     )
     .toFuture
 
-  def fileManager(blockingEc: ExecutionContextExecutor): FileManager = new S3ManagerImpl(blockingEc)
+  def fileManager(blockingEc: ExecutionContextExecutor): FileManager =
+    FileManager.get(ApplicationConfiguration.storageKind match {
+      case "S3"   => FileManager.S3
+      case "file" => FileManager.File
+      case _      => throw new Exception("Incorrect File Manager")
+    })(blockingEc)
 
   def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
     actorSystem: ActorSystem[_],
@@ -93,7 +116,12 @@ trait Dependencies {
         tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
         authorizationManagement(blockingEc),
-        fileManager(blockingEc)
+        partyManagement,
+        userRegistry,
+        PDFCreator,
+        fileManager(blockingEc),
+        OffsetDateTimeSupplier,
+        UUIDSupplier
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts

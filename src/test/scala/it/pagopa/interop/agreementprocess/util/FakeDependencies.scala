@@ -3,17 +3,20 @@ package it.pagopa.interop.agreementprocess.util
 import akka.http.scaladsl.server.directives.FileInfo
 import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.attributeregistrymanagement
 import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.model.{Attributes, EService, EServiceTechnology}
 import it.pagopa.interop.commons.files.service.FileManager
+import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
+import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.tenantmanagement.client.model.{ExternalId, Tenant}
 
 import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
 import java.util.UUID
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Holds fake implementation of dependencies for tests not requiring neither mocks or stubs
@@ -49,6 +52,16 @@ object FakeDependencies {
       declaredAttributes = Nil,
       verifiedAttributes = Nil,
       consumerDocuments = Nil,
+      createdAt = OffsetDateTime.now(),
+      stamps = Stamps()
+    )
+
+    val document: Document = Document(
+      id = UUID.randomUUID(),
+      name = "name",
+      prettyName = "prettyName",
+      contentType = "contentType",
+      path = "path",
       createdAt = OffsetDateTime.now()
     )
 
@@ -78,6 +91,10 @@ object FakeDependencies {
 
     override def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit] =
       Future.unit
+
+    override def addAgreementContract(agreementId: UUID, seed: DocumentSeed)(implicit
+      contexts: Seq[(String, String)]
+    ): Future[Document] = Future.successful(document)
   }
 
   class FakeCatalogManagementService       extends CatalogManagementService       {
@@ -124,6 +141,46 @@ object FakeDependencies {
       )
   }
 
+  class FakePartyManagementService extends PartyManagementService {
+    override def getInstitution(
+      partyId: UUID
+    )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution] =
+      Future.successful(
+        Institution(
+          id = UUID.randomUUID(),
+          externalId = UUID.randomUUID().toString,
+          originId = UUID.randomUUID().toString,
+          description = UUID.randomUUID().toString,
+          digitalAddress = UUID.randomUUID().toString,
+          address = UUID.randomUUID().toString,
+          zipCode = UUID.randomUUID().toString,
+          taxCode = UUID.randomUUID().toString,
+          origin = UUID.randomUUID().toString,
+          institutionType = UUID.randomUUID().toString,
+          attributes = Seq.empty
+        )
+      )
+  }
+
+  class FakeUserRegistryService extends UserRegistryService {
+    override def getUserById(id: UUID)(implicit contexts: Seq[(String, String)]): Future[UserResource] =
+      Future.successful(
+        UserResource(
+          birthDate = None,
+          email = None,
+          familyName = None,
+          fiscalCode = None,
+          id = UUID.randomUUID(),
+          name = None,
+          workContacts = None
+        )
+      )
+  }
+
+  class FakePDFCreator extends PDFCreator {
+    override def create(template: String, pdfPayload: PDFPayload): Future[Array[Byte]] = Future.successful(Array.empty)
+  }
+
   class FakeFileManager extends FileManager {
     override def store(containerPath: String, path: String)(
       resourceId: String,
@@ -145,4 +202,5 @@ object FakeDependencies {
 
     override def delete(containerPath: String)(filePath: StorageFilePath): Future[Boolean] = Future.successful(true)
   }
+
 }

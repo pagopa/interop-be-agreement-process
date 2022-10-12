@@ -7,6 +7,7 @@ import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.util.FakeDependencies._
 import it.pagopa.interop.agreementprocess.util.{AuthorizedRoutes, AuthzScalatestRouteTest}
 import it.pagopa.interop.commons.files.service.FileManager
+import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -20,6 +21,9 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
   val fakeTenantManagementService: TenantManagementService               = new FakeTenantManagementService()
   val fakeAttributeManagementService: AttributeManagementService         = new FakeAttributeManagementService()
   val fakeAuthorizationManagementService: AuthorizationManagementService = new FakeAuthorizationManagementService()
+  val fakePartyManagementService: PartyManagementService                 = new FakePartyManagementService()
+  val fakeUserRegistryService: UserRegistryService                       = new FakeUserRegistryService()
+  val fakePDFCreator: PDFCreator                                         = new FakePDFCreator()
   val fakeFileManager: FileManager                                       = new FakeFileManager()
 
   val service: AgreementApiServiceImpl = AgreementApiServiceImpl(
@@ -28,7 +32,12 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     fakeTenantManagementService,
     fakeAttributeManagementService,
     fakeAuthorizationManagementService,
-    fakeFileManager
+    fakePartyManagementService,
+    fakeUserRegistryService,
+    fakePDFCreator,
+    fakeFileManager,
+    OffsetDateTimeSupplier,
+    UUIDSupplier
   )(ExecutionContext.global)
 
   "Agreement api operation authorization spec" should {

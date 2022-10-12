@@ -35,7 +35,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
           consumerId = consumer.id
         )
 
-      val seed = UpgradeAgreementSeed(descriptorId = newerDescriptor.id)
+      val seed = UpgradeAgreementSeed(descriptorId = newerDescriptor.id, SpecData.defaultStamp.get)
 
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
