@@ -12,7 +12,7 @@ import it.pagopa.interop.tenantmanagement.client.model.{
 }
 
 import java.io.ByteArrayOutputStream
-import java.time.OffsetDateTime
+import java.time.{OffsetDateTime, ZoneId}
 import java.time.format.DateTimeFormatter
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -24,6 +24,7 @@ trait PDFCreator {
 }
 
 object PDFCreator extends PDFCreator with PDFManager {
+  private final val RomeZoneId: ZoneId = ZoneId.of("Europe/Rome")
 
   // Suppressing openhtmltopdf log
   XRLog.listRegisteredLoggers.asScala.foreach((logger: String) =>
@@ -42,13 +43,13 @@ object PDFCreator extends PDFCreator with PDFManager {
 
   private def setupData(pdfPayload: PDFPayload): Map[String, String] = {
     val todayDate = getDateText(pdfPayload.today)
-    val todayTime = getUTCTimeText(pdfPayload.today)
+    val todayTime = getTimeText(pdfPayload.today)
 
     val submissionDate = getDateText(pdfPayload.submissionTimestamp)
-    val submissionTime = getUTCTimeText(pdfPayload.submissionTimestamp)
+    val submissionTime = getTimeText(pdfPayload.submissionTimestamp)
 
     val activationDate = getDateText(pdfPayload.activationTimestamp)
-    val activationTime = getUTCTimeText(pdfPayload.activationTimestamp)
+    val activationTime = getTimeText(pdfPayload.activationTimestamp)
 
     Map(
       "todayDate"           -> todayDate,
@@ -72,7 +73,7 @@ object PDFCreator extends PDFCreator with PDFManager {
   private def getDeclaredAttributesText(declared: Seq[(ClientAttribute, DeclaredTenantAttribute)]): String =
     declared.map { case (clientAttribute, tenantAttribute) =>
       val date = getDateText(tenantAttribute.assignmentTimestamp)
-      val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
+      val time = getTimeText(tenantAttribute.assignmentTimestamp)
       s"""
          |<div>
          |In data <strong>$date</strong> alle ore <strong>$time</strong>,
@@ -86,7 +87,7 @@ object PDFCreator extends PDFCreator with PDFManager {
   private def getCertifiedAttributesText(certified: Seq[(ClientAttribute, CertifiedTenantAttribute)]): String =
     certified.map { case (clientAttribute, tenantAttribute) =>
       val date = getDateText(tenantAttribute.assignmentTimestamp)
-      val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
+      val time = getTimeText(tenantAttribute.assignmentTimestamp)
       s"""
          |<div>
          |In data <strong>$date</strong> alle ore <strong>$time</strong>,
@@ -99,7 +100,7 @@ object PDFCreator extends PDFCreator with PDFManager {
   private def getVerifiedAttributesText(verified: Seq[(ClientAttribute, VerifiedTenantAttribute)]): String =
     verified.map { case (clientAttribute, tenantAttribute) =>
       val date = getDateText(tenantAttribute.assignmentTimestamp)
-      val time = getUTCTimeText(tenantAttribute.assignmentTimestamp)
+      val time = getTimeText(tenantAttribute.assignmentTimestamp)
       // TODO add implicit verifier when ready
       s"""
          |<div>
@@ -111,9 +112,10 @@ object PDFCreator extends PDFCreator with PDFManager {
          |""".stripMargin
     }.mkString
 
-  private def getDateText(timestamp: OffsetDateTime): String = timestamp.toLocalDate.format(printedDateFormatter)
+  private def getDateText(timestamp: OffsetDateTime): String =
+    timestamp.atZoneSameInstant(RomeZoneId).toLocalDate.format(printedDateFormatter)
 
-  private def getUTCTimeText(timestamp: OffsetDateTime): String =
-    s"${timestamp.toLocalTime.format(printedTimeFormatter)} UTC"
+  private def getTimeText(timestamp: OffsetDateTime): String =
+    timestamp.atZoneSameInstant(RomeZoneId).toLocalTime.format(printedTimeFormatter)
 
 }
