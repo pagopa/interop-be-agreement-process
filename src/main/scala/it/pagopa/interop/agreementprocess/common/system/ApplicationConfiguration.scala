@@ -20,6 +20,7 @@ object ApplicationConfiguration {
 
   require(jwtAudience.nonEmpty, "Audience cannot be empty")
 
+  val storageKind: String           = config.getString("agreement-process.storage.kind")
   val storageContainer: String      = config.getString("agreement-process.storage.container")
   val agreementDocPath: String      = config.getString("agreement-process.storage.agreement-contract-path")
   val partyManagementApiKey: String = config.getString("agreement-process.party-management-api-key")
