@@ -122,10 +122,22 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
 
+      val expectedSeed = UpdateAgreementSeed(
+        state = AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+        certifiedAttributes = Nil,
+        declaredAttributes = Nil,
+        verifiedAttributes = Nil,
+        suspendedByConsumer = None,
+        suspendedByProducer = None,
+        suspendedByPlatform = Some(true),
+        stamps = agreement.stamps
+      )
+
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest

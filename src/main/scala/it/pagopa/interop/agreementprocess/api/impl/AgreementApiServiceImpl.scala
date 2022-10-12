@@ -455,12 +455,12 @@ final case class AgreementApiServiceImpl(
     val newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
 
     def calculateStamps(state: AgreementState, stamp: Stamp): Future[Stamps] = state match {
-      case AgreementState.PENDING   => Future.successful(agreement.stamps.copy(submission = stamp.some))
-      case AgreementState.ACTIVE    =>
+      case AgreementState.DRAFT   => Future.successful(agreement.stamps)
+      case AgreementState.PENDING => Future.successful(agreement.stamps.copy(submission = stamp.some))
+      case AgreementState.ACTIVE  =>
         Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
-      case AgreementState.SUSPENDED =>
-        Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
-      case _                        => Future.failed(AgreementNotInExpectedState(agreement.id.toString(), newState))
+      case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => Future.successful(agreement.stamps)
+      case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString(), newState))
     }
 
     for {
@@ -604,7 +604,7 @@ final case class AgreementApiServiceImpl(
       suspendedByPlatform = None,
       rejectionReason = payload.reason.some,
       stamps = agreement.stamps.copy(rejection = stamp.some)
-    ) // TODO why rejectionReason is not set?
+    )
     agreementManagementService.updateAgreement(agreement.id, updateSeed)
   }
 
