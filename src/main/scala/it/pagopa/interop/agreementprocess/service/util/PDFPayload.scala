@@ -12,6 +12,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 final case class PDFPayload(
+  today: OffsetDateTime,
   agreementId: UUID,
   eService: String,
   producer: Institution,

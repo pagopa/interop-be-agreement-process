@@ -18,12 +18,12 @@ import java.util.UUID
 object SpecData {
 
   final val timestamp: OffsetDateTime   = OffsetDateTime.of(2022, 12, 31, 11, 22, 33, 0, ZoneOffset.UTC)
-  final val emptyStamps: Stamps       = Stamps()
+  final val emptyStamps: Stamps         = Stamps()
   val who: UUID                         = UUID.randomUUID()
   val when: OffsetDateTime              = OffsetDateTime.now()
   final val defaultStamp: Option[Stamp] = Stamp(who, when).some
 
-  final val submissionStamps = defaultStamps.copy(submission = defaultStamp)
+  final val submissionStamps = emptyStamps.copy(submission = defaultStamp)
   final val rejectionStamps  = submissionStamps.copy(rejection = defaultStamp)
   final val activationStamps = submissionStamps.copy(activation = defaultStamp)
   final val suspensionStamps = activationStamps.copy(suspension = defaultStamp)

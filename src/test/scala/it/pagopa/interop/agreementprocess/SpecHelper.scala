@@ -222,4 +222,31 @@ trait SpecHelper extends MockFactory {
       .expects(containerPath, filePath)
       .once()
       .returns(Future.successful(true))
+
+  def mockContractCreation(
+    agreement: Agreement,
+    eService: EService,
+    consumer: Tenant,
+    expectedSeed: UpdateAgreementSeed
+  ) = {
+    mockAgreementRetrieve(agreement)
+    mockAgreementsRetrieve(Nil)
+    mockEServiceRetrieve(eService.id, eService)
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockPDFCreatorCreate
+    mockFileManagerWrite
+    mockAgreementContract
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
+    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
+    mockTenantRetrieve(consumer.id, consumer)
+    mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+    mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+  }
 }

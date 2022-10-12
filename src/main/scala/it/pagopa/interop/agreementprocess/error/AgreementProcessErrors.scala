@@ -76,7 +76,7 @@ object AgreementProcessErrors {
   final case class StampNotFound(stamp: String) extends ComponentError("0015", s"Agreement stamp $stamp not found")
 
   final case class MissingUserInfo(userId: UUID)
-      extends ComponentError("0016", s"Some mandatory info are missing for user ${user.toString()}")
+      extends ComponentError("0016", s"Some mandatory info are missing for user ${userId.toString()}")
 
   final case class ContractNotFound(agreementId: String)
       extends ComponentError("0017", s"Contract not found for agreement $agreementId")

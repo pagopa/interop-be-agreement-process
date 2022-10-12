@@ -5,7 +5,6 @@ import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.commons.files.model.PDFConfiguration
 import it.pagopa.interop.commons.files.service.PDFManager
 import it.pagopa.interop.commons.utils.TypeConversions.TryOps
-import it.pagopa.interop.commons.utils.service.OffsetDateTimeSupplier
 import it.pagopa.interop.tenantmanagement.client.model.{
   CertifiedTenantAttribute,
   DeclaredTenantAttribute,
@@ -42,9 +41,8 @@ object PDFCreator extends PDFCreator with PDFManager {
   }
 
   private def setupData(pdfPayload: PDFPayload): Map[String, String] = {
-    val today     = OffsetDateTimeSupplier.get()
-    val todayDate = getDateText(today)
-    val todayTime = getUTCTimeText(today)
+    val todayDate = getDateText(pdfPayload.today)
+    val todayTime = getUTCTimeText(pdfPayload.today)
 
     val submissionDate = getDateText(pdfPayload.submissionTimestamp)
     val submissionTime = getUTCTimeText(pdfPayload.submissionTimestamp)

@@ -80,25 +80,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
-      mockEServiceRetrieve(eService.id, eService)
-      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
-      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
-      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
-      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
-      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
-      mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
-      mockPDFCreatorCreate
-      mockFileManagerWrite
-      mockAgreementContract
-      mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
-      mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
-      mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
-      mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
-      mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
-      mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+      mockContractCreation(agreement, eService, consumer, expectedSeed)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
@@ -132,7 +114,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.activationStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -168,7 +150,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.activationStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -204,7 +186,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -240,7 +222,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -277,7 +259,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -318,7 +300,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {

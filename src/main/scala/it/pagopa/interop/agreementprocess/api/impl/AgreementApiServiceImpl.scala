@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives.{complete, onComplete}
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, DocumentSeed, Stamp, UpdateAgreementSeed}
+import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, Stamp, UpdateAgreementSeed}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.common.Adapters._
@@ -15,7 +15,6 @@ import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.error.ErrorHandlers._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
-import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAndEServiceDetailsUpdate
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
@@ -27,20 +26,11 @@ import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, g
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
-import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
-import it.pagopa.interop.tenantmanagement.client.model.{
-  CertifiedTenantAttribute,
-  DeclaredTenantAttribute,
-  VerifiedTenantAttribute
-}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.io.File
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
 import scala.util.Success
 
 final case class AgreementApiServiceImpl(
@@ -61,12 +51,16 @@ final case class AgreementApiServiceImpl(
   implicit val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 
-  private[this] val agreementTemplate = Source
-    .fromResource("agreementTemplate/index.html")
-    .getLines()
-    .mkString(System.lineSeparator())
-
-  private val agreementDocumentSuffix: String = "_agreement_contract.pdf"
+  val agreementContractCreator: AgreementContractCreator = new AgreementContractCreator(
+    pdfCreator,
+    fileManager,
+    uuidSupplier,
+    agreementManagementService,
+    attributeManagementService,
+    partyManagementService,
+    userRegistry,
+    offsetDateTimeSupplier
+  )
 
   override def createAgreement(payload: AgreementPayload)(implicit
     contexts: Seq[(String, String)],
@@ -514,107 +508,6 @@ final case class AgreementApiServiceImpl(
         )
     }
 
-    def getAttributeInvolved(seed: UpdateAgreementSeed)(implicit contexts: Seq[(String, String)]): Future[
-      (
-        Seq[(ClientAttribute, CertifiedTenantAttribute)],
-        Seq[(ClientAttribute, DeclaredTenantAttribute)],
-        Seq[(ClientAttribute, VerifiedTenantAttribute)]
-      )
-    ] = {
-      def getCertified: Future[Seq[(ClientAttribute, CertifiedTenantAttribute)]] = {
-        val attributes =
-          consumer.attributes.flatMap(_.certified).filter(c => seed.certifiedAttributes.map(_.id).contains(c.id))
-        Future.traverse(attributes)(attr =>
-          attributeManagementService.getAttribute(attr.id.toString()).map(ca => ca -> attr)
-        )
-      }
-
-      def getDeclared: Future[Seq[(ClientAttribute, DeclaredTenantAttribute)]] = {
-        val attributes =
-          consumer.attributes.flatMap(_.declared).filter(c => seed.declaredAttributes.map(_.id).contains(c.id))
-        Future.traverse(attributes)(attr =>
-          attributeManagementService.getAttribute(attr.id.toString()).map(ca => ca -> attr)
-        )
-      }
-
-      def getVerified: Future[Seq[(ClientAttribute, VerifiedTenantAttribute)]] = {
-        val attributes =
-          consumer.attributes.flatMap(_.verified).filter(c => seed.verifiedAttributes.map(_.id).contains(c.id))
-        Future.traverse(attributes)(attr =>
-          attributeManagementService.getAttribute(attr.id.toString()).map(ca => ca -> attr)
-        )
-      }
-
-      for {
-        certified <- getCertified
-        declared  <- getDeclared
-        verified  <- getVerified
-      } yield (certified, declared, verified)
-
-    }
-
-    def getSubmissionInfo(
-      seed: UpdateAgreementSeed
-    )(implicit contexts: Seq[(String, String)]): Future[(String, OffsetDateTime)] =
-      for {
-        submission <- seed.stamps.submission.toFuture(StampNotFound("submission"))
-        response   <- userRegistry.getUserById(submission.who)
-        submitter  <- getUserText(response).toFuture(MissingUserInfo(submission.who))
-      } yield (submitter, submission.when)
-
-    def getActivationInfo(
-      seed: UpdateAgreementSeed
-    )(implicit contexts: Seq[(String, String)]): Future[(String, OffsetDateTime)] =
-      for {
-        activation <- seed.stamps.activation.toFuture(StampNotFound("activation"))
-        response   <- userRegistry.getUserById(activation.who)
-        activator  <- getUserText(response).toFuture(MissingUserInfo(activation.who))
-      } yield (activator, activation.when)
-
-    def getUserText(user: UserResource): Option[String] = for {
-      name       <- user.name
-      familyName <- user.familyName
-      fiscalCode <- user.fiscalCode
-    } yield s"${name.value} ${familyName.value} ($fiscalCode)"
-
-    def getPdfPayload(seed: UpdateAgreementSeed) = {
-      for {
-        (certified, declared, verified)  <- getAttributeInvolved(seed)
-        producerParty                    <- partyManagementService.getInstitution(agreement.producerId)
-        consumerParty                    <- partyManagementService.getInstitution(agreement.consumerId)
-        (submitter, submissionTimestamp) <- getSubmissionInfo(seed)
-        (activator, activationTimestamp) <- getActivationInfo(seed)
-      } yield PDFPayload(
-        agreementId = agreement.id,
-        eService = eService.name,
-        producer = producerParty,
-        consumer = consumerParty,
-        certified = certified,
-        declared = declared,
-        verified = verified,
-        submitter = submitter,
-        submissionTimestamp = submissionTimestamp,
-        activator = activator,
-        activationTimestamp = activationTimestamp
-      )
-    }
-
-    def createAgreementDocumentName: String =
-      s"${OffsetDateTimeSupplier.get().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))}$agreementDocumentSuffix"
-
-    def createContract(seed: UpdateAgreementSeed): Future[Unit] = for {
-      pdfPayload <- getPdfPayload(seed)
-      document   <- pdfCreator.create(agreementTemplate, pdfPayload)
-      path       <- fileManager.storeBytes(
-        ApplicationConfiguration.storageContainer,
-        ApplicationConfiguration.agreementDocPath
-      )(uuidSupplier.get().toString(), createAgreementDocumentName, document)
-      _          <- agreementManagementService.addAgreementContract(
-        agreement.id,
-        DocumentSeed("", "", MediaTypes.`application/pdf`.value, path)
-      )
-    } yield ()
-
     val failureStates = List(
       AgreementManagement.AgreementState.DRAFT,
       AgreementManagement.AgreementState.PENDING,
@@ -627,7 +520,9 @@ final case class AgreementApiServiceImpl(
 
     for {
       seed    <- getUpdateSeed()
-      _       <- if (firstActivation) createContract(seed) else Future.unit
+      _       <-
+        if (firstActivation) agreementContractCreator.create(agreement, eService, consumer, seed)
+        else Future.unit
       updated <- agreementManagementService.updateAgreement(agreement.id, seed)
       _       <- failOnActivationFailure()
       _       <- authorizationManagementService

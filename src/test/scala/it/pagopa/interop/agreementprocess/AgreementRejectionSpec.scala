@@ -85,7 +85,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.rejectionStamps))
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK

@@ -42,7 +42,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.submissionStamps))
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
@@ -137,7 +137,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.submissionStamps))
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
