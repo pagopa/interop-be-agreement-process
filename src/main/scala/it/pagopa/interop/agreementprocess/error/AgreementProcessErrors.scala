@@ -85,7 +85,7 @@ object AgreementProcessErrors {
   final case class DocumentsChangeNotAllowed(state: AgreementState)
       extends ComponentError(
         "0018",
-        s"Agreement state ${state.toString()} is not allowed to work on consumer documents"
+        s"The requested operation on consumer documents is not allowed on agreement with state ${state.toString()}"
       )
 
 }
