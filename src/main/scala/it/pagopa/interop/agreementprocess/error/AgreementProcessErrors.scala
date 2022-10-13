@@ -16,10 +16,10 @@ object AgreementProcessErrors {
         s"Required certified attribute is missing. EService $eServiceId, Consumer: $consumerId"
       )
 
-  final case class MissingDeclaredAttributes(eServiceId: UUID, consumerId: UUID)
+  final case class AgreementSubmissionFailed(agreementId: UUID)
       extends ComponentError(
         "0002",
-        s"Required declared attribute is missing. EService $eServiceId, Consumer: $consumerId"
+        s"Unable to activate agreement $agreementId. Please check if attributes requirements and suspension flags are satisfied"
       )
 
   final case class AgreementNotInExpectedState(agreementId: String, state: AgreementManagement.AgreementState)
