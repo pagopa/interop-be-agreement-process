@@ -106,9 +106,9 @@ final case class AgreementApiServiceImpl(
         eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
         _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
         consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-        _              <- validateDeclaredAttributes(eService, consumer)
+//        _              <- validateDeclaredAttributes(eService, consumer)
         updated        <- submit(agreement, eService, consumer)
-        _              <- validateCertifiedAttributes(eService, consumer) // Just to return the error. TODO required?
+//        _              <- validateCertifiedAttributes(eService, consumer) // Just to return the error. TODO required?
       } yield updated.toApi
 
       onComplete(result) {
@@ -460,7 +460,7 @@ final case class AgreementApiServiceImpl(
       case AgreementState.ACTIVE  =>
         Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
       case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => Future.successful(agreement.stamps)
-      case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString(), newState))
+      case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString, newState))
     }
 
     for {
@@ -477,6 +477,12 @@ final case class AgreementApiServiceImpl(
         stamps = stamps
       )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
+      _       <- Future
+        .failed(AgreementSubmissionFailed(agreement.id))
+        .unlessA(
+          List(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.ACTIVE)
+            .contains(newState)
+        )
     } yield updated
 
   }
@@ -742,14 +748,6 @@ final case class AgreementApiServiceImpl(
     Future
       .failed(MissingCertifiedAttributes(eService.id, consumer.id))
       .unlessA(AgreementStateByAttributesFSM.certifiedAttributesSatisfied(eService, consumer))
-
-  def validateDeclaredAttributes(
-    eService: CatalogManagement.EService,
-    consumer: TenantManagement.Tenant
-  ): Future[Unit] =
-    Future
-      .failed(MissingDeclaredAttributes(eService.id, consumer.id))
-      .unlessA(AgreementStateByAttributesFSM.declaredAttributesSatisfied(eService, consumer))
 
   def verifyConsumerDoesNotActivatePending(
     agreement: AgreementManagement.Agreement,
