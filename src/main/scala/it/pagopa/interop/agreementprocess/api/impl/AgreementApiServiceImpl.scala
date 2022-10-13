@@ -461,11 +461,11 @@ final case class AgreementApiServiceImpl(
       case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString, newState))
     }
 
-    def validateResultState() = Future
+    def validateResultState(state: AgreementManagement.AgreementState) = Future
       .failed(AgreementSubmissionFailed(agreement.id))
       .unlessA(
         List(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.ACTIVE)
-          .contains(newState)
+          .contains(state)
       )
 
     for {
@@ -482,7 +482,7 @@ final case class AgreementApiServiceImpl(
         stamps = stamps
       )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
-      _       <- validateResultState()
+      _       <- validateResultState(newState)
     } yield updated
 
   }
