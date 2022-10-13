@@ -81,4 +81,7 @@ object AgreementProcessErrors {
   final case class ContractNotFound(agreementId: String)
       extends ComponentError("0017", s"Contract not found for agreement $agreementId")
 
+  final case class DocumentNotFound(agreementId: String, documentId: String)
+      extends ComponentError("0018", s"Document $documentId from agreement $agreementId not found")
+
 }

@@ -14,7 +14,7 @@ servers:
   - url: '/agreement-process/{{version}}'
     description: This service is the agreement process
 security:
-  - bearerAuth: [ ]
+  - bearerAuth: []
 tags:
   - name: health
     description: Verify service status
@@ -236,42 +236,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-  '/agreements/{agreementId}/contract':
-    parameters:
-      - $ref: '#/components/parameters/CorrelationIdHeader'
-      - $ref: '#/components/parameters/IpAddress'
-      - name: agreementId
-        in: path
-        description: The identifier of the agreement
-        required: true
-        schema:
-          type: string
-          format: uuid
-    get:
-      tags:
-        - agreement
-      summary: retrieves the agreement contract
-      description: returns the agreement contract for a given agreementId
-      operationId: getAgreementContract
-      responses:
-        '200':
-          description: Agreement contract retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Document'
-        '404':
-          description: Agreement not found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-        '400':
-          description: Invalid ID supplied
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
   '/agreements/{agreementId}/suspend':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'
@@ -434,7 +398,7 @@ paths:
             type: array
             items:
               $ref: '#/components/schemas/AgreementState'
-            default: []
+            default: [ ]
           explode: false
         - in: query
           name: latest

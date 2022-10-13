@@ -13,6 +13,7 @@ import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
   AgreementNotInExpectedState,
   ContractNotFound,
   DescriptorNotInExpectedState,
+  DocumentNotFound,
   EServiceNotFound,
   MissingCertifiedAttributes,
   MissingDeclaredAttributes,
@@ -183,6 +184,24 @@ object ErrorHandlers {
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen { case Failure(_) =>
     internalServerError(logMessage)
+  }
+
+  def handleAddDocumentError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen {
+    case Failure(ex: AgreementNotFound) => notFound(ex)
+    case Failure(_)                     => internalServerError(logMessage)
+  }
+
+  def handleGetDocumentError(logMessage: String)(implicit
+    contexts: Seq[(String, String)],
+    logger: LoggerTakingImplicit[ContextFieldsToLog],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): PartialFunction[Try[_], StandardRoute] = log(logMessage) andThen {
+    case Failure(ex: DocumentNotFound) => notFound(ex)
+    case Failure(_)                    => internalServerError(logMessage)
   }
 
 }

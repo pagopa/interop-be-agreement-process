@@ -95,6 +95,18 @@ object FakeDependencies {
     override def addAgreementContract(agreementId: UUID, seed: DocumentSeed)(implicit
       contexts: Seq[(String, String)]
     ): Future[Document] = Future.successful(document)
+
+    override def addConsumerDocument(agreementId: UUID, seed: DocumentSeed)(implicit
+      contexts: Seq[(String, String)]
+    ): Future[Document] = Future.successful(document)
+
+    override def getConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
+      contexts: Seq[(String, String)]
+    ): Future[Document] = Future.successful(document)
+
+    override def removeConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
+      contexts: Seq[(String, String)]
+    ): Future[Unit] = Future.unit
   }
 
   class FakeCatalogManagementService       extends CatalogManagementService       {

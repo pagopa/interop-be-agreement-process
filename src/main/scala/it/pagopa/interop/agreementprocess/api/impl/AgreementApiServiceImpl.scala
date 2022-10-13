@@ -789,27 +789,70 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerDocument: ToEntityMarshaller[Document],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = authorize(ADMIN_ROLE) {
-    for {
-      uuid     <- agreementId.toFutureUUID
-      document <- agreementManagementService.addConsumerDocuments(uuid, documentSeed)
-    } yield document
 
+    logger.info(s"Adding a consumer document to agreement $agreementId")
+
+    val result: Future[Document] = for {
+      agreementUUID <- agreementId.toFutureUUID
+      document      <- agreementManagementService.addConsumerDocument(
+        agreementUUID,
+        AgreementManagement.DocumentSeed(
+          name = documentSeed.name,
+          prettyName = documentSeed.prettyName,
+          contentType = documentSeed.contentType,
+          path = documentSeed.path
+        )
+      )
+    } yield document.toApi
+
+    onComplete(result) {
+      handleAddDocumentError(s"Error adding a consumer document to agreement $agreementId") orElse {
+        case Success(document) =>
+          addAgreementConsumerDocument200(document)
+      }
+    }
   }
 
   override def getAgreementConsumerDocument(agreementId: String, documentId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerDocument: ToEntityMarshaller[Document],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = ???
+  ): Route = authorize(ADMIN_ROLE) {
 
-  override def getAgreementContract(agreementId: String)(implicit
-    contexts: Seq[(String, String)],
-    toEntityMarshallerDocument: ToEntityMarshaller[Document],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = ???
+    logger.info(s"Getting consumer document $documentId from agreement $agreementId")
+
+    val result: Future[Document] = for {
+      agreementUUID <- agreementId.toFutureUUID
+      documentUUID  <- documentId.toFutureUUID
+      document      <- agreementManagementService.getConsumerDocument(agreementUUID, documentUUID)
+    } yield document.toApi
+
+    onComplete(result) {
+      handleGetDocumentError(s"Error getting consumer document $documentId from agreement $agreementId") orElse {
+        case Success(document) =>
+          getAgreementConsumerDocument200(document)
+      }
+    }
+  }
 
   override def removeAgreementConsumerDocument(agreementId: String, documentId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = ???
+  ): Route = authorize(ADMIN_ROLE) {
+
+    logger.info(s"Removing consumer document $documentId from agreement $agreementId")
+
+    val result: Future[Unit] = for {
+      agreementUUID <- agreementId.toFutureUUID
+      documentUUID  <- documentId.toFutureUUID
+      result        <- agreementManagementService.removeConsumerDocument(agreementUUID, documentUUID)
+    } yield result
+
+    onComplete(result) {
+      handleGetDocumentError(s"Error removing consumer document $documentId from agreement $agreementId") orElse {
+        case Success(_) => removeAgreementConsumerDocument204
+      }
+    }
+  }
+
 }
