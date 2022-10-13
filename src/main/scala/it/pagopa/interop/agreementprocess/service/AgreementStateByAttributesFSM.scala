@@ -14,7 +14,9 @@ object AgreementStateByAttributesFSM {
   def nextState(agreement: Agreement, eService: EService, consumer: Tenant): AgreementState =
     agreement.state match {
       case DRAFT                        =>
-        if (!certifiedAttributesSatisfied(eService, consumer)) MISSING_CERTIFIED_ATTRIBUTES
+        // Skip attributes validation if consuming own EServices
+        if (agreement.consumerId == agreement.producerId) ACTIVE
+        else if (!certifiedAttributesSatisfied(eService, consumer)) MISSING_CERTIFIED_ATTRIBUTES
         else if (
           eService.descriptors.exists(d => d.id == agreement.descriptorId && d.agreementApprovalPolicy == AUTOMATIC) &&
           declaredAttributesSatisfied(eService, consumer) &&
