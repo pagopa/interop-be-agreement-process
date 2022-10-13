@@ -97,7 +97,8 @@ final case class AgreementApiServiceImpl(
       logger.info("Submitting agreement {}", agreementId)
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
         _              <- agreement.assertSubmittableState.toFuture
         _              <- verifySubmissionConflictingAgreements(agreement)
@@ -125,7 +126,8 @@ final case class AgreementApiServiceImpl(
       logger.info("Activating agreement {}", agreementId)
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
         _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
         _              <- agreement.assertActivableState.toFuture
@@ -152,7 +154,8 @@ final case class AgreementApiServiceImpl(
       logger.info("Suspending agreement {}", agreementId)
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
         _              <- agreement.assertSuspendableState.toFuture
         eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -175,7 +178,8 @@ final case class AgreementApiServiceImpl(
     logger.info(s"Upgrading agreement $agreementId")
     val result = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      agreement      <- agreementManagementService.getAgreementById(agreementId)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- agreement.assertUpgradableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -206,7 +210,8 @@ final case class AgreementApiServiceImpl(
       logger.info(s"Deleting agreement $agreementId")
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
         _              <- agreement.assertDeletableState.toFuture
         _              <- Future.traverse(agreement.consumerDocuments)(doc =>
@@ -244,7 +249,8 @@ final case class AgreementApiServiceImpl(
     logger.info(s"Rejecting agreement $agreementId")
     val result = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      agreement      <- agreementManagementService.getAgreementById(agreementId)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsProducer(requesterOrgId, agreement)
       _              <- agreement.assertRejectableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -307,7 +313,8 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
     logger.info(s"Getting agreement by id $agreementId")
     val result: Future[Agreement] = for {
-      agreement <- agreementManagementService.getAgreementById(agreementId)
+      agreementUUID <- agreementId.toFutureUUID
+      agreement     <- agreementManagementService.getAgreementById(agreementUUID)
     } yield agreement.toApi
 
     onComplete(result) {
@@ -793,8 +800,11 @@ final case class AgreementApiServiceImpl(
     logger.info(s"Adding a consumer document to agreement $agreementId")
 
     val result: Future[Document] = for {
-      agreementUUID <- agreementId.toFutureUUID
-      document      <- agreementManagementService.addConsumerDocument(
+      organizationId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(organizationId, agreement)
+      document       <- agreementManagementService.addConsumerDocument(
         agreementUUID,
         AgreementManagement.DocumentSeed(
           name = documentSeed.name,
@@ -843,9 +853,12 @@ final case class AgreementApiServiceImpl(
     logger.info(s"Removing consumer document $documentId from agreement $agreementId")
 
     val result: Future[Unit] = for {
-      agreementUUID <- agreementId.toFutureUUID
-      documentUUID  <- documentId.toFutureUUID
-      result        <- agreementManagementService.removeConsumerDocument(agreementUUID, documentUUID)
+      organizationId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(organizationId, agreement)
+      documentUUID   <- documentId.toFutureUUID
+      result         <- agreementManagementService.removeConsumerDocument(agreementUUID, documentUUID)
     } yield result
 
     onComplete(result) {

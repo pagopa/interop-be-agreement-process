@@ -69,7 +69,7 @@ object FakeDependencies {
       contexts: Seq[(String, String)]
     ): Future[Agreement] = Future.successful(agreement)
 
-    override def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
+    override def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
       Future.successful(agreement)
 
     override def getAgreements(

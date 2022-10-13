@@ -26,11 +26,11 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
     invoker.invoke(request, s"Upgrading agreement by id = $agreementId")
   }
 
-  override def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
+  override def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
     withHeaders { (bearerToken, correlationId, ip) =>
-      val request = api.getAgreement(correlationId, agreementId, ip)(BearerToken(bearerToken))
-      invoker.invoke(request, s"Retrieving agreement by id = $agreementId").recoverWith {
-        case err: ApiError[_] if err.code == 404 => Future.failed(AgreementNotFound(agreementId))
+      val request = api.getAgreement(correlationId, agreementId.toString(), ip)(BearerToken(bearerToken))
+      invoker.invoke(request, s"Retrieving agreement by id = ${agreementId.toString()}").recoverWith {
+        case err: ApiError[_] if err.code == 404 => Future.failed(AgreementNotFound(agreementId.toString()))
       }
     }
 

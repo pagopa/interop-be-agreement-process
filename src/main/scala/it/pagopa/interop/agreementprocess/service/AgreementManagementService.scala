@@ -11,7 +11,7 @@ trait AgreementManagementService {
     contexts: Seq[(String, String)]
   ): Future[Agreement]
 
-  def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement]
+  def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement]
 
   def getAgreements(
     producerId: Option[String] = None,
