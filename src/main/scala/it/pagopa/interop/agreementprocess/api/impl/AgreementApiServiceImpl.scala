@@ -458,7 +458,7 @@ final case class AgreementApiServiceImpl(
       case AgreementState.ACTIVE  =>
         Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
       case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => Future.successful(agreement.stamps)
-      case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString, newState))
+      case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString(), newState))
     }
 
     def validateResultState(state: AgreementManagement.AgreementState) = Future
