@@ -452,21 +452,58 @@ final case class AgreementApiServiceImpl(
           .contains(state)
       )
 
+    def getUpdateSeed(agreement: AgreementManagement.Agreement, stamps: Stamps): UpdateAgreementSeed =
+      if (agreement.state == AgreementManagement.AgreementState.ACTIVE)
+        AgreementManagement.UpdateAgreementSeed(
+          state = newState,
+          certifiedAttributes = matchingCertifiedAttributes(eService, consumer),
+          declaredAttributes = matchingDeclaredAttributes(eService, consumer),
+          verifiedAttributes = matchingVerifiedAttributes(eService, consumer),
+          suspendedByConsumer = agreement.suspendedByConsumer,
+          suspendedByProducer = agreement.suspendedByProducer,
+          suspendedByPlatform = suspendedByPlatform,
+          stamps = stamps
+        )
+      else
+        AgreementManagement.UpdateAgreementSeed(
+          state = newState,
+          certifiedAttributes = Nil,
+          declaredAttributes = Nil,
+          verifiedAttributes = Nil,
+          suspendedByConsumer = None,
+          suspendedByProducer = None,
+          suspendedByPlatform = suspendedByPlatform,
+          stamps = stamps
+        )
+
+    val failureStates = List(
+      AgreementManagement.AgreementState.DRAFT,
+      AgreementManagement.AgreementState.PENDING,
+      AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
+    )
+
+    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed) =
+      for {
+        _ <- agreementContractCreator.create(agreement, eService, consumer, seed)
+        _ <- authorizationManagementService
+          .updateStateOnClients(
+            eServiceId = agreement.eserviceId,
+            consumerId = agreement.consumerId,
+            agreementId = agreement.id,
+            state = toClientState(newState)
+          )
+          .unlessA(failureStates.contains(newState))
+      } yield ()
+
     for {
       uid    <- getUidFutureUUID(contexts)
       stamps <- calculateStamps(newState, Stamp(uid, offsetDateTimeSupplier.get()))
-      updateSeed = AgreementManagement.UpdateAgreementSeed(
-        state = newState,
-        certifiedAttributes = Nil,
-        declaredAttributes = Nil,
-        verifiedAttributes = Nil,
-        suspendedByConsumer = None,
-        suspendedByProducer = None,
-        suspendedByPlatform = suspendedByPlatform,
-        stamps = stamps
-      )
+      updateSeed = getUpdateSeed(agreement, stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- validateResultState(newState)
+      _       <-
+        if (agreement.state == AgreementManagement.AgreementState.ACTIVE) performActivation(updated, updateSeed)
+        else Future.unit
     } yield updated
 
   }
