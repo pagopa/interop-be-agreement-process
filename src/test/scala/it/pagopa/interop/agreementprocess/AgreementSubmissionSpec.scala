@@ -2,7 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
+import it.pagopa.interop.agreementmanagement.client.model.{CertifiedAttribute, DeclaredAttribute, UpdateAgreementSeed}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.{AUTOMATIC, MANUAL}
 import org.scalatest.matchers.should.Matchers._
@@ -67,8 +67,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
-        certifiedAttributes = Nil,
-        declaredAttributes = Nil,
+        certifiedAttributes = Seq(CertifiedAttribute(tenantCertAttr.certified.get.id)),
+        declaredAttributes = Seq(DeclaredAttribute(tenantDeclAttr.declared.get.id)),
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = None,
@@ -76,16 +76,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      // TODO This should also create the contract document
-      mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
-      mockEServiceRetrieve(eService.id, eService)
-      mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(
-        agreement.id,
-        expectedSeed,
-        agreement.copy(state = expectedSeed.state, stamps = SpecData.activationStamps)
-      )
+      mockAutomaticActivation(agreement, eService, consumer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
@@ -132,15 +123,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
-      mockEServiceRetrieve(eService.id, eService)
-      mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(
-        agreement.id,
-        expectedSeed,
-        agreement.copy(state = expectedSeed.state, stamps = SpecData.activationStamps)
-      )
+      mockSelfActivation(agreement, eService, consumer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK

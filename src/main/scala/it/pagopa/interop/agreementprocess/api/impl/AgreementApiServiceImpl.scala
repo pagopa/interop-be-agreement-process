@@ -452,8 +452,12 @@ final case class AgreementApiServiceImpl(
           .contains(state)
       )
 
-    def getUpdateSeed(agreement: AgreementManagement.Agreement, stamps: Stamps): UpdateAgreementSeed =
-      if (agreement.state == AgreementManagement.AgreementState.ACTIVE)
+    def getUpdateSeed(
+      newState: AgreementManagement.AgreementState,
+      agreement: AgreementManagement.Agreement,
+      stamps: Stamps
+    ): UpdateAgreementSeed =
+      if (newState == AgreementManagement.AgreementState.ACTIVE)
         AgreementManagement.UpdateAgreementSeed(
           state = newState,
           certifiedAttributes = matchingCertifiedAttributes(eService, consumer),
@@ -491,10 +495,10 @@ final case class AgreementApiServiceImpl(
     for {
       uid    <- getUidFutureUUID(contexts)
       stamps <- calculateStamps(newState, Stamp(uid, offsetDateTimeSupplier.get()))
-      updateSeed = getUpdateSeed(agreement, stamps)
+      updateSeed = getUpdateSeed(newState, agreement, stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- validateResultState(newState)
-      _       <- performActivation(updated, updateSeed).whenA(agreement.state == AgreementManagement.AgreementState.ACTIVE)
+      _ <- performActivation(updated, updateSeed).whenA(updated.state == AgreementManagement.AgreementState.ACTIVE)
     } yield updated
 
   }
