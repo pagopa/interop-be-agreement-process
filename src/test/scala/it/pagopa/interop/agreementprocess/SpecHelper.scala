@@ -1,23 +1,22 @@
 package it.pagopa.interop.agreementprocess
 
-import it.pagopa.interop.agreementmanagement.client.model.{
-  Agreement,
-  AgreementState,
-  UpdateAgreementSeed,
-  UpgradeAgreementSeed
-}
+import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.api.impl.{AgreementApiMarshallerImpl, AgreementApiServiceImpl}
 import it.pagopa.interop.agreementprocess.api.{AgreementApiMarshaller, AgreementApiService}
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{AgreementNotFound, EServiceNotFound}
 import it.pagopa.interop.agreementprocess.service._
+import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.authorizationmanagement.client.model.{
   ClientAgreementAndEServiceDetailsUpdate,
   ClientComponentState
 }
 import it.pagopa.interop.catalogmanagement.client.model.EService
-import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, USER_ROLES}
-import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import it.pagopa.interop.commons.files.service.FileManager
+import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
+import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, UID, USER_ROLES}
+import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
+import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
+import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import org.scalamock.scalatest.MockFactory
 
 import java.util.UUID
@@ -28,10 +27,16 @@ trait SpecHelper extends MockFactory {
   final lazy val url: String =
     s"http://localhost:8088/agreement-process/${buildinfo.BuildInfo.interfaceVersion}"
 
-  val bearerToken: String                      = "bearerToken"
-  val requesterOrgId: UUID                     = UUID.randomUUID()
+  val bearerToken: String  = "bearerToken"
+  val requesterOrgId: UUID = UUID.randomUUID()
+
   implicit val contexts: Seq[(String, String)] =
-    Seq("bearer" -> "bearerToken", ORGANIZATION_ID_CLAIM -> requesterOrgId.toString, USER_ROLES -> "admin")
+    Seq(
+      "bearer"              -> "bearerToken",
+      ORGANIZATION_ID_CLAIM -> requesterOrgId.toString,
+      USER_ROLES            -> "admin",
+      UID                   -> SpecData.who.toString
+    )
 
   val agreementApiMarshaller: AgreementApiMarshaller = AgreementApiMarshallerImpl
 
@@ -40,7 +45,12 @@ trait SpecHelper extends MockFactory {
   val mockTenantManagementService: TenantManagementService               = mock[TenantManagementService]
   val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
   val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
+  val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
+  val mockUserRegistryService: UserRegistryService                       = mock[UserRegistryService]
+  val mockPDFCreator: PDFCreator                                         = mock[PDFCreator]
   val mockFileManager: FileManager                                       = mock[FileManager]
+  val mockOffsetDateTimeSupplier: OffsetDateTimeSupplier                 = () => SpecData.when
+  val mockUUIDSupplier: UUIDSupplier                                     = () => UUID.randomUUID()
 
   val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
@@ -48,7 +58,12 @@ trait SpecHelper extends MockFactory {
     mockTenantManagementService,
     mockAttributeManagementService,
     mockAuthorizationManagementService,
-    mockFileManager
+    mockPartyManagementService,
+    mockUserRegistryService,
+    mockPDFCreator,
+    mockFileManager,
+    mockOffsetDateTimeSupplier,
+    mockUUIDSupplier
   )(ExecutionContext.global)
 
   def contextWithRole(role: String): Seq[(String, String)] = contexts.filter { case (key, _) =>
@@ -86,7 +101,7 @@ trait SpecHelper extends MockFactory {
   def mockAgreementUpdate(agreementId: UUID, seed: UpdateAgreementSeed, result: Agreement) =
     (mockAgreementManagementService
       .updateAgreement(_: UUID, _: UpdateAgreementSeed)(_: Seq[(String, String)]))
-      .expects(agreementId, seed, *)
+      .expects(agreementId, seed, contexts)
       .once()
       .returns(Future.successful(result))
 
@@ -166,10 +181,72 @@ trait SpecHelper extends MockFactory {
       .once()
       .returns(Future.unit)
 
+  def mockPartyManagementRetrieve(institution: Institution) =
+    (mockPartyManagementService
+      .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+      .expects(*, *, *)
+      .once()
+      .returns(Future.successful(institution))
+
+  def mockUserRegistryRetrieve(user: UserResource) =
+    (mockUserRegistryService
+      .getUserById(_: UUID)(_: Seq[(String, String)]))
+      .expects(*, *)
+      .once()
+      .returns(Future.successful(user))
+
+  def mockAttributeManagementServiceRetrieve(attribute: ClientAttribute) =
+    (mockAttributeManagementService
+      .getAttribute(_: String)(_: Seq[(String, String)]))
+      .expects(*, *)
+      .returns(Future.successful(attribute))
+
+  def mockPDFCreatorCreate =
+    (mockPDFCreator.create(_: String, _: PDFPayload)).expects(*, *).returns(Future.successful(Array.empty))
+
+  def mockFileManagerWrite =
+    (mockFileManager
+      .storeBytes(_: String, _: String)(_: String, _: String, _: Array[Byte]))
+      .expects(*, *, *, *, *)
+      .returns(Future.successful("path"))
+
+  def mockAgreementContract =
+    (mockAgreementManagementService
+      .addAgreementContract(_: UUID, _: DocumentSeed)(_: Seq[(String, String)]))
+      .expects(*, *, *)
+      .returns(Future.successful(SpecData.document(UUID.randomUUID())))
+
   def mockFileDeletion(containerPath: String, filePath: String) =
     (mockFileManager
       .delete(_: String)(_: String))
       .expects(containerPath, filePath)
       .once()
       .returns(Future.successful(true))
+
+  def mockContractCreation(
+    agreement: Agreement,
+    eService: EService,
+    consumer: Tenant,
+    expectedSeed: UpdateAgreementSeed
+  ) = {
+    mockAgreementRetrieve(agreement)
+    mockAgreementsRetrieve(Nil)
+    mockEServiceRetrieve(eService.id, eService)
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockPDFCreatorCreate
+    mockFileManagerWrite
+    mockAgreementContract
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
+    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
+    mockTenantRetrieve(consumer.id, consumer)
+    mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+    mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+  }
 }

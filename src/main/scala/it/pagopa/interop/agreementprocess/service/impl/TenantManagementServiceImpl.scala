@@ -12,7 +12,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import it.pagopa.interop.tenantmanagement.client.invoker.ApiRequest
 
-final case class TenantManagementServiceImpl(invoker: TenantManagementInvoker, api: TenantApi)
+final class TenantManagementServiceImpl(invoker: TenantManagementInvoker, api: TenantApi)
     extends TenantManagementService {
 
   implicit val logger: LoggerTakingImplicit[ContextFieldsToLog] =

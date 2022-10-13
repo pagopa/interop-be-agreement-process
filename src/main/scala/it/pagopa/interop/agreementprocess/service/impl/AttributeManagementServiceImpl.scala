@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.scalalogging.Logger
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 
-final case class AttributeManagementServiceImpl(invoker: AttributeRegistryManagementInvoker, api: AttributeApi)(implicit
+final class AttributeManagementServiceImpl(invoker: AttributeRegistryManagementInvoker, api: AttributeApi)(implicit
   ec: ExecutionContext
 ) extends AttributeManagementService {
 

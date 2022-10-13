@@ -1,11 +1,8 @@
 package it.pagopa.interop.agreementprocess.service.impl
 
 import com.typesafe.scalalogging.Logger
-import it.pagopa.interop.agreementprocess.service.{
-  AuthorizationManagementInvoker,
-  AuthorizationManagementPurposeApi,
-  AuthorizationManagementService
-}
+import it.pagopa.interop.agreementprocess.service.{AuthorizationManagementInvoker, AuthorizationManagementService}
+import it.pagopa.interop.authorizationmanagement.client.api.PurposeApi
 import it.pagopa.interop.authorizationmanagement.client.invoker.BearerToken
 import it.pagopa.interop.authorizationmanagement.client.model.{
   ClientAgreementAndEServiceDetailsUpdate,
@@ -18,11 +15,9 @@ import it.pagopa.interop.commons.utils.withHeaders
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
-final case class AuthorizationManagementServiceImpl(
-  invoker: AuthorizationManagementInvoker,
-  api: AuthorizationManagementPurposeApi
-)(implicit ec: ExecutionContext)
-    extends AuthorizationManagementService {
+final class AuthorizationManagementServiceImpl(invoker: AuthorizationManagementInvoker, api: PurposeApi)(implicit
+  ec: ExecutionContext
+) extends AuthorizationManagementService {
 
   implicit val logger = Logger.takingImplicit[ContextFieldsToLog](this.getClass)
 

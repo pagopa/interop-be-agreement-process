@@ -76,15 +76,11 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Seq(VerifiedAttribute(verAttr1), VerifiedAttribute(verAttr2)),
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
-      mockEServiceRetrieve(eService.id, eService)
-      mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
-      mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+      mockContractCreation(agreement, eService, consumer, expectedSeed)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
@@ -110,14 +106,15 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(false),
         suspendedByProducer = None,
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.activationStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -145,14 +142,15 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.activationStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -180,14 +178,15 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(true),
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -215,14 +214,15 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(false),
         suspendedByProducer = Some(true),
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -251,14 +251,15 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(false),
         suspendedByProducer = None,
-        suspendedByPlatform = Some(true)
+        suspendedByPlatform = Some(true),
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -291,14 +292,15 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(true)
+        suspendedByPlatform = Some(true),
+        stamps = SpecData.activationStamps
       )
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionStamps))
       mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -334,7 +336,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(true)
+        suspendedByPlatform = Some(true),
+        stamps = SpecData.submissionStamps
       )
 
       mockAgreementRetrieve(agreement)
@@ -377,7 +380,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
         // TODO The action is done by the platform, but it's not suspended. What value should it have?
-        suspendedByPlatform = Some(false)
+        suspendedByPlatform = Some(false),
+        stamps = SpecData.submissionStamps
       )
 
       mockAgreementRetrieve(agreement)

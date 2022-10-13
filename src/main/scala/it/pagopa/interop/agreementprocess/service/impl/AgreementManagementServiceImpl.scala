@@ -2,7 +2,7 @@ package it.pagopa.interop.agreementprocess.service.impl
 
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.api.AgreementApi
-import it.pagopa.interop.agreementmanagement.client.invoker.{ApiError, BearerToken}
+import it.pagopa.interop.agreementmanagement.client.invoker.{ApiError, ApiRequest, BearerToken}
 import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotFound
 import it.pagopa.interop.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
@@ -11,9 +11,8 @@ import it.pagopa.interop.commons.utils.withHeaders
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import it.pagopa.interop.agreementmanagement.client.invoker.ApiRequest
 
-final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, api: AgreementApi)(implicit
+final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, api: AgreementApi)(implicit
   ec: ExecutionContext
 ) extends AgreementManagementService {
 
@@ -82,6 +81,14 @@ final case class AgreementManagementServiceImpl(invoker: AgreementManagementInvo
     val request: ApiRequest[Agreement] =
       api.updateAgreementById(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
     invoker.invoke(request, s"Updating agreement with id = $agreementId")
+  }
+
+  override def addAgreementContract(agreementId: UUID, seed: DocumentSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Document] = withHeaders { (bearerToken, correlationId, ip) =>
+    val request: ApiRequest[Document] =
+      api.addAgreementContract(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+    invoker.invoke(request, s"Adding  agreement with id = $agreementId")
   }
 
   override def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit] =
