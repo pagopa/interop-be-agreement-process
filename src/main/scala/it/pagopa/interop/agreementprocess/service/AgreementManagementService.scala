@@ -11,7 +11,7 @@ trait AgreementManagementService {
     contexts: Seq[(String, String)]
   ): Future[Agreement]
 
-  def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement]
+  def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement]
 
   def getAgreements(
     producerId: Option[String] = None,
@@ -35,4 +35,16 @@ trait AgreementManagementService {
   ): Future[Document]
 
   def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit]
+
+  def addConsumerDocument(agreementId: UUID, seed: DocumentSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Document]
+
+  def getConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Document]
+
+  def removeConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Unit]
 }

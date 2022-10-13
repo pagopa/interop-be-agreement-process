@@ -94,13 +94,19 @@ object Adapters {
     def toApi: DeclaredAttribute = DeclaredAttribute(id = a.id)
   }
 
+  implicit class DocumentSeedWrapper(private val d: AgreementManagement.DocumentSeed) extends AnyVal {
+    def toApi: DocumentSeed =
+      DocumentSeed(name = d.name, prettyName = d.prettyName, contentType = d.contentType, path = d.path)
+  }
+
   implicit class DocumentWrapper(private val d: AgreementManagement.Document) extends AnyVal {
     def toApi: Document = Document(
       id = d.id,
       name = d.name,
       prettyName = d.prettyName,
       contentType = d.contentType,
-      createdAt = d.createdAt
+      createdAt = d.createdAt,
+      path = d.path
     )
   }
 

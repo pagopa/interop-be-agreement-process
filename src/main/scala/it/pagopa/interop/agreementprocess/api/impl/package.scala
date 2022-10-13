@@ -21,8 +21,9 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def verifiedAttributeJsonFormat: RootJsonFormat[VerifiedAttribute]   = jsonFormat1(VerifiedAttribute)
   implicit def declaredAttributeJsonFormat: RootJsonFormat[DeclaredAttribute]   = jsonFormat1(DeclaredAttribute)
   implicit def certifiedAttributeJsonFormat: RootJsonFormat[CertifiedAttribute] = jsonFormat1(CertifiedAttribute)
-  implicit def documentJsonFormat: RootJsonFormat[Document]                     = jsonFormat5(Document)
-  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                   = jsonFormat17(Agreement)
+  implicit def documentSeedJsonFormat: RootJsonFormat[DocumentSeed]             = jsonFormat4(DocumentSeed)
+  implicit def documentJsonFormat: RootJsonFormat[Document]                     = jsonFormat6(Document)
+  implicit def agreementJsonFormat: RootJsonFormat[Agreement]                   = jsonFormat18(Agreement)
   implicit def agreementPayloadJsonFormat: RootJsonFormat[AgreementPayload]     = jsonFormat2(AgreementPayload)
   implicit def agreementRejectionPayloadJsonFormat: RootJsonFormat[AgreementRejectionPayload] =
     jsonFormat1(AgreementRejectionPayload)

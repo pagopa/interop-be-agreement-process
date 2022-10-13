@@ -114,14 +114,14 @@ trait SpecHelper extends MockFactory {
 
   def mockAgreementRetrieve(result: Agreement) =
     (mockAgreementManagementService
-      .getAgreementById(_: String)(_: Seq[(String, String)]))
+      .getAgreementById(_: UUID)(_: Seq[(String, String)]))
       .expects(*, *)
       .once()
       .returns(Future.successful(result))
 
   def mockAgreementRetrieveNotFound(agreementId: UUID) =
     (mockAgreementManagementService
-      .getAgreementById(_: String)(_: Seq[(String, String)]))
+      .getAgreementById(_: UUID)(_: Seq[(String, String)]))
       .expects(*, *)
       .once()
       .returns(Future.failed(AgreementNotFound(agreementId.toString)))
