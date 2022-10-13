@@ -501,9 +501,7 @@ final case class AgreementApiServiceImpl(
       updateSeed = getUpdateSeed(agreement, stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- validateResultState(newState)
-      _       <-
-        if (agreement.state == AgreementManagement.AgreementState.ACTIVE) performActivation(updated, updateSeed)
-        else Future.unit
+      _       <- performActivation(updated, updateSeed).whenA(agreement.state == AgreementManagement.AgreementState.ACTIVE)
     } yield updated
 
   }
