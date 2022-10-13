@@ -215,7 +215,7 @@ final case class AgreementApiServiceImpl(
         _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
         _              <- agreement.assertDeletableState.toFuture
         _              <- Future.traverse(agreement.consumerDocuments)(doc =>
-          fileManager.delete(ApplicationConfiguration.consumerDocumentsPath)(doc.path)
+          fileManager.delete(ApplicationConfiguration.storageContainer)(doc.path)
         )
         _              <- agreementManagementService.deleteAgreement(agreement.id)
       } yield ()
@@ -832,9 +832,12 @@ final case class AgreementApiServiceImpl(
     logger.info(s"Getting consumer document $documentId from agreement $agreementId")
 
     val result: Future[Document] = for {
-      agreementUUID <- agreementId.toFutureUUID
-      documentUUID  <- documentId.toFutureUUID
-      document      <- agreementManagementService.getConsumerDocument(agreementUUID, documentUUID)
+      organizationId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumerOrProducer(organizationId, agreement)
+      documentUUID   <- documentId.toFutureUUID
+      document       <- agreementManagementService.getConsumerDocument(agreementUUID, documentUUID)
     } yield document.toApi
 
     onComplete(result) {
