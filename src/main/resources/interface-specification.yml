@@ -398,7 +398,7 @@ paths:
             type: array
             items:
               $ref: '#/components/schemas/AgreementState'
-            default: [ ]
+            default: []
           explode: false
         - in: query
           name: latest
