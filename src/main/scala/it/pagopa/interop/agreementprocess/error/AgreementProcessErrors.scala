@@ -1,5 +1,6 @@
 package it.pagopa.interop.agreementprocess.error
 
+import it.pagopa.interop.agreementmanagement.client.model.AgreementState
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptorState
 import it.pagopa.interop.commons.utils.errors.ComponentError
@@ -80,5 +81,11 @@ object AgreementProcessErrors {
 
   final case class DocumentNotFound(agreementId: String, documentId: String)
       extends ComponentError("0017", s"Document $documentId in agreement $agreementId not found")
+
+  final case class DocumentsChangeNotAllowed(state: AgreementState)
+      extends ComponentError(
+        "0018",
+        s"Agreement state ${state.toString()} is not allowed to work on consumer documents"
+      )
 
 }

@@ -23,7 +23,7 @@ import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, getUidFutureUUID}
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
-import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, StringOps}
+import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
@@ -791,6 +791,11 @@ final case class AgreementApiServiceImpl(
     } yield ()
   }
 
+  def assertCanWorkOnConsumerDocuments(agreementState: AgreementState): Future[Unit] =
+    Future
+      .failed(DocumentsChangeNotAllowed(agreementState))
+      .unlessA(Set[AgreementState](AgreementState.DRAFT, AgreementState.PENDING).contains(agreementState))
+
   override def addAgreementConsumerDocument(agreementId: String, documentSeed: DocumentSeed)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerDocument: ToEntityMarshaller[Document],
@@ -804,6 +809,7 @@ final case class AgreementApiServiceImpl(
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsConsumer(organizationId, agreement)
+      _              <- assertCanWorkOnConsumerDocuments(agreement.state)
       document       <- agreementManagementService.addConsumerDocument(
         agreementUUID,
         AgreementManagement.DocumentSeed(
@@ -860,8 +866,13 @@ final case class AgreementApiServiceImpl(
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsConsumer(organizationId, agreement)
+      _              <- assertCanWorkOnConsumerDocuments(agreement.state)
       documentUUID   <- documentId.toFutureUUID
+      document       <- agreement.consumerDocuments
+        .find(_.id == documentUUID)
+        .toFuture(DocumentNotFound(agreementId, documentId))
       result         <- agreementManagementService.removeConsumerDocument(agreementUUID, documentUUID)
+      _              <- fileManager.delete(ApplicationConfiguration.storageContainer)(document.path)
     } yield result
 
     onComplete(result) {
