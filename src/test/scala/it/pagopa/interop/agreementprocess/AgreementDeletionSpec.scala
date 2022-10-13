@@ -18,8 +18,8 @@ class AgreementDeletionSpec extends AnyWordSpecLike with SpecHelper with Scalate
         SpecData.draftAgreement.copy(consumerId = requesterOrgId, consumerDocuments = Seq(consumerDoc1, consumerDoc2))
 
       mockAgreementRetrieve(agreement)
-      mockFileDeletion(ApplicationConfiguration.consumerDocumentsPath, consumerDoc1.path)
-      mockFileDeletion(ApplicationConfiguration.consumerDocumentsPath, consumerDoc2.path)
+      mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc1.path)
+      mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc2.path)
       mockAgreementDeletion(agreement.id)
 
       Get() ~> service.deleteAgreement(agreement.id.toString) ~> check {
@@ -36,8 +36,8 @@ class AgreementDeletionSpec extends AnyWordSpecLike with SpecHelper with Scalate
       )
 
       mockAgreementRetrieve(agreement)
-      mockFileDeletion(ApplicationConfiguration.consumerDocumentsPath, consumerDoc1.path)
-      mockFileDeletion(ApplicationConfiguration.consumerDocumentsPath, consumerDoc2.path)
+      mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc1.path)
+      mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc2.path)
       mockAgreementDeletion(agreement.id)
 
       Get() ~> service.deleteAgreement(agreement.id.toString) ~> check {
