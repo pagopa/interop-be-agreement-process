@@ -105,9 +105,7 @@ final case class AgreementApiServiceImpl(
         eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
         _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
         consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-        _              <- validateDeclaredAttributes(eService, consumer)
         updated        <- submit(agreement, eService, consumer)
-        _              <- validateCertifiedAttributes(eService, consumer) // Just to return the error. TODO required?
       } yield updated.toApi
 
       onComplete(result) {
@@ -447,6 +445,13 @@ final case class AgreementApiServiceImpl(
       case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString(), newState))
     }
 
+    def validateResultState(state: AgreementManagement.AgreementState) = Future
+      .failed(AgreementSubmissionFailed(agreement.id))
+      .unlessA(
+        List(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.ACTIVE)
+          .contains(state)
+      )
+
     for {
       uid    <- getUidFutureUUID(contexts)
       stamps <- calculateStamps(newState, Stamp(uid, offsetDateTimeSupplier.get()))
@@ -461,6 +466,7 @@ final case class AgreementApiServiceImpl(
         stamps = stamps
       )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
+      _       <- validateResultState(newState)
     } yield updated
 
   }
@@ -726,14 +732,6 @@ final case class AgreementApiServiceImpl(
     Future
       .failed(MissingCertifiedAttributes(eService.id, consumer.id))
       .unlessA(AgreementStateByAttributesFSM.certifiedAttributesSatisfied(eService, consumer))
-
-  def validateDeclaredAttributes(
-    eService: CatalogManagement.EService,
-    consumer: TenantManagement.Tenant
-  ): Future[Unit] =
-    Future
-      .failed(MissingDeclaredAttributes(eService.id, consumer.id))
-      .unlessA(AgreementStateByAttributesFSM.declaredAttributesSatisfied(eService, consumer))
 
   def verifyConsumerDoesNotActivatePending(
     agreement: AgreementManagement.Agreement,

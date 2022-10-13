@@ -6,21 +6,7 @@ import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
 import com.typesafe.scalalogging.LoggerTakingImplicit
 import it.pagopa.interop.agreementprocess.api.impl.problemOf
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
-  AgreementActivationFailed,
-  AgreementAlreadyExists,
-  AgreementNotFound,
-  AgreementNotInExpectedState,
-  DescriptorNotInExpectedState,
-  DocumentNotFound,
-  EServiceNotFound,
-  MissingCertifiedAttributes,
-  MissingDeclaredAttributes,
-  NoNewerDescriptorExists,
-  OperationNotAllowed,
-  PublishedDescriptorNotFound,
-  UnexpectedError
-}
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.model.Problem
 import it.pagopa.interop.commons.logging.ContextFieldsToLog
 import it.pagopa.interop.commons.utils.errors.ComponentError
@@ -82,8 +68,8 @@ object ErrorHandlers {
     case Failure(ex: AgreementNotFound)            => notFound(ex)
     case Failure(ex: AgreementAlreadyExists)       => badRequest(ex)
     case Failure(ex: AgreementNotInExpectedState)  => badRequest(ex)
+    case Failure(ex: AgreementSubmissionFailed)    => badRequest(ex)
     case Failure(ex: MissingCertifiedAttributes)   => badRequest(ex)
-    case Failure(ex: MissingDeclaredAttributes)    => badRequest(ex)
     case Failure(ex: DescriptorNotInExpectedState) => badRequest(ex)
     case Failure(ex: OperationNotAllowed)          => forbidden(ex)
     case Failure(_)                                => internalServerError(logMessage)
