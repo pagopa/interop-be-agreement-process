@@ -1,8 +1,7 @@
 package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes}
-import akka.http.scaladsl.server.Directives.{complete, onComplete}
+import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
@@ -24,11 +23,10 @@ import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, getUidFutureUUID}
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
-import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, StringOps}
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
-import java.io.File
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -315,27 +313,6 @@ final case class AgreementApiServiceImpl(
     onComplete(result) {
       handleRetrieveError(s"Error while getting agreement by id $agreementId") orElse { case Success(agreement) =>
         getAgreementById200(agreement)
-      }
-    }
-  }
-
-  override def getAgreementContract(agreementId: String)(implicit
-    contexts: Seq[(String, String)],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    toEntityMarshallerFile: ToEntityMarshaller[File]
-  ): Route = authorize(ADMIN_ROLE) {
-    logger.info(s"Retrieving contract for agreement $agreementId")
-
-    val result: Future[HttpEntity.Strict] =
-      for {
-        agreement  <- agreementManagementService.getAgreementById(agreementId)
-        contract   <- agreement.contract.toFuture(ContractNotFound(agreementId))
-        byteStream <- fileManager.get(ApplicationConfiguration.storageContainer)(contract.path)
-      } yield HttpEntity(ContentType(MediaTypes.`application/pdf`), byteStream.toByteArray())
-
-    onComplete(result) {
-      handleDownloadError(s"Error downloading contract fro agreement $agreementId") orElse { case Success(contract) =>
-        complete(contract)
       }
     }
   }
@@ -806,4 +783,33 @@ final case class AgreementApiServiceImpl(
         .whenA(activeAgreement.nonEmpty)
     } yield ()
   }
+
+  override def addAgreementConsumerDocument(agreementId: String, documentSeed: DocumentSeed)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerDocument: ToEntityMarshaller[Document],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = authorize(ADMIN_ROLE) {
+    for {
+      uuid     <- agreementId.toFutureUUID
+      document <- agreementManagementService.addConsumerDocuments(uuid, documentSeed)
+    } yield document
+
+  }
+
+  override def getAgreementConsumerDocument(agreementId: String, documentId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerDocument: ToEntityMarshaller[Document],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = ???
+
+  override def getAgreementContract(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerDocument: ToEntityMarshaller[Document],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = ???
+
+  override def removeAgreementConsumerDocument(agreementId: String, documentId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = ???
 }

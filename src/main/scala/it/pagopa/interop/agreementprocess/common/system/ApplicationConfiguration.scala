@@ -16,13 +16,12 @@ object ApplicationConfiguration {
   val attributeRegistryManagementURL: String =
     config.getString("agreement-process.services.attribute-registry-management")
 
-  val consumerDocumentsPath: String = config.getString("agreement-process.storage.consumer-documents-path")
-
   require(jwtAudience.nonEmpty, "Audience cannot be empty")
 
   val storageKind: String           = config.getString("agreement-process.storage.kind")
   val storageContainer: String      = config.getString("agreement-process.storage.container")
   val agreementDocPath: String      = config.getString("agreement-process.storage.agreement-contract-path")
+  val consumerDocumentsPath: String = config.getString("agreement-process.storage.consumer-documents-path")
   val partyManagementApiKey: String = config.getString("agreement-process.party-management-api-key")
   val userRegistryApiKey: String    = config.getString("agreement-process.user-registry-api-key")
 }

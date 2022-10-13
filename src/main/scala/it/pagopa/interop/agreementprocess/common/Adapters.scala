@@ -100,7 +100,8 @@ object Adapters {
       name = d.name,
       prettyName = d.prettyName,
       contentType = d.contentType,
-      createdAt = d.createdAt
+      createdAt = d.createdAt,
+      path = d.path
     )
   }
 

@@ -97,4 +97,9 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
       invoker.invoke(request, s"Deleting agreement by id = $agreementId")
     }
 
+  def addConsumerDocuments(agreementId: UUID, seed: DocumentSeed)(implicit contexts: Seq[(String, String)]): Future[Document] =
+    withHeaders { (bearerToken, correlationId, ip) =>
+      val request = api.addAgreementConsumerDocument(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+      invoker.invoke(request, s"Adding document to agreement = $agreementId")
+    }
 }

@@ -35,4 +35,8 @@ trait AgreementManagementService {
   ): Future[Document]
 
   def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit]
+
+  def addConsumerDocuments(agreementId: UUID, seed: DocumentSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Document]
 }
