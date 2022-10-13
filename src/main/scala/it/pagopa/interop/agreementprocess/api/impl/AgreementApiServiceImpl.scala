@@ -476,12 +476,6 @@ final case class AgreementApiServiceImpl(
           stamps = stamps
         )
 
-    val failureStates = List(
-      AgreementManagement.AgreementState.DRAFT,
-      AgreementManagement.AgreementState.PENDING,
-      AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-    )
-
     def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed) =
       for {
         _ <- agreementContractCreator.create(agreement, eService, consumer, seed)
@@ -492,7 +486,6 @@ final case class AgreementApiServiceImpl(
             agreementId = agreement.id,
             state = toClientState(newState)
           )
-          .unlessA(failureStates.contains(newState))
       } yield ()
 
     for {
