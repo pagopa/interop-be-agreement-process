@@ -325,7 +325,7 @@ final case class AgreementApiServiceImpl(
   override def computeAgreementsByAttribute(consumerId: String, attributeId: String)(implicit
     contexts: Seq[(String, String)]
   ): Route =
-    authorize(INTERNAL_ROLE) {
+    authorize(INTERNAL_ROLE, M2M_ROLE) {
       logger.info(s"Recalculating agreements status for attribute $attributeId")
 
       val allowedStateTransitions: Map[AgreementManagement.AgreementState, AgreementManagement.AgreementState] =
