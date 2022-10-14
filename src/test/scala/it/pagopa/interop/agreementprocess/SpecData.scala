@@ -163,7 +163,7 @@ object SpecData {
 
   def matchingVerifiedAttributes(verifierId: UUID = UUID.randomUUID()): (Attributes, TenantAttribute) = {
     val attributeId       = UUID.randomUUID()
-    val eServiceAttribute = catalogCertifiedAttribute(attributeId)
+    val eServiceAttribute = catalogVerifiedAttribute(attributeId)
     val tenantAttribute   = tenantVerifiedAttribute(attributeId, verifierId)
 
     (eServiceAttribute, tenantAttribute)
