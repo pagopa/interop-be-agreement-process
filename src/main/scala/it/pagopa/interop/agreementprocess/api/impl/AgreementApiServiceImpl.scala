@@ -481,16 +481,14 @@ final case class AgreementApiServiceImpl(
         )
 
     def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed) =
-      for {
-        _ <- agreementContractCreator.create(agreement, eService, consumer, seed)
-        _ <- authorizationManagementService
+      agreementContractCreator.create(agreement, eService, consumer, seed) >>
+        authorizationManagementService
           .updateStateOnClients(
             eServiceId = agreement.eserviceId,
             consumerId = agreement.consumerId,
             agreementId = agreement.id,
             state = toClientState(newState)
           )
-      } yield ()
 
     for {
       uid    <- getUidFutureUUID(contexts)
