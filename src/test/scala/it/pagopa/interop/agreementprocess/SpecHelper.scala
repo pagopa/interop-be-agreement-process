@@ -249,4 +249,57 @@ trait SpecHelper extends MockFactory {
     mockAgreementUpdate(agreement.id, expectedSeed, agreement)
     mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
   }
+
+  def mockAutomaticActivation(
+    agreement: Agreement,
+    eService: EService,
+    consumer: Tenant,
+    expectedSeed: UpdateAgreementSeed
+  ) = {
+    mockAgreementRetrieve(agreement)
+    mockAgreementsRetrieve(Nil)
+    mockEServiceRetrieve(eService.id, eService)
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockTenantRetrieve(consumer.id, consumer)
+    mockAgreementUpdate(
+      agreement.id,
+      expectedSeed,
+      agreement.copy(state = expectedSeed.state, stamps = SpecData.activationStamps)
+    )
+    mockPDFCreatorCreate
+    mockFileManagerWrite
+    mockAgreementContract
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
+    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
+    mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+  }
+
+  def mockSelfActivation(
+    agreement: Agreement,
+    eService: EService,
+    consumer: Tenant,
+    expectedSeed: UpdateAgreementSeed
+  ) = {
+    mockAgreementRetrieve(agreement)
+    mockAgreementsRetrieve(Nil)
+    mockEServiceRetrieve(eService.id, eService)
+    mockTenantRetrieve(consumer.id, consumer)
+    mockAgreementUpdate(
+      agreement.id,
+      expectedSeed,
+      agreement.copy(state = expectedSeed.state, stamps = SpecData.activationStamps)
+    )
+    mockPDFCreatorCreate
+    mockFileManagerWrite
+    mockAgreementContract
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockPartyManagementRetrieve(SpecData.institution(UUID.randomUUID()))
+    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
+    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
+    mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+  }
 }

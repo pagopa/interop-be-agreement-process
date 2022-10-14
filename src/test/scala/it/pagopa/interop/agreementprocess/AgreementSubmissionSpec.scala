@@ -2,7 +2,12 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
+import it.pagopa.interop.agreementmanagement.client.model.{
+  CertifiedAttribute,
+  DeclaredAttribute,
+  UpdateAgreementSeed,
+  VerifiedAttribute
+}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.{AUTOMATIC, MANUAL}
 import org.scalatest.matchers.should.Matchers._
@@ -54,38 +59,39 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
     }
 
     "succeed and Activate if all requirements are met and approval policy is Automatic" in {
+      val producerId: UUID = requesterOrgId
+
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
+      val (eServiceVeriAttr, tenantVeriAttr) = SpecData.matchingVerifiedAttributes(producerId)
+      val eServiceAttr                       =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVeriAttr.verified)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVeriAttr)
 
       val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = AUTOMATIC)
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
+      val eService   =
+        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = producerId)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
-        SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+        SpecData.draftAgreement.copy(
+          producerId = producerId,
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id
+        )
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
-        certifiedAttributes = Nil,
-        declaredAttributes = Nil,
-        verifiedAttributes = Nil,
+        certifiedAttributes = Seq(CertifiedAttribute(tenantCertAttr.certified.get.id)),
+        declaredAttributes = Seq(DeclaredAttribute(tenantDeclAttr.declared.get.id)),
+        verifiedAttributes = Seq(VerifiedAttribute(tenantVeriAttr.verified.get.id)),
         suspendedByConsumer = None,
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
         stamps = SpecData.activationStamps
       )
 
-      // TODO This should also create the contract document
-      mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
-      mockEServiceRetrieve(eService.id, eService)
-      mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(
-        agreement.id,
-        expectedSeed,
-        agreement.copy(state = expectedSeed.state, stamps = SpecData.activationStamps)
-      )
+      mockAutomaticActivation(agreement, eService, consumer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
@@ -132,15 +138,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
-      mockEServiceRetrieve(eService.id, eService)
-      mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(
-        agreement.id,
-        expectedSeed,
-        agreement.copy(state = expectedSeed.state, stamps = SpecData.activationStamps)
-      )
+      mockSelfActivation(agreement, eService, consumer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
