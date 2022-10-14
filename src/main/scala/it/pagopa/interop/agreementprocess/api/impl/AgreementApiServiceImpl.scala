@@ -1,8 +1,7 @@
 package it.pagopa.interop.agreementprocess.api.impl
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes}
-import akka.http.scaladsl.server.Directives.{complete, onComplete}
+import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
@@ -24,11 +23,10 @@ import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, getUidFutureUUID}
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
-import it.pagopa.interop.commons.utils.TypeConversions.{EitherOps, OptionOps, StringOps}
+import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
-import java.io.File
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -99,7 +97,8 @@ final case class AgreementApiServiceImpl(
       logger.info("Submitting agreement {}", agreementId)
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
         _              <- agreement.assertSubmittableState.toFuture
         _              <- verifySubmissionConflictingAgreements(agreement)
@@ -125,7 +124,8 @@ final case class AgreementApiServiceImpl(
       logger.info("Activating agreement {}", agreementId)
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
         _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
         _              <- agreement.assertActivableState.toFuture
@@ -152,7 +152,8 @@ final case class AgreementApiServiceImpl(
       logger.info("Suspending agreement {}", agreementId)
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
         _              <- agreement.assertSuspendableState.toFuture
         eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -175,7 +176,8 @@ final case class AgreementApiServiceImpl(
     logger.info(s"Upgrading agreement $agreementId")
     val result = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      agreement      <- agreementManagementService.getAgreementById(agreementId)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- agreement.assertUpgradableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -206,11 +208,12 @@ final case class AgreementApiServiceImpl(
       logger.info(s"Deleting agreement $agreementId")
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreement      <- agreementManagementService.getAgreementById(agreementId)
+        agreementUUID  <- agreementId.toFutureUUID
+        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
         _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
         _              <- agreement.assertDeletableState.toFuture
         _              <- Future.traverse(agreement.consumerDocuments)(doc =>
-          fileManager.delete(ApplicationConfiguration.consumerDocumentsPath)(doc.path)
+          fileManager.delete(ApplicationConfiguration.storageContainer)(doc.path)
         )
         _              <- agreementManagementService.deleteAgreement(agreement.id)
       } yield ()
@@ -244,7 +247,8 @@ final case class AgreementApiServiceImpl(
     logger.info(s"Rejecting agreement $agreementId")
     val result = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      agreement      <- agreementManagementService.getAgreementById(agreementId)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsProducer(requesterOrgId, agreement)
       _              <- agreement.assertRejectableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
@@ -307,33 +311,13 @@ final case class AgreementApiServiceImpl(
   ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
     logger.info(s"Getting agreement by id $agreementId")
     val result: Future[Agreement] = for {
-      agreement <- agreementManagementService.getAgreementById(agreementId)
+      agreementUUID <- agreementId.toFutureUUID
+      agreement     <- agreementManagementService.getAgreementById(agreementUUID)
     } yield agreement.toApi
 
     onComplete(result) {
       handleRetrieveError(s"Error while getting agreement by id $agreementId") orElse { case Success(agreement) =>
         getAgreementById200(agreement)
-      }
-    }
-  }
-
-  override def getAgreementContract(agreementId: String)(implicit
-    contexts: Seq[(String, String)],
-    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
-    toEntityMarshallerFile: ToEntityMarshaller[File]
-  ): Route = authorize(ADMIN_ROLE) {
-    logger.info(s"Retrieving contract for agreement $agreementId")
-
-    val result: Future[HttpEntity.Strict] =
-      for {
-        agreement  <- agreementManagementService.getAgreementById(agreementId)
-        contract   <- agreement.contract.toFuture(ContractNotFound(agreementId))
-        byteStream <- fileManager.get(ApplicationConfiguration.storageContainer)(contract.path)
-      } yield HttpEntity(ContentType(MediaTypes.`application/pdf`), byteStream.toByteArray())
-
-    onComplete(result) {
-      handleDownloadError(s"Error downloading contract fro agreement $agreementId") orElse { case Success(contract) =>
-        complete(contract)
       }
     }
   }
@@ -804,4 +788,96 @@ final case class AgreementApiServiceImpl(
         .whenA(activeAgreement.nonEmpty)
     } yield ()
   }
+
+  def assertCanWorkOnConsumerDocuments(agreementState: AgreementState): Future[Unit] =
+    Future
+      .failed(DocumentsChangeNotAllowed(agreementState))
+      .unlessA(Set[AgreementState](AgreementState.DRAFT, AgreementState.PENDING).contains(agreementState))
+
+  override def addAgreementConsumerDocument(agreementId: String, documentSeed: DocumentSeed)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerDocument: ToEntityMarshaller[Document],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = authorize(ADMIN_ROLE) {
+
+    logger.info(s"Adding a consumer document to agreement $agreementId")
+
+    val result: Future[Document] = for {
+      organizationId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(organizationId, agreement)
+      _              <- assertCanWorkOnConsumerDocuments(agreement.state)
+      document       <- agreementManagementService.addConsumerDocument(
+        agreementUUID,
+        AgreementManagement.DocumentSeed(
+          name = documentSeed.name,
+          prettyName = documentSeed.prettyName,
+          contentType = documentSeed.contentType,
+          path = documentSeed.path
+        )
+      )
+    } yield document.toApi
+
+    onComplete(result) {
+      handleAddDocumentError(s"Error adding a consumer document to agreement $agreementId") orElse {
+        case Success(document) =>
+          addAgreementConsumerDocument200(document)
+      }
+    }
+  }
+
+  override def getAgreementConsumerDocument(agreementId: String, documentId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerDocument: ToEntityMarshaller[Document],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = authorize(ADMIN_ROLE) {
+
+    logger.info(s"Getting consumer document $documentId from agreement $agreementId")
+
+    val result: Future[Document] = for {
+      organizationId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumerOrProducer(organizationId, agreement)
+      documentUUID   <- documentId.toFutureUUID
+      document       <- agreementManagementService.getConsumerDocument(agreementUUID, documentUUID)
+    } yield document.toApi
+
+    onComplete(result) {
+      handleGetDocumentError(s"Error getting consumer document $documentId from agreement $agreementId") orElse {
+        case Success(document) =>
+          getAgreementConsumerDocument200(document)
+      }
+    }
+  }
+
+  override def removeAgreementConsumerDocument(agreementId: String, documentId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem]
+  ): Route = authorize(ADMIN_ROLE) {
+
+    logger.info(s"Removing consumer document $documentId from agreement $agreementId")
+
+    val result: Future[Unit] = for {
+      organizationId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(organizationId, agreement)
+      _              <- assertCanWorkOnConsumerDocuments(agreement.state)
+      documentUUID   <- documentId.toFutureUUID
+      document       <- agreement.consumerDocuments
+        .find(_.id == documentUUID)
+        .toFuture(DocumentNotFound(agreementId, documentId))
+      result         <- agreementManagementService.removeConsumerDocument(agreementUUID, documentUUID)
+      _              <- fileManager.delete(ApplicationConfiguration.storageContainer)(document.path)
+    } yield result
+
+    onComplete(result) {
+      handleGetDocumentError(s"Error removing consumer document $documentId from agreement $agreementId") orElse {
+        case Success(_) => removeAgreementConsumerDocument204
+      }
+    }
+  }
+
 }

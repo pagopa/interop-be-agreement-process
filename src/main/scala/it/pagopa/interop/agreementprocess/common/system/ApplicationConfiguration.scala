@@ -16,8 +16,6 @@ object ApplicationConfiguration {
   val attributeRegistryManagementURL: String =
     config.getString("agreement-process.services.attribute-registry-management")
 
-  val consumerDocumentsPath: String = config.getString("agreement-process.storage.consumer-documents-path")
-
   require(jwtAudience.nonEmpty, "Audience cannot be empty")
 
   val storageKind: String           = config.getString("agreement-process.storage.kind")

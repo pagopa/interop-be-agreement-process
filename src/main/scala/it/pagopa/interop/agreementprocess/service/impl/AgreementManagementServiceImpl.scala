@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.api.AgreementApi
 import it.pagopa.interop.agreementmanagement.client.invoker.{ApiError, ApiRequest, BearerToken}
 import it.pagopa.interop.agreementmanagement.client.model._
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotFound
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{AgreementNotFound, DocumentNotFound}
 import it.pagopa.interop.agreementprocess.service.{AgreementManagementInvoker, AgreementManagementService}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.withHeaders
@@ -26,11 +26,11 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
     invoker.invoke(request, s"Upgrading agreement by id = $agreementId")
   }
 
-  override def getAgreementById(agreementId: String)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
+  override def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
     withHeaders { (bearerToken, correlationId, ip) =>
-      val request = api.getAgreement(correlationId, agreementId, ip)(BearerToken(bearerToken))
-      invoker.invoke(request, s"Retrieving agreement by id = $agreementId").recoverWith {
-        case err: ApiError[_] if err.code == 404 => Future.failed(AgreementNotFound(agreementId))
+      val request = api.getAgreement(correlationId, agreementId.toString(), ip)(BearerToken(bearerToken))
+      invoker.invoke(request, s"Retrieving agreement by id = ${agreementId.toString()}").recoverWith {
+        case err: ApiError[_] if err.code == 404 => Future.failed(AgreementNotFound(agreementId.toString()))
       }
     }
 
@@ -97,4 +97,38 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
       invoker.invoke(request, s"Deleting agreement by id = $agreementId")
     }
 
+  def addConsumerDocument(agreementId: UUID, seed: DocumentSeed)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Document] =
+    withHeaders { (bearerToken, correlationId, ip) =>
+      val request = api.addAgreementConsumerDocument(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+      invoker.invoke(request, s"Adding document to agreement = ${agreementId.toString()}")
+    }
+
+  override def getConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Document] = withHeaders { (bearerToken, correlationId, ip) =>
+    val request = api.getAgreementConsumerDocument(correlationId, agreementId, documentId, ip)(BearerToken(bearerToken))
+
+    invoker
+      .invoke(request, s"Getting document = ${documentId.toString()} from agreement = ${agreementId.toString()}")
+      .recoverWith {
+        case err: ApiError[_] if err.code == 404 =>
+          Future.failed(DocumentNotFound(agreementId.toString(), documentId.toString()))
+      }
+  }
+
+  override def removeConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Unit] = withHeaders { (bearerToken, correlationId, ip) =>
+    val request =
+      api.removeAgreementConsumerDocument(correlationId, agreementId, documentId, ip)(BearerToken(bearerToken))
+
+    invoker
+      .invoke(request, s"Removing document = ${documentId.toString()} from agreement = ${agreementId.toString()}")
+      .recoverWith {
+        case err: ApiError[_] if err.code == 404 =>
+          Future.failed(DocumentNotFound(agreementId.toString(), documentId.toString()))
+      }
+  }
 }
