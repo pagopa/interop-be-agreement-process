@@ -24,13 +24,15 @@ import com.typesafe.config.{Config, ConfigFactory}
 import scala.collection.mutable
 
 class Controller({{#apiInfo}}{{#apis}}{{#operations}}{{classVarName}}: {{classname}}{{^-last}}, {{/-last}}{{/operations}}{{/apis}}{{/apiInfo}}, validationExceptionToRoute: Option[ValidationReport => Route] = None)(implicit system: ActorSystem) {
+private final val openApiFileName: String = "interface-specification.yml"
+private final val swaggerEnabled: Boolean = Option(System.getenv("SWAGGER_ENABLED")).flatMap(_.toBooleanOption).getOrElse(false)
 val interfaceVersion = buildinfo.BuildInfo.interfaceVersion
 private val mf = new DefaultMustacheFactory
 val writer =
-mf.compile("interface-specification.yml").execute(new StringWriter(), mutable.HashMap("version" -> interfaceVersion).asJava).asInstanceOf[StringWriter]
+mf.compile(openApiFileName).execute(new StringWriter(), mutable.HashMap("version" -> interfaceVersion).asJava).asInstanceOf[StringWriter]
 writer.flush()
 writer.close()
-private val tmpFile = File.createTempFile("tmp", "interface-specification.yml")
+private val tmpFile = File.createTempFile("tmp", openApiFileName)
 tmpFile.deleteOnExit()
 val w = new BufferedWriter(new FileWriter(tmpFile))
 w.write(writer.toString)
@@ -43,7 +45,7 @@ private val validator: OpenApiInteractionValidator =
    .build
 
 private val strictnessTimeout = FiniteDuration({{entityStrictnessTimeout}}, SECONDS)
-private val validationsWhitelist: List[String] = List("swagger-ui", "build-info")
+private val validationsWhitelist: List[String] = List("build-info") ::: (if(swaggerEnabled) List("swagger-ui") else Nil)
 
  def validationFunction(httpRequest: HttpRequest)(route: Route): Route = {
     if (validationsWhitelist.exists(httpRequest.uri.toString.contains(_)))
@@ -106,15 +108,16 @@ complete(HttpEntity(ContentTypes.`application/json`, buildinfo.BuildInfo.toJson)
 }
 
 def swaggerRoute: Route =
-    pathPrefix("{{projectName}}" / interfaceVersion / "swagger") {
-      getFromResourceDirectory("swagger-ui") ~ getFromFile(tmpFile)
-    }
+pathPrefix("{{projectName}}" / interfaceVersion / "swagger") {
+getFromResourceDirectory("swagger-ui") ~ getFromFile(tmpFile)
+}
 
-lazy val routes: Route = getBuildInfo ~ swaggerRoute ~ pathPrefix("{{projectName}}" / interfaceVersion) {
+val accessoryRoutes: Route = if (swaggerEnabled)  getBuildInfo ~ swaggerRoute else getBuildInfo
+
+lazy val routes: Route = accessoryRoutes ~ pathPrefix("{{projectName}}" / interfaceVersion) {
 toStrictEntity(strictnessTimeout) {
-extractRequest {
-request =>
-validationFunction(request){
+extractRequest { request =>
+validationFunction(request) {
 {{#apiInfo}}{{#apis}}{{#operations}}{{classVarName}}.route {{^-last}} ~ {{/-last}}{{/operations}}{{/apis}}{{/apiInfo}}
 }
 }
