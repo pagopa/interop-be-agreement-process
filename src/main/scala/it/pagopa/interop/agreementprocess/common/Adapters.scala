@@ -65,7 +65,8 @@ object Adapters {
       suspendedByPlatform = a.suspendedByPlatform,
       consumerDocuments = a.consumerDocuments.map(_.toApi),
       createdAt = a.createdAt,
-      updatedAt = a.updatedAt
+      updatedAt = a.updatedAt,
+      contract = a.contract.map(_.toApi)
     )
   }
 
