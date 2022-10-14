@@ -48,7 +48,7 @@
     {
       "route": "computeAgreementsByAttribute",
       "verb": "POST",
-      "roles": ["internal"]
+      "roles": ["internal", "m2m"]
     }
   ]
 }
