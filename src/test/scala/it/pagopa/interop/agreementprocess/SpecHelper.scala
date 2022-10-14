@@ -261,6 +261,7 @@ trait SpecHelper extends MockFactory {
     mockEServiceRetrieve(eService.id, eService)
     mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
     mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
+    mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
     mockTenantRetrieve(consumer.id, consumer)
     mockAgreementUpdate(
       agreement.id,
