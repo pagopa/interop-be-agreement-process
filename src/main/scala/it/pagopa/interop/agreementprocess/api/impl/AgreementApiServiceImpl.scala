@@ -72,7 +72,7 @@ final case class AgreementApiServiceImpl(
       _              <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
       _              <- verifyCreationConflictingAgreements(eService.producerId, requesterOrgId, payload)
       consumer       <- tenantManagementService.getTenant(requesterOrgId)
-      _              <- validateCertifiedAttributes(eService, consumer)
+      _              <- validateCertifiedAttributes(eService, consumer).whenA(eService.producerId != consumer.id)
       agreement      <- agreementManagementService.createAgreement(
         eService.producerId,
         requesterOrgId,

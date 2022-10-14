@@ -28,6 +28,33 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       }
     }
 
+    "succeed if Consumer and Producer are the same even on unmet attributes" in {
+      val eServiceCertAttr = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr   = SpecData.tenantCertifiedAttribute()
+      val eServiceDeclAttr = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
+      val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
+      val eServiceAttr     =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val descriptor = SpecData.publishedDescriptor
+      val eService   =
+        SpecData.eService.copy(producerId = requesterOrgId, descriptors = Seq(descriptor), attributes = eServiceAttr)
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+
+      mockEServiceRetrieve(eService.id, eService)
+      mockAgreementsRetrieve(Nil)
+      mockTenantRetrieve(consumer.id, consumer)
+      mockAgreementCreation(SpecData.agreement)
+
+      Get() ~> service.createAgreement(payload) ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
     "fail if EService does not exist" in {
       val descriptor = SpecData.publishedDescriptor
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
