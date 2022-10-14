@@ -28,6 +28,27 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       nextState(agreement, eService, consumer) shouldBe PENDING
     }
 
+    "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
+      val producerId: UUID = UUID.randomUUID()
+
+      val eServiceCertAttr = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr   = SpecData.tenantCertifiedAttribute()
+      val eServiceDeclAttr = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
+      val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
+      val eServiceAttr     =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val agreement: Agreement =
+        SpecData.agreement.copy(state = DRAFT, producerId = producerId, consumerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, producerId = producerId)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
+
+      nextState(agreement, eService, consumer) shouldBe ACTIVE
+    }
+
     "go to PENDING when Certified and Declared attributes are satisfied and Agreement Approval Policy is not AUTOMATIC" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
@@ -175,6 +196,27 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       nextState(agreement, eService, consumer) shouldBe SUSPENDED
     }
+
+    "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
+      val producerId: UUID = UUID.randomUUID()
+
+      val eServiceCertAttr = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr   = SpecData.tenantCertifiedAttribute()
+      val eServiceDeclAttr = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
+      val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
+      val eServiceAttr     =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val agreement: Agreement =
+        SpecData.agreement.copy(state = ACTIVE, producerId = producerId, consumerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, producerId = producerId)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
+
+      nextState(agreement, eService, consumer) shouldBe ACTIVE
+    }
   }
 
   "from SUSPENDED" should {
@@ -242,6 +284,27 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       nextState(agreement, eService, consumer) shouldBe SUSPENDED
+    }
+
+    "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
+      val producerId: UUID = UUID.randomUUID()
+
+      val eServiceCertAttr = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr   = SpecData.tenantCertifiedAttribute()
+      val eServiceDeclAttr = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
+      val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
+      val eServiceAttr     =
+        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+
+      val agreement: Agreement =
+        SpecData.agreement.copy(state = SUSPENDED, producerId = producerId, consumerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, producerId = producerId)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
+
+      nextState(agreement, eService, consumer) shouldBe ACTIVE
     }
   }
 

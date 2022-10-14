@@ -30,7 +30,8 @@ object AgreementStateByAttributesFSM {
         else if (!verifiedAttributesSatisfied(agreement, eService, consumer)) PENDING
         else ACTIVE
       case ACTIVE                       =>
-        if (
+        if (agreement.consumerId == agreement.producerId) ACTIVE
+        else if (
           certifiedAttributesSatisfied(eService, consumer) &&
           declaredAttributesSatisfied(eService, consumer) &&
           verifiedAttributesSatisfied(agreement, eService, consumer)
@@ -39,7 +40,8 @@ object AgreementStateByAttributesFSM {
         else
           SUSPENDED
       case SUSPENDED                    =>
-        if (
+        if (agreement.consumerId == agreement.producerId) ACTIVE
+        else if (
           certifiedAttributesSatisfied(eService, consumer) &&
           declaredAttributesSatisfied(eService, consumer) &&
           verifiedAttributesSatisfied(agreement, eService, consumer)
