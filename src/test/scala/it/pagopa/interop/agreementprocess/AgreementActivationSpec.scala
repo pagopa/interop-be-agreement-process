@@ -96,7 +96,9 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           consumerId = consumer.id,
-          suspendedByConsumer = Some(true)
+          suspendedByConsumer = Some(true),
+          suspendedByProducer = None,
+          suspendedByPlatform = None
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -241,7 +243,9 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           descriptorId = descriptor.id,
           producerId = eService.producerId,
           consumerId = consumer.id,
-          suspendedByPlatform = Some(true)
+          suspendedByPlatform = Some(true),
+          suspendedByConsumer = None,
+          suspendedByProducer = None
         )
 
       val expectedSeed = UpdateAgreementSeed(

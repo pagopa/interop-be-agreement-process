@@ -190,7 +190,8 @@ object SpecData {
 
   def draftAgreement: Agreement     = agreement.copy(state = AgreementState.DRAFT)
   def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING, stamps = submissionStamps)
-  def suspendedAgreement: Agreement = agreement.copy(state = AgreementState.SUSPENDED, stamps = suspensionStamps)
+  def suspendedAgreement: Agreement =
+    agreement.copy(state = AgreementState.SUSPENDED, stamps = suspensionStamps, suspendedByProducer = Some(true))
   def activeAgreement: Agreement    = agreement.copy(state = AgreementState.ACTIVE, stamps = activationStamps)
   def archivedAgreement: Agreement  = agreement.copy(state = AgreementState.ARCHIVED, stamps = archivingStamps)
   def missingCertifiedAttributesAgreement: Agreement =

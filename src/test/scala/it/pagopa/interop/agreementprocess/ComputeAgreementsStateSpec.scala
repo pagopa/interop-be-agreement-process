@@ -2,6 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, UpdateAgreementSeed}
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 import it.pagopa.interop.commons.jwt.INTERNAL_ROLE
 import org.scalatest.matchers.should.Matchers._
@@ -21,30 +22,86 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
 
       val eServiceId1 = UUID.randomUUID()
       val eServiceId2 = UUID.randomUUID()
+      val eServiceId3 = UUID.randomUUID()
       val eService1   = SpecData.eService.copy(id = eServiceId1, attributes = eServiceAttr)
       val eService2   = SpecData.eService.copy(id = eServiceId2)
+      val eService3   = SpecData.eService.copy(id = eServiceId3, attributes = eServiceAttr)
       val tenant      = SpecData.tenant.copy(attributes = Seq(tenantAttr))
 
-      val suspendedAgreement       = SpecData.suspendedAgreement.copy(eserviceId = eServiceId1)
+      val suspendedAgreement1      =
+        SpecData.suspendedAgreement.copy(
+          eserviceId = eServiceId1,
+          suspendedByProducer = None,
+          suspendedByConsumer = None,
+          suspendedByPlatform = Some(true)
+        )
       val missingCertAttrAgreement =
         SpecData.missingCertifiedAttributesAgreement.copy(eserviceId = eServiceId1, suspendedByPlatform = Some(true))
-      val suspendedAgreement2      = SpecData.suspendedAgreement.copy(eserviceId = eServiceId2)
+      val suspendedAgreement2      =
+        SpecData.suspendedAgreement.copy(eserviceId = eServiceId2, suspendedByProducer = Some(true))
+      val suspendedAgreement3      =
+        SpecData.suspendedAgreement.copy(
+          eserviceId = eServiceId3,
+          suspendedByProducer = Some(true),
+          suspendedByConsumer = None,
+          suspendedByPlatform = Some(true)
+        )
+      val agreements               =
+        Seq(suspendedAgreement1, missingCertAttrAgreement, suspendedAgreement2, suspendedAgreement3)
 
-      val agreements =
-        Seq(suspendedAgreement, missingCertAttrAgreement, suspendedAgreement2)
+      val expectedSeed1 = UpdateAgreementSeed(
+        state = AgreementState.ACTIVE,
+        certifiedAttributes = suspendedAgreement1.certifiedAttributes,
+        declaredAttributes = suspendedAgreement1.declaredAttributes,
+        verifiedAttributes = suspendedAgreement1.verifiedAttributes,
+        suspendedByConsumer = None,
+        suspendedByProducer = None,
+        suspendedByPlatform = Some(false),
+        stamps = suspendedAgreement1.stamps,
+        consumerNotes = suspendedAgreement1.consumerNotes,
+        rejectionReason = suspendedAgreement1.rejectionReason
+      )
+
+      val expectedSeed2 = UpdateAgreementSeed(
+        state = AgreementState.DRAFT,
+        certifiedAttributes = missingCertAttrAgreement.certifiedAttributes,
+        declaredAttributes = missingCertAttrAgreement.declaredAttributes,
+        verifiedAttributes = missingCertAttrAgreement.verifiedAttributes,
+        suspendedByConsumer = None,
+        suspendedByProducer = None,
+        suspendedByPlatform = Some(false),
+        stamps = missingCertAttrAgreement.stamps,
+        consumerNotes = missingCertAttrAgreement.consumerNotes,
+        rejectionReason = missingCertAttrAgreement.rejectionReason
+      )
+
+      val expectedSeed3 = UpdateAgreementSeed(
+        state = AgreementState.SUSPENDED,
+        certifiedAttributes = suspendedAgreement3.certifiedAttributes,
+        declaredAttributes = suspendedAgreement3.declaredAttributes,
+        verifiedAttributes = suspendedAgreement3.verifiedAttributes,
+        suspendedByConsumer = None,
+        suspendedByProducer = Some(true),
+        suspendedByPlatform = Some(false),
+        stamps = suspendedAgreement3.stamps,
+        consumerNotes = suspendedAgreement3.consumerNotes,
+        rejectionReason = suspendedAgreement3.rejectionReason
+      )
 
       mockAgreementsRetrieve(agreements)
       mockEServiceRetrieve(eServiceId1, eService1)
       mockEServiceRetrieve(eServiceId2, eService2)
+      mockEServiceRetrieve(eServiceId3, eService3)
       mockTenantRetrieve(consumerId, tenant)
 
-      mockAgreementUpdateIgnoreSeed(suspendedAgreement.id)
-      mockAgreementUpdateIgnoreSeed(missingCertAttrAgreement.id)
+      mockAgreementUpdate(suspendedAgreement1.id, expectedSeed1, suspendedAgreement1)
+      mockAgreementUpdate(missingCertAttrAgreement.id, expectedSeed2, missingCertAttrAgreement)
+      mockAgreementUpdate(suspendedAgreement3.id, expectedSeed3, suspendedAgreement3)
 
       mockClientStateUpdate(
-        suspendedAgreement.eserviceId,
-        suspendedAgreement.consumerId,
-        suspendedAgreement.id,
+        suspendedAgreement1.eserviceId,
+        suspendedAgreement1.consumerId,
+        suspendedAgreement1.id,
         ClientComponentState.ACTIVE
       )
 

@@ -323,16 +323,19 @@ final case class AgreementApiServiceImpl(
     authorize(INTERNAL_ROLE, M2M_ROLE) {
       logger.info(s"Recalculating agreements status for attribute $attributeId")
 
-      val allowedStateTransitions: Map[AgreementManagement.AgreementState, AgreementManagement.AgreementState] =
+      val allowedStateTransitions: Map[AgreementManagement.AgreementState, List[AgreementManagement.AgreementState]] =
         Map(
           AgreementManagement.AgreementState.DRAFT                        ->
-            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+            List(AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES),
           AgreementManagement.AgreementState.PENDING                      ->
-            AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+            List(AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES),
           AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES ->
-            AgreementManagement.AgreementState.DRAFT,
-          AgreementManagement.AgreementState.ACTIVE    -> AgreementManagement.AgreementState.SUSPENDED,
-          AgreementManagement.AgreementState.SUSPENDED -> AgreementManagement.AgreementState.ACTIVE
+            List(AgreementManagement.AgreementState.DRAFT),
+          AgreementManagement.AgreementState.ACTIVE    -> List(AgreementManagement.AgreementState.SUSPENDED),
+          AgreementManagement.AgreementState.SUSPENDED -> List(
+            AgreementManagement.AgreementState.ACTIVE,
+            AgreementManagement.AgreementState.SUSPENDED
+          )
         )
 
       def updateAgreement(
@@ -354,7 +357,7 @@ final case class AgreementApiServiceImpl(
           verifiedAttributes = agreement.verifiedAttributes,
           suspendedByConsumer = agreement.suspendedByConsumer,
           suspendedByProducer = agreement.suspendedByProducer,
-          suspendedByPlatform = suspendedByPlatformFlag(fsmState),
+          suspendedByPlatform = newSuspendedByPlatform,
           consumerNotes = agreement.consumerNotes,
           stamps = agreement.stamps
         )
@@ -368,15 +371,15 @@ final case class AgreementApiServiceImpl(
             state = toClientState(finalState)
           )
           .whenA(
-            List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
-              .contains(finalState)
+            (agreement.state == AgreementManagement.AgreementState.ACTIVE && finalState == AgreementManagement.AgreementState.SUSPENDED) ||
+              (agreement.state == AgreementManagement.AgreementState.SUSPENDED && finalState == AgreementManagement.AgreementState.ACTIVE)
           )
 
         (updateAgreement >> updateClientState)
           .whenA(
             newSuspendedByPlatform != agreement.suspendedByPlatform && allowedStateTransitions
               .get(agreement.state)
-              .contains(finalState)
+              .exists(_.contains(finalState))
           )
 
       }
