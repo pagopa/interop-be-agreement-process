@@ -101,7 +101,7 @@ trait SpecHelper extends MockFactory {
   def mockAgreementUpdate(agreementId: UUID, seed: UpdateAgreementSeed, result: Agreement) =
     (mockAgreementManagementService
       .updateAgreement(_: UUID, _: UpdateAgreementSeed)(_: Seq[(String, String)]))
-      .expects(agreementId, seed, contexts)
+      .expects(agreementId, seed, *)
       .once()
       .returns(Future.successful(result))
 
