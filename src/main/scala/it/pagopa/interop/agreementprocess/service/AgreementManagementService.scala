@@ -7,9 +7,7 @@ import scala.concurrent.Future
 
 trait AgreementManagementService {
 
-  def createAgreement(producerId: UUID, consumerId: UUID, eServiceId: UUID, descriptorId: UUID)(implicit
-    contexts: Seq[(String, String)]
-  ): Future[Agreement]
+  def createAgreement(seed: AgreementSeed)(implicit contexts: Seq[(String, String)]): Future[Agreement]
 
   def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement]
 

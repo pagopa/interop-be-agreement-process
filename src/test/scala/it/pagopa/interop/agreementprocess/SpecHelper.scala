@@ -86,8 +86,8 @@ trait SpecHelper extends MockFactory {
 
   def mockAgreementCreation(result: Agreement) =
     (mockAgreementManagementService
-      .createAgreement(_: UUID, _: UUID, _: UUID, _: UUID)(_: Seq[(String, String)]))
-      .expects(*, *, *, *, *)
+      .createAgreement(_: AgreementSeed)(_: Seq[(String, String)]))
+      .expects(*, *)
       .once()
       .returns(Future.successful(result))
 
