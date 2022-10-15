@@ -548,6 +548,8 @@ components:
         descriptorId:
           type: string
           format: uuid
+        consumerNotes:
+          type: string
       required:
         - eserviceId
         - descriptorId

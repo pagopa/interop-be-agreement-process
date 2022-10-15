@@ -5,6 +5,8 @@ import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagemen
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotInExpectedState
 import it.pagopa.interop.agreementprocess.model._
 
+import java.util.UUID
+
 object Adapters {
 
   val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState]   =
@@ -111,4 +113,17 @@ object Adapters {
     )
   }
 
+  implicit class AgreementPayloadWrapper(private val p: AgreementPayload) extends AnyVal {
+    def toSeed(producerId: UUID, consumerId: UUID): AgreementManagement.AgreementSeed =
+      AgreementManagement.AgreementSeed(
+        eserviceId = p.eserviceId,
+        descriptorId = p.descriptorId,
+        producerId = producerId,
+        consumerId = consumerId,
+        consumerNotes = p.consumerNotes,
+        verifiedAttributes = Nil,
+        certifiedAttributes = Nil,
+        declaredAttributes = Nil
+      )
+  }
 }

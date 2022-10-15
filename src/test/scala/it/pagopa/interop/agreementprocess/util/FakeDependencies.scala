@@ -65,9 +65,8 @@ object FakeDependencies {
       createdAt = OffsetDateTime.now()
     )
 
-    override def createAgreement(producerId: UUID, consumerId: UUID, eServiceId: UUID, descriptorId: UUID)(implicit
-      contexts: Seq[(String, String)]
-    ): Future[Agreement] = Future.successful(agreement)
+    override def createAgreement(seed: AgreementSeed)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
+      Future.successful(agreement)
 
     override def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
       Future.successful(agreement)

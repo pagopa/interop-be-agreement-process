@@ -34,24 +34,11 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
       }
     }
 
-  override def createAgreement(producerId: UUID, consumerId: UUID, eServiceId: UUID, descriptorId: UUID)(implicit
-    contexts: Seq[(String, String)]
-  ): Future[Agreement] = {
-    val seed: AgreementSeed = AgreementSeed(
-      eserviceId = eServiceId,
-      descriptorId = descriptorId,
-      producerId = producerId,
-      consumerId = consumerId,
-      verifiedAttributes = Nil,
-      certifiedAttributes = Nil,
-      declaredAttributes = Nil
-    )
-
+  override def createAgreement(seed: AgreementSeed)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
     withHeaders { (bearerToken, correlationId, ip) =>
       val request: ApiRequest[Agreement] = api.addAgreement(correlationId, seed, ip)(BearerToken(bearerToken))
       invoker.invoke(request, "Creating agreement")
     }
-  }
 
   override def getAgreements(
     producerId: Option[String] = None,

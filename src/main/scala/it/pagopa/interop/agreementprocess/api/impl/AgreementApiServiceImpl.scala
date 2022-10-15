@@ -73,12 +73,7 @@ final case class AgreementApiServiceImpl(
       _              <- verifyCreationConflictingAgreements(eService.producerId, requesterOrgId, payload)
       consumer       <- tenantManagementService.getTenant(requesterOrgId)
       _              <- validateCertifiedAttributes(eService, consumer).whenA(eService.producerId != consumer.id)
-      agreement      <- agreementManagementService.createAgreement(
-        eService.producerId,
-        requesterOrgId,
-        payload.eserviceId,
-        payload.descriptorId
-      )
+      agreement      <- agreementManagementService.createAgreement(payload.toSeed(eService.producerId, requesterOrgId))
     } yield agreement.toApi
 
     onComplete(result) {
