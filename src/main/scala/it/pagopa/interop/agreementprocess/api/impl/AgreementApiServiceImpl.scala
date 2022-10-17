@@ -83,7 +83,7 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  override def submitAgreement(agreementId: String)(implicit
+  override def submitAgreement(agreementId: String, payload: AgreementSubmissionPayload)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
@@ -100,7 +100,7 @@ final case class AgreementApiServiceImpl(
         eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
         _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
         consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-        updated        <- submit(agreement, eService, consumer)
+        updated        <- submit(agreement, eService, consumer, payload)
       } yield updated.toApi
 
       onComplete(result) {
@@ -428,7 +428,8 @@ final case class AgreementApiServiceImpl(
   def submit(
     agreement: AgreementManagement.Agreement,
     eService: CatalogManagement.EService,
-    consumer: TenantManagement.Tenant
+    consumer: TenantManagement.Tenant,
+    payload: AgreementSubmissionPayload
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
@@ -464,6 +465,7 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer = agreement.suspendedByConsumer,
           suspendedByProducer = agreement.suspendedByProducer,
           suspendedByPlatform = suspendedByPlatform,
+          consumerNotes = payload.consumerNotes,
           stamps = stamps
         )
       else
@@ -475,6 +477,7 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer = None,
           suspendedByProducer = None,
           suspendedByPlatform = suspendedByPlatform,
+          consumerNotes = payload.consumerNotes,
           stamps = stamps
         )
 

@@ -120,7 +120,6 @@ object Adapters {
         descriptorId = p.descriptorId,
         producerId = producerId,
         consumerId = consumerId,
-        consumerNotes = p.consumerNotes,
         verifiedAttributes = Nil,
         certifiedAttributes = Nil,
         declaredAttributes = Nil
