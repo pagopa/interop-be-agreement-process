@@ -50,20 +50,15 @@ final class AgreementContractCreator(
     document   <- pdfCreator.create(agreementTemplate, pdfPayload)
     documentName = createAgreementDocumentName(agreement.consumerId, agreement.producerId)
     documentId   = uuidSupplier.get()
-    documentPath = createDocumentPath(agreement, documentId)
-    path <- fileManager.storeBytes(ApplicationConfiguration.storageContainer, documentPath)(
-      documentId.toString(),
-      documentName,
-      document
-    )
+    path <- fileManager.storeBytes(
+      ApplicationConfiguration.storageContainer,
+      s"${ApplicationConfiguration.agreementContractPath}/${agreement.id.toString()}"
+    )(documentId.toString(), documentName, document)
     _    <- agreementManagementService.addAgreementContract(
       agreement.id,
       DocumentSeed(documentId, documentName, contractPrettyName, MediaTypes.`application/pdf`.value, path)
     )
   } yield ()
-
-  private def createDocumentPath(agreement: Agreement, documentId: UUID): String =
-    s"${ApplicationConfiguration.agreementDocPath}/${agreement.id.toString()}/${documentId.toString()}"
 
   def getAttributeInvolved(consumer: Tenant, seed: UpdateAgreementSeed)(implicit
     contexts: Seq[(String, String)],
