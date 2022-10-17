@@ -52,7 +52,7 @@ final class AgreementContractCreator(
     documentId   = uuidSupplier.get()
     documentPath = createDocumentPath(agreement, documentId)
     path <- fileManager.storeBytes(ApplicationConfiguration.storageContainer, documentPath)(
-      uuidSupplier.get().toString(),
+      documentId.toString(),
       documentName,
       document
     )
