@@ -50,11 +50,10 @@ final class AgreementContractCreator(
     document   <- pdfCreator.create(agreementTemplate, pdfPayload)
     documentName = createAgreementDocumentName(agreement.consumerId, agreement.producerId)
     documentId   = uuidSupplier.get()
-    resourceId   = s"${agreement.id.toString()}/${documentId.toString()}"
     path <- fileManager.storeBytes(
       ApplicationConfiguration.storageContainer,
-      ApplicationConfiguration.agreementContractPath
-    )(resourceId, documentName, document)
+      s"${ApplicationConfiguration.agreementContractPath}/${agreement.id.toString()}"
+    )(documentId.toString(), documentName, document)
     _    <- agreementManagementService.addAgreementContract(
       agreement.id,
       DocumentSeed(documentId, documentName, contractPrettyName, MediaTypes.`application/pdf`.value, path)
