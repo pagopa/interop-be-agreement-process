@@ -839,6 +839,7 @@ final case class AgreementApiServiceImpl(
       document       <- agreementManagementService.addConsumerDocument(
         agreementUUID,
         AgreementManagement.DocumentSeed(
+          id = documentSeed.id,
           name = documentSeed.name,
           prettyName = documentSeed.prettyName,
           contentType = documentSeed.contentType,

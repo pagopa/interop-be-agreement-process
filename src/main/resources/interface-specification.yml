@@ -682,11 +682,15 @@ components:
     DocumentSeed:
       type: object
       required:
+        - id
         - name
         - prettyName
         - contentType
         - path
       properties:
+        id:
+          type: string
+          format: uuid
         name:
           type: string
         prettyName:

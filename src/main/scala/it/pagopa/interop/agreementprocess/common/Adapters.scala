@@ -99,7 +99,7 @@ object Adapters {
 
   implicit class DocumentSeedWrapper(private val d: AgreementManagement.DocumentSeed) extends AnyVal {
     def toApi: DocumentSeed =
-      DocumentSeed(name = d.name, prettyName = d.prettyName, contentType = d.contentType, path = d.path)
+      DocumentSeed(id = d.id, name = d.name, prettyName = d.prettyName, contentType = d.contentType, path = d.path)
   }
 
   implicit class DocumentWrapper(private val d: AgreementManagement.Document) extends AnyVal {
