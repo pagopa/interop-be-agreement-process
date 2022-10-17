@@ -59,6 +59,13 @@ paths:
       summary: Agreement Sumbission
       description: Submit the draft agreement if all the pre-requisites are met.
       operationId: submitAgreement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementSubmissionPayload'
+        description: payload for agreement submission
+        required: true
       responses:
         '200':
           description: Draft agreement submitted.
@@ -548,11 +555,15 @@ components:
         descriptorId:
           type: string
           format: uuid
-        consumerNotes:
-          type: string
       required:
         - eserviceId
         - descriptorId
+    AgreementSubmissionPayload:
+      type: object
+      description: contains the information for agreement creation.
+      properties:
+        consumerNotes:
+          type: string
     Agreement:
       type: object
       properties:

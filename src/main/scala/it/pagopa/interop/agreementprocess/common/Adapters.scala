@@ -66,6 +66,7 @@ object Adapters {
       suspendedByProducer = a.suspendedByProducer,
       suspendedByPlatform = a.suspendedByPlatform,
       consumerDocuments = a.consumerDocuments.map(_.toApi),
+      rejectionReason = a.rejectionReason,
       createdAt = a.createdAt,
       updatedAt = a.updatedAt,
       contract = a.contract.map(_.toApi)
@@ -120,7 +121,6 @@ object Adapters {
         descriptorId = p.descriptorId,
         producerId = producerId,
         consumerId = consumerId,
-        consumerNotes = p.consumerNotes,
         verifiedAttributes = Nil,
         certifiedAttributes = Nil,
         declaredAttributes = Nil

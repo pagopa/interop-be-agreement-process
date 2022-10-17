@@ -9,6 +9,7 @@ import it.pagopa.interop.agreementmanagement.client.model.{
   VerifiedAttribute
 }
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
+import it.pagopa.interop.agreementprocess.model.AgreementSubmissionPayload
 import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.{AUTOMATIC, MANUAL}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -31,6 +32,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.PENDING,
@@ -40,6 +42,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
+        consumerNotes = payload.consumerNotes,
         stamps = SpecData.submissionStamps
       )
 
@@ -53,7 +56,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         agreement.copy(state = expectedSeed.state, stamps = SpecData.submissionStamps)
       )
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
       }
     }
@@ -79,6 +82,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
           descriptorId = descriptor.id,
           consumerId = consumer.id
         )
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
@@ -88,12 +92,13 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
+        consumerNotes = payload.consumerNotes,
         stamps = SpecData.activationStamps
       )
 
       mockAutomaticActivation(agreement, eService, consumer, expectedSeed)
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
       }
     }
@@ -126,6 +131,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
           consumerId = consumer.id,
           producerId = eService.producerId
         )
+      val payload             = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
@@ -135,43 +141,47 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
+        consumerNotes = payload.consumerNotes,
         stamps = SpecData.activationStamps
       )
 
       mockSelfActivation(agreement, eService, consumer, expectedSeed)
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
       }
     }
 
     "fail on missing agreement" in {
       val agreementId = UUID.randomUUID()
+      val payload     = AgreementSubmissionPayload(Some("consumer-notes"))
 
       mockAgreementRetrieveNotFound(agreementId)
 
-      Get() ~> service.submitAgreement(agreementId.toString) ~> check {
+      Get() ~> service.submitAgreement(agreementId.toString, payload) ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "fail if other Agreements exist in conflicting state" in {
       val agreement = SpecData.draftAgreement.copy(consumerId = requesterOrgId)
+      val payload   = AgreementSubmissionPayload(Some("consumer-notes"))
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Seq(SpecData.agreement))
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
 
     "fail if requester is not the Consumer" in {
       val agreement = SpecData.draftAgreement.copy(consumerId = UUID.randomUUID())
+      val payload   = AgreementSubmissionPayload(Some("consumer-notes"))
 
       mockAgreementRetrieve(agreement)
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -187,22 +197,24 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
           consumerId = consumer.id,
           producerId = eService.producerId
         )
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
 
     "fail if Agreement is not in expected state" in {
       val agreement = SpecData.pendingAgreement.copy(consumerId = requesterOrgId)
+      val payload   = AgreementSubmissionPayload(Some("consumer-notes"))
 
       mockAgreementRetrieve(agreement)
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -217,6 +229,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
@@ -226,6 +239,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = None,
         suspendedByPlatform = Some(true),
+        consumerNotes = payload.consumerNotes,
         stamps = agreement.stamps
       )
 
@@ -235,7 +249,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -250,6 +264,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
         state = agreement.state,
@@ -259,6 +274,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = agreement.suspendedByConsumer,
         suspendedByProducer = agreement.suspendedByProducer,
         suspendedByPlatform = Some(false),
+        consumerNotes = payload.consumerNotes,
         stamps = agreement.stamps
       )
 
@@ -268,7 +284,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
 
-      Get() ~> service.submitAgreement(agreement.id.toString) ~> check {
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
