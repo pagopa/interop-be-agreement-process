@@ -25,7 +25,6 @@ import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, g
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
-import it.pagopa.interop.tenantmanagement.client.model.{CertifiedTenantAttribute, TenantAttribute}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.util.UUID
