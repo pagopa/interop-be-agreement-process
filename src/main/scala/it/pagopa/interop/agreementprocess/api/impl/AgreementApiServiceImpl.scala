@@ -693,7 +693,8 @@ final case class AgreementApiServiceImpl(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
   ): Seq[AgreementManagement.VerifiedAttribute] = {
-    val attributes: Seq[UUID] = consumer.attributes.flatMap(_.verified).filter(_.revokedBy.isEmpty).map(_.id)
+    val attributes: Seq[UUID] =
+      consumer.attributes.flatMap(_.verified).filter(_.verifiedBy.exists(_.id == eService.producerId)).map(_.id)
 
     matchingAttributes(eService.attributes.verified, attributes).map(AgreementManagement.VerifiedAttribute)
   }
