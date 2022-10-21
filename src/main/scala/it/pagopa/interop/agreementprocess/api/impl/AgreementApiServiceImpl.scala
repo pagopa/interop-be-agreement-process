@@ -675,23 +675,30 @@ final case class AgreementApiServiceImpl(
   def matchingCertifiedAttributes(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
-  ): Seq[AgreementManagement.CertifiedAttribute] =
-    matchingAttributes(eService.attributes.certified, consumer.attributes.flatMap(_.certified).map(_.id))
-      .map(AgreementManagement.CertifiedAttribute)
+  ): Seq[AgreementManagement.CertifiedAttribute] = {
+    val attributes: Seq[UUID] = consumer.attributes.flatMap(_.certified).filter(_.revocationTimestamp.isEmpty).map(_.id)
+
+    matchingAttributes(eService.attributes.certified, attributes).map(AgreementManagement.CertifiedAttribute)
+  }
 
   def matchingDeclaredAttributes(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
-  ): Seq[AgreementManagement.DeclaredAttribute] =
-    matchingAttributes(eService.attributes.declared, consumer.attributes.flatMap(_.declared).map(_.id))
-      .map(AgreementManagement.DeclaredAttribute)
+  ): Seq[AgreementManagement.DeclaredAttribute] = {
+    val attributes: Seq[UUID] = consumer.attributes.flatMap(_.declared).filter(_.revocationTimestamp.isEmpty).map(_.id)
+
+    matchingAttributes(eService.attributes.declared, attributes).map(AgreementManagement.DeclaredAttribute)
+  }
 
   def matchingVerifiedAttributes(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
-  ): Seq[AgreementManagement.VerifiedAttribute] =
-    matchingAttributes(eService.attributes.verified, consumer.attributes.flatMap(_.verified).map(_.id))
-      .map(AgreementManagement.VerifiedAttribute)
+  ): Seq[AgreementManagement.VerifiedAttribute] = {
+    val attributes: Seq[UUID] =
+      consumer.attributes.flatMap(_.verified).filter(_.verifiedBy.exists(_.id == eService.producerId)).map(_.id)
+
+    matchingAttributes(eService.attributes.verified, attributes).map(AgreementManagement.VerifiedAttribute)
+  }
 
   def verifyRequester(requesterId: UUID, expected: UUID): Future[Unit] =
     Future.failed(OperationNotAllowed(requesterId)).whenA(requesterId != expected)
