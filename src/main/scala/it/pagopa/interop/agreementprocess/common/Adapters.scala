@@ -66,6 +66,7 @@ object Adapters {
       suspendedByProducer = a.suspendedByProducer,
       suspendedByPlatform = a.suspendedByPlatform,
       consumerDocuments = a.consumerDocuments.map(_.toApi),
+      consumerNotes = a.consumerNotes,
       rejectionReason = a.rejectionReason,
       createdAt = a.createdAt,
       updatedAt = a.updatedAt,
