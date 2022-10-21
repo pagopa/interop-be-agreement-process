@@ -3,11 +3,15 @@ package it.pagopa.interop.agreementprocess.service
 import akka.http.scaladsl.model.MediaTypes
 import it.pagopa.interop.agreementmanagement.client.model.{Agreement, DocumentSeed, UpdateAgreementSeed}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{MissingUserInfo, StampNotFound}
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
+  MissingUserInfo,
+  SelfcareIdNotFound,
+  StampNotFound
+}
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.files.service.FileManager
-import it.pagopa.interop.commons.utils.TypeConversions.OptionOps
+import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.tenantmanagement.client.model.{
@@ -30,6 +34,7 @@ final class AgreementContractCreator(
   agreementManagementService: AgreementManagementService,
   attributeManagementService: AttributeManagementService,
   partyManagementService: PartyManagementService,
+  tenantManagementService: TenantManagementService,
   userRegistry: UserRegistryService,
   offsetDateTimeSupplier: OffsetDateTimeSupplier
 ) {
@@ -132,8 +137,14 @@ final class AgreementContractCreator(
   ): Future[PDFPayload] = {
     for {
       (certified, declared, verified)  <- getAttributeInvolved(consumer, seed)
-      producerParty                    <- partyManagementService.getInstitution(agreement.producerId)
-      consumerParty                    <- partyManagementService.getInstitution(agreement.consumerId)
+      producerTenant                   <- tenantManagementService.getTenant(agreement.producerId)
+      consumerTenant                   <- tenantManagementService.getTenant(agreement.consumerId)
+      producerSelfcareId               <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(agreement.producerId))
+      consumerSelfcareId               <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(agreement.consumerId))
+      producerSelfcareUUID             <- producerSelfcareId.toFutureUUID
+      consumerSelfcareUUID             <- consumerSelfcareId.toFutureUUID
+      producerParty                    <- partyManagementService.getInstitution(producerSelfcareUUID)
+      consumerParty                    <- partyManagementService.getInstitution(consumerSelfcareUUID)
       (submitter, submissionTimestamp) <- getSubmissionInfo(seed)
       (activator, activationTimestamp) <- getActivationInfo(seed)
     } yield PDFPayload(

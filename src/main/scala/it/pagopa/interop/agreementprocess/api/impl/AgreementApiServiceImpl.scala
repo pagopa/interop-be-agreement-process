@@ -56,6 +56,7 @@ final case class AgreementApiServiceImpl(
     agreementManagementService,
     attributeManagementService,
     partyManagementService,
+    tenantManagementService,
     userRegistry,
     offsetDateTimeSupplier
   )

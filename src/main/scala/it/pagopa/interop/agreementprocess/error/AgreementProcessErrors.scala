@@ -88,4 +88,7 @@ object AgreementProcessErrors {
         s"The requested operation on consumer documents is not allowed on agreement with state ${state.toString()}"
       )
 
+  final case class SelfcareIdNotFound(tenantId: UUID)
+      extends ComponentError("0019", s"Selfcare id not found for tenant ${tenantId.toString()}")
+
 }
