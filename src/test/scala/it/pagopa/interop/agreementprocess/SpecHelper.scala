@@ -230,8 +230,8 @@ trait SpecHelper extends MockFactory {
     expectedSeed: UpdateAgreementSeed
   ) = {
     val consumerParty = SpecData.institution(UUID.fromString(consumer.selfcareId.get))
-    val producerParty = SpecData.institution(agreement.producerId)
-    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(producerParty.id.toString()))
+    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
+    val producerParty = SpecData.institution(UUID.fromString(producer.selfcareId.get))
 
     mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
@@ -263,8 +263,8 @@ trait SpecHelper extends MockFactory {
     expectedSeed: UpdateAgreementSeed
   ) = {
     val consumerParty = SpecData.institution(UUID.fromString(consumer.selfcareId.get))
-    val producerParty = SpecData.institution(agreement.producerId)
-    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(producerParty.id.toString()))
+    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
+    val producerParty = SpecData.institution(UUID.fromString(producer.selfcareId.get))
 
     mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
@@ -297,8 +297,8 @@ trait SpecHelper extends MockFactory {
     expectedSeed: UpdateAgreementSeed
   ) = {
     val consumerParty = SpecData.institution(UUID.fromString(consumer.selfcareId.get))
-    val producerParty = SpecData.institution(agreement.producerId)
-    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(producerParty.id.toString()))
+    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
+    val producerParty = SpecData.institution(UUID.fromString(producer.selfcareId.get))
 
     mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
