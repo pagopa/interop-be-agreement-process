@@ -51,7 +51,10 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
           Seq(SpecData.catalogSingleAttribute(verAttr1), SpecData.catalogGroupAttributes(id1 = verAttr2))
         )
       val tenantVerAttr   =
-        Seq(SpecData.tenantVerifiedAttribute(verAttr1), SpecData.tenantVerifiedAttribute(verAttr2))
+        Seq(
+          SpecData.tenantVerifiedAttribute(verAttr1, requesterOrgId),
+          SpecData.tenantVerifiedAttribute(verAttr2, requesterOrgId)
+        )
 
       val eServiceAttr =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
