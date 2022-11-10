@@ -133,7 +133,12 @@ object Dependencies {
         _ % Compile
       )
     lazy val lifecycle: Seq[ModuleID] =
-      Seq(cats.core, pagopa.agreementManagementClient, pagopa.catalogManagementClient, pagopa.tenantManagementClient)
-        .map(_ % Compile)
+      Seq(
+        cats.core                        % Compile,
+        pagopa.agreementManagementClient % Compile,
+        pagopa.catalogManagementClient   % Compile,
+        pagopa.tenantManagementClient    % Compile,
+        scalatest.core                   % Test
+      )
   }
 }

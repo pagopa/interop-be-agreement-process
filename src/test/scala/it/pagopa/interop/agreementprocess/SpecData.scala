@@ -113,38 +113,6 @@ object SpecData {
       )
     )
 
-  def tenantRevokedCertifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(certified =
-      Some(CertifiedTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp)))
-    )
-
-  def tenantRevokedDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(declared =
-      Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp)))
-    )
-
-  def tenantRevokedVerifiedAttribute(
-    id: UUID = UUID.randomUUID(),
-    revokerId: UUID = UUID.randomUUID()
-  ): TenantAttribute =
-    TenantAttribute(verified =
-      Some(
-        VerifiedTenantAttribute(
-          id = id,
-          assignmentTimestamp = timestamp,
-          verifiedBy = Nil,
-          revokedBy = Seq(
-            TenantRevoker(
-              id = revokerId,
-              verificationDate = timestamp,
-              revocationDate = timestamp,
-              renewal = VerificationRenewal.AUTOMATIC_RENEWAL
-            )
-          )
-        )
-      )
-    )
-
   def matchingCertifiedAttributes: (Attributes, TenantAttribute) = {
     val attributeId       = UUID.randomUUID()
     val eServiceAttribute = catalogCertifiedAttribute(attributeId)
@@ -228,24 +196,24 @@ object SpecData {
     createdAt = timestamp
   )
 
-  def userResource(name: String, familyName: String, fiscalCode: String) = UserResource(
+  def userResource(name: String, familyName: String, fiscalCode: String): UserResource = UserResource(
     familyName = Some(CertifiableFieldResourceOfstring(Certification.SPID, familyName)),
     fiscalCode = Some(fiscalCode),
     id = SpecData.who,
     name = Some(CertifiableFieldResourceOfstring(Certification.SPID, name))
   )
 
-  def institution(id: UUID) = Institution(
+  def institution(id: UUID): Institution = Institution(
     id = id,
-    externalId = UUID.randomUUID().toString(),
-    originId = UUID.randomUUID().toString(),
+    externalId = UUID.randomUUID().toString,
+    originId = UUID.randomUUID().toString,
     description = "producer",
-    digitalAddress = UUID.randomUUID().toString(),
-    address = UUID.randomUUID().toString(),
-    zipCode = UUID.randomUUID().toString(),
-    taxCode = UUID.randomUUID().toString(),
-    origin = UUID.randomUUID().toString(),
-    institutionType = UUID.randomUUID().toString(),
+    digitalAddress = UUID.randomUUID().toString,
+    address = UUID.randomUUID().toString,
+    zipCode = UUID.randomUUID().toString,
+    taxCode = UUID.randomUUID().toString,
+    origin = UUID.randomUUID().toString,
+    institutionType = UUID.randomUUID().toString,
     attributes = Seq.empty
   )
 }
