@@ -132,5 +132,8 @@ object Dependencies {
       Seq(akka.stream, akka.http, akka.httpJson4s, akka.slf4j, json4s.jackson, json4s.ext, pagopa.commons).map(
         _ % Compile
       )
+    lazy val lifecycle: Seq[ModuleID] =
+      Seq(cats.core, pagopa.agreementManagementClient, pagopa.catalogManagementClient, pagopa.tenantManagementClient)
+        .map(_ % Compile)
   }
 }

@@ -12,6 +12,7 @@ import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.error.ErrorHandlers._
+import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules.certifiedAttributesSatisfied
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAndEServiceDetailsUpdate
@@ -770,7 +771,7 @@ final case class AgreementApiServiceImpl(
   ): Future[Unit] =
     Future
       .failed(MissingCertifiedAttributes(eService.id, consumer.id))
-      .unlessA(AgreementStateByAttributesFSM.certifiedAttributesSatisfied(eService, consumer))
+      .unlessA(certifiedAttributesSatisfied(eService, consumer))
 
   def verifyConsumerDoesNotActivatePending(
     agreement: AgreementManagement.Agreement,

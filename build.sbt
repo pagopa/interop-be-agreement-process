@@ -56,12 +56,13 @@ generateCode := {
 (Test / test)       := ((Test / test) dependsOn generateCode).value
 
 cleanFiles += baseDirectory.value / "generated" / "src"
-
 cleanFiles += baseDirectory.value / "generated" / "target"
 
 cleanFiles += baseDirectory.value / "client" / "src"
-
 cleanFiles += baseDirectory.value / "client" / "target"
+
+cleanFiles += baseDirectory.value / "lifecycle" / "src"
+cleanFiles += baseDirectory.value / "lifecycle" / "target"
 
 ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
 
@@ -92,6 +93,21 @@ lazy val client = project
     }
   )
 
+lazy val lifecycle = project
+  .in(file("lifecycle"))
+  .settings(
+    name                := "interop-be-agreement-process-lifecycle",
+    libraryDependencies := Dependencies.Jars.lifecycle,
+    scalafmtOnCompile   := true,
+    Docker / publish    := {},
+    publishTo           := {
+      val nexus = s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/"
+      if (isSnapshot.value) Some("snapshots" at nexus + "maven-snapshots/")
+      else Some("releases" at nexus + "maven-releases/")
+    }
+  )
+
+
 lazy val root = (project in file("."))
   .settings(
     name                        := "interop-be-agreement-process",
@@ -110,8 +126,8 @@ lazy val root = (project in file("."))
     libraryDependencies         := Dependencies.Jars.`server`,
     dockerCommands += Cmd("LABEL", s"org.opencontainers.image.source https://github.com/pagopa/${name.value}")
   )
-  .aggregate(client)
-  .dependsOn(generated)
+  .aggregate(client, lifecycle)
+  .dependsOn(generated, lifecycle)
   .enableContractTest
   .enablePlugins(JavaAppPackaging)
   .setupBuildInfo
