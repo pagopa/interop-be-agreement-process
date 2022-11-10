@@ -64,7 +64,8 @@ object SpecData {
     features = Nil,
     attributes = Nil,
     createdAt = OffsetDateTime.now(),
-    updatedAt = None
+    updatedAt = None,
+    mails = Nil
   )
 
   def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Attribute =

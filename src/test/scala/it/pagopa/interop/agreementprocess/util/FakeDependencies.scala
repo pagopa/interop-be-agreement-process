@@ -147,7 +147,8 @@ object FakeDependencies {
           features = Nil,
           attributes = Nil,
           createdAt = OffsetDateTime.now(),
-          updatedAt = None
+          updatedAt = None,
+          mails = Nil
         )
       )
   }
