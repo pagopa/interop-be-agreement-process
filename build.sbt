@@ -61,7 +61,6 @@ cleanFiles += baseDirectory.value / "generated" / "target"
 cleanFiles += baseDirectory.value / "client" / "src"
 cleanFiles += baseDirectory.value / "client" / "target"
 
-cleanFiles += baseDirectory.value / "lifecycle" / "src"
 cleanFiles += baseDirectory.value / "lifecycle" / "target"
 
 ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
