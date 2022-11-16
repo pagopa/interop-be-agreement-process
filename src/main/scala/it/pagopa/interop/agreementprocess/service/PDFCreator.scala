@@ -65,8 +65,8 @@ object PDFCreator extends PDFCreator with PDFManager {
       "activationTime"      -> activationTime,
       "activator"           -> pdfPayload.activator,
       "eServiceName"        -> pdfPayload.eService,
-      "producerName"        -> pdfPayload.producer,
-      "consumerName"        -> pdfPayload.consumer
+      "producerName"        -> pdfPayload.producerName,
+      "consumerName"        -> pdfPayload.consumerName
     )
   }
 
