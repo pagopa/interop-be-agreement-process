@@ -7,7 +7,6 @@ import it.pagopa.interop.attributeregistrymanagement.client.{model => AttributeM
 import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
 import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
 import it.pagopa.interop.catalogmanagement.client.model._
-import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
 import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
 import it.pagopa.interop.tenantmanagement.client.model._
@@ -203,19 +202,5 @@ object SpecData {
     fiscalCode = Some(fiscalCode),
     id = SpecData.who,
     name = Some(CertifiableFieldResourceOfstring(Certification.SPID, name))
-  )
-
-  def institution(id: UUID): Institution = Institution(
-    id = id,
-    externalId = UUID.randomUUID().toString,
-    originId = UUID.randomUUID().toString,
-    description = "producer",
-    digitalAddress = UUID.randomUUID().toString,
-    address = UUID.randomUUID().toString,
-    zipCode = UUID.randomUUID().toString,
-    taxCode = UUID.randomUUID().toString,
-    origin = UUID.randomUUID().toString,
-    institutionType = UUID.randomUUID().toString,
-    attributes = Seq.empty
   )
 }

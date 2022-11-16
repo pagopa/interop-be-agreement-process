@@ -13,19 +13,11 @@ package object service {
   type TenantManagementInvoker            = tenantmanagement.client.invoker.ApiInvoker
   type AttributeRegistryManagementInvoker = attributeregistrymanagement.client.invoker.ApiInvoker
   type AuthorizationManagementInvoker     = authorizationmanagement.client.invoker.ApiInvoker
-  type PartyManagementInvoker             = partymanagement.client.invoker.ApiInvoker
   type UserRegistryManagementInvoker      = userregistry.client.invoker.ApiInvoker
 
   type AgreementManagementApi = agreementmanagement.client.api.AgreementApi
 
-  type PartyManagementApiKeyValue = selfcare.partymanagement.client.invoker.ApiKeyValue
-  type UserRegistryApiKeyValue    = selfcare.userregistry.client.invoker.ApiKeyValue
-
-  object PartyManagementApiKeyValue {
-    def apply(): PartyManagementApiKeyValue =
-      partymanagement.client.invoker.ApiKeyValue(ApplicationConfiguration.partyManagementApiKey)
-  }
-
+  type UserRegistryApiKeyValue = selfcare.userregistry.client.invoker.ApiKeyValue
   object UserRegistryApiKeyValue {
     def apply(): UserRegistryApiKeyValue =
       userregistry.client.invoker.ApiKeyValue(ApplicationConfiguration.userRegistryApiKey)
@@ -63,11 +55,6 @@ package object service {
 
   object AgreementManagementApi {
     def apply(baseUrl: String): AgreementManagementApi = agreementmanagement.client.api.AgreementApi(baseUrl)
-  }
-
-  object PartyManagementInvoker {
-    def apply()(implicit actorSystem: ActorSystem): PartyManagementInvoker =
-      partymanagement.client.invoker.ApiInvoker(partymanagement.client.api.EnumsSerializers.all)
   }
 
   object UserRegistryManagementInvoker {

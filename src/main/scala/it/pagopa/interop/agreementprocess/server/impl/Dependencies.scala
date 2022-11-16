@@ -30,8 +30,7 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 trait Dependencies {
 
-  implicit val partyManagementApiKeyValue: PartyManagementApiKeyValue = PartyManagementApiKeyValue()
-  implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue       = UserRegistryApiKeyValue()
+  implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue = UserRegistryApiKeyValue()
 
   def agreementManagement(
     blockingEc: ExecutionContextExecutor
