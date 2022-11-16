@@ -38,7 +38,6 @@ final case class AgreementApiServiceImpl(
   tenantManagementService: TenantManagementService,
   attributeManagementService: AttributeManagementService,
   authorizationManagementService: AuthorizationManagementService,
-  partyManagementService: PartyManagementService,
   userRegistry: UserRegistryService,
   pdfCreator: PDFCreator,
   fileManager: FileManager,
@@ -56,7 +55,6 @@ final case class AgreementApiServiceImpl(
     uuidSupplier,
     agreementManagementService,
     attributeManagementService,
-    partyManagementService,
     tenantManagementService,
     userRegistry,
     offsetDateTimeSupplier

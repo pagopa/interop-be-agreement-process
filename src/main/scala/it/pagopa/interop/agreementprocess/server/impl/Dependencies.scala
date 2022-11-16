@@ -23,7 +23,6 @@ import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, S
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
-import it.pagopa.interop.selfcare.partymanagement.client.api.PartyApi
 import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
 import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 
@@ -74,12 +73,6 @@ trait Dependencies {
       new PurposeApi(ApplicationConfiguration.authorizationManagementURL)
     )
 
-  def partyManagement(implicit actorSystem: ActorSystem[_]): PartyManagementService =
-    new PartyManagementServiceImpl(
-      PartyManagementInvoker()(actorSystem.classicSystem),
-      PartyApi(ApplicationConfiguration.partyManagementURL)
-    )
-
   def userRegistry(implicit actorSystem: ActorSystem[_]): UserRegistryService =
     new UserRegistryServiceImpl(
       UserRegistryManagementInvoker()(actorSystem.classicSystem),
@@ -116,7 +109,6 @@ trait Dependencies {
         tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
         authorizationManagement(blockingEc),
-        partyManagement,
         userRegistry,
         PDFCreator,
         fileManager(blockingEc),
