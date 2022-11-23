@@ -9,14 +9,13 @@ import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.model.{Attributes, EService, EServiceTechnology}
 import it.pagopa.interop.commons.files.service.FileManager
-import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.tenantmanagement.client.model.{ExternalId, Tenant}
 
 import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
  * Holds fake implementation of dependencies for tests not requiring neither mocks or stubs
@@ -148,28 +147,8 @@ object FakeDependencies {
           attributes = Nil,
           createdAt = OffsetDateTime.now(),
           updatedAt = None,
-          mails = Nil
-        )
-      )
-  }
-
-  class FakePartyManagementService extends PartyManagementService {
-    override def getInstitution(
-      partyId: UUID
-    )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution] =
-      Future.successful(
-        Institution(
-          id = UUID.randomUUID(),
-          externalId = UUID.randomUUID().toString,
-          originId = UUID.randomUUID().toString,
-          description = UUID.randomUUID().toString,
-          digitalAddress = UUID.randomUUID().toString,
-          address = UUID.randomUUID().toString,
-          zipCode = UUID.randomUUID().toString,
-          taxCode = UUID.randomUUID().toString,
-          origin = UUID.randomUUID().toString,
-          institutionType = UUID.randomUUID().toString,
-          attributes = Seq.empty
+          mails = Nil,
+          name = "test_name"
         )
       )
   }

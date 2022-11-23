@@ -1,7 +1,6 @@
 package it.pagopa.interop.agreementprocess.service.util
 
 import it.pagopa.interop.agreementprocess.service.ClientAttribute
-import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
 import it.pagopa.interop.tenantmanagement.client.model.{
   CertifiedTenantAttribute,
   DeclaredTenantAttribute,
@@ -15,8 +14,8 @@ final case class PDFPayload(
   today: OffsetDateTime,
   agreementId: UUID,
   eService: String,
-  producer: Institution,
-  consumer: Institution,
+  producerName: String,
+  consumerName: String,
   certified: Seq[(ClientAttribute, CertifiedTenantAttribute)],
   declared: Seq[(ClientAttribute, DeclaredTenantAttribute)],
   verified: Seq[(ClientAttribute, VerifiedTenantAttribute)],

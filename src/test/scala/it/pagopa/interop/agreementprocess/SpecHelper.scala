@@ -14,7 +14,6 @@ import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, UID, USER_ROLES}
-import it.pagopa.interop.selfcare.partymanagement.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import org.scalamock.scalatest.MockFactory
@@ -45,7 +44,6 @@ trait SpecHelper extends MockFactory {
   val mockTenantManagementService: TenantManagementService               = mock[TenantManagementService]
   val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
   val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
-  val mockPartyManagementService: PartyManagementService                 = mock[PartyManagementService]
   val mockUserRegistryService: UserRegistryService                       = mock[UserRegistryService]
   val mockPDFCreator: PDFCreator                                         = mock[PDFCreator]
   val mockFileManager: FileManager                                       = mock[FileManager]
@@ -58,7 +56,6 @@ trait SpecHelper extends MockFactory {
     mockTenantManagementService,
     mockAttributeManagementService,
     mockAuthorizationManagementService,
-    mockPartyManagementService,
     mockUserRegistryService,
     mockPDFCreator,
     mockFileManager,
@@ -181,13 +178,6 @@ trait SpecHelper extends MockFactory {
       .once()
       .returns(Future.unit)
 
-  def mockPartyManagementRetrieve(institution: Institution) =
-    (mockPartyManagementService
-      .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
-      .expects(*, *, *)
-      .once()
-      .returns(Future.successful(institution))
-
   def mockUserRegistryRetrieve(user: UserResource) =
     (mockUserRegistryService
       .getUserById(_: UUID)(_: Seq[(String, String)]))
@@ -229,9 +219,7 @@ trait SpecHelper extends MockFactory {
     consumer: Tenant,
     expectedSeed: UpdateAgreementSeed
   ) = {
-    val consumerParty = SpecData.institution(UUID.fromString(consumer.selfcareId.get))
-    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
-    val producerParty = SpecData.institution(UUID.fromString(producer.selfcareId.get))
+    val producer = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
 
     mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
@@ -247,8 +235,6 @@ trait SpecHelper extends MockFactory {
     mockAgreementContract
     mockTenantRetrieve(consumer.id, consumer)
     mockTenantRetrieve(producer.id, producer)
-    mockPartyManagementRetrieve(producerParty)
-    mockPartyManagementRetrieve(consumerParty)
     mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
     mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
     mockTenantRetrieve(consumer.id, consumer)
@@ -262,9 +248,7 @@ trait SpecHelper extends MockFactory {
     consumer: Tenant,
     expectedSeed: UpdateAgreementSeed
   ) = {
-    val consumerParty = SpecData.institution(UUID.fromString(consumer.selfcareId.get))
-    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
-    val producerParty = SpecData.institution(UUID.fromString(producer.selfcareId.get))
+    val producer = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
 
     mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
@@ -283,8 +267,6 @@ trait SpecHelper extends MockFactory {
     mockAgreementContract
     mockTenantRetrieve(consumer.id, consumer)
     mockTenantRetrieve(producer.id, producer)
-    mockPartyManagementRetrieve(producerParty)
-    mockPartyManagementRetrieve(consumerParty)
     mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
     mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
     mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
@@ -296,9 +278,7 @@ trait SpecHelper extends MockFactory {
     consumer: Tenant,
     expectedSeed: UpdateAgreementSeed
   ) = {
-    val consumerParty = SpecData.institution(UUID.fromString(consumer.selfcareId.get))
-    val producer      = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
-    val producerParty = SpecData.institution(UUID.fromString(producer.selfcareId.get))
+    val producer = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString()))
 
     mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
@@ -314,8 +294,6 @@ trait SpecHelper extends MockFactory {
     mockAgreementContract
     mockTenantRetrieve(consumer.id, consumer)
     mockTenantRetrieve(producer.id, producer)
-    mockPartyManagementRetrieve(producerParty)
-    mockPartyManagementRetrieve(consumerParty)
     mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
     mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
     mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)

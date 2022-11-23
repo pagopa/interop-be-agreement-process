@@ -3,11 +3,7 @@ package it.pagopa.interop.agreementprocess.service
 import akka.http.scaladsl.model.MediaTypes
 import it.pagopa.interop.agreementmanagement.client.model.{Agreement, DocumentSeed, UpdateAgreementSeed}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
-  MissingUserInfo,
-  SelfcareIdNotFound,
-  StampNotFound
-}
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{MissingUserInfo, StampNotFound}
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.files.service.FileManager
@@ -33,7 +29,6 @@ final class AgreementContractCreator(
   uuidSupplier: UUIDSupplier,
   agreementManagementService: AgreementManagementService,
   attributeManagementService: AttributeManagementService,
-  partyManagementService: PartyManagementService,
   tenantManagementService: TenantManagementService,
   userRegistry: UserRegistryService,
   offsetDateTimeSupplier: OffsetDateTimeSupplier
@@ -139,20 +134,14 @@ final class AgreementContractCreator(
       (certified, declared, verified)  <- getAttributeInvolved(consumer, seed)
       producerTenant                   <- tenantManagementService.getTenant(agreement.producerId)
       consumerTenant                   <- tenantManagementService.getTenant(agreement.consumerId)
-      producerSelfcareId               <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(agreement.producerId))
-      consumerSelfcareId               <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(agreement.consumerId))
-      producerSelfcareUUID             <- producerSelfcareId.toFutureUUID
-      consumerSelfcareUUID             <- consumerSelfcareId.toFutureUUID
-      producerParty                    <- partyManagementService.getInstitution(producerSelfcareUUID)
-      consumerParty                    <- partyManagementService.getInstitution(consumerSelfcareUUID)
       (submitter, submissionTimestamp) <- getSubmissionInfo(seed)
       (activator, activationTimestamp) <- getActivationInfo(seed)
     } yield PDFPayload(
       today = offsetDateTimeSupplier.get(),
       agreementId = agreement.id,
       eService = eService.name,
-      producer = producerParty,
-      consumer = consumerParty,
+      producerName = producerTenant.name,
+      consumerName = consumerTenant.name,
       certified = certified,
       declared = declared,
       verified = verified,
