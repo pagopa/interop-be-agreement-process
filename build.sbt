@@ -8,8 +8,9 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / dependencyOverrides ++= Dependencies.Jars.overrides
 ThisBuild / version           := ComputeVersion.version
 
-ThisBuild / resolvers += "Pagopa Nexus Snapshots" at s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/maven-snapshots/"
-ThisBuild / resolvers += "Pagopa Nexus Releases" at s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/maven-releases/"
+ThisBuild / githubOwner      := "pagopa"
+ThisBuild / githubRepository := "interop-be-agreement-process"
+ThisBuild / resolvers += Resolver.githubPackages("pagopa")
 
 lazy val generateCode = taskKey[Unit]("A task for generating the code starting from the swagger definition")
 
@@ -63,8 +64,6 @@ cleanFiles += baseDirectory.value / "client" / "target"
 
 cleanFiles += baseDirectory.value / "lifecycle" / "target"
 
-ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
-
 val runStandalone = inputKey[Unit]("Run the app using standalone configuration")
 runStandalone := {
   task(System.setProperty("config.file", "src/main/resources/application-standalone.conf")).value
@@ -74,6 +73,7 @@ runStandalone := {
 lazy val generated = project
   .in(file("generated"))
   .settings(scalacOptions := Seq(), scalafmtOnCompile := true, libraryDependencies := Dependencies.Jars.`server`)
+  .enablePlugins(NoPublishPlugin)
   .setupBuildInfo
 
 lazy val client = project
@@ -84,12 +84,7 @@ lazy val client = project
     scalafmtOnCompile   := true,
     libraryDependencies := Dependencies.Jars.client,
     updateOptions       := updateOptions.value.withGigahorse(false),
-    Docker / publish    := {},
-    publishTo           := {
-      val nexus = s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/"
-      if (isSnapshot.value) Some("snapshots" at nexus + "maven-snapshots/")
-      else Some("releases" at nexus + "maven-releases/")
-    }
+    Docker / publish    := {}
   )
 
 lazy val lifecycle = project
@@ -98,14 +93,8 @@ lazy val lifecycle = project
     name                := "interop-be-agreement-process-lifecycle",
     libraryDependencies := Dependencies.Jars.lifecycle,
     scalafmtOnCompile   := true,
-    Docker / publish    := {},
-    publishTo           := {
-      val nexus = s"https://${System.getenv("MAVEN_REPO")}/nexus/repository/"
-      if (isSnapshot.value) Some("snapshots" at nexus + "maven-snapshots/")
-      else Some("releases" at nexus + "maven-releases/")
-    }
+    Docker / publish    := {}
   )
-
 
 lazy val root = (project in file("."))
   .settings(
@@ -115,7 +104,7 @@ lazy val root = (project in file("."))
     Test / javaOptions += "-Dconfig.file=src/test/resources/application-test.conf",
     scalafmtOnCompile           := true,
     dockerBuildOptions ++= Seq("--network=host"),
-    dockerRepository            := Some(System.getenv("DOCKER_REPO")),
+    dockerRepository            := Some(System.getenv("ECR_REGISTRY")),
     dockerBaseImage             := "adoptopenjdk:11-jdk-hotspot",
     daemonUser                  := "daemon",
     Docker / version            := (ThisBuild / version).value.replaceAll("-SNAPSHOT", "-latest").toLowerCase,
@@ -129,6 +118,7 @@ lazy val root = (project in file("."))
   .dependsOn(generated, lifecycle)
   .enableContractTest
   .enablePlugins(JavaAppPackaging)
+  .enablePlugins(NoPublishPlugin)
   .setupBuildInfo
 
 ProjectSettings.addContractTestCommandAlias
