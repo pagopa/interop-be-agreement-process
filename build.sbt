@@ -72,8 +72,15 @@ runStandalone := {
 
 lazy val generated = project
   .in(file("generated"))
-  .settings(scalacOptions := Seq(), scalafmtOnCompile := true, libraryDependencies := Dependencies.Jars.`server`)
-  .enablePlugins(NoPublishPlugin)
+  .settings(
+    scalacOptions       := Seq(),
+    scalafmtOnCompile   := true,
+    libraryDependencies := Dependencies.Jars.`server`,
+    publish / skip      := true,
+    publish             := (()),
+    publishLocal        := (()),
+    publishTo           := None
+  )
   .setupBuildInfo
 
 lazy val client = project
@@ -118,6 +125,7 @@ lazy val root = (project in file("."))
   .dependsOn(generated, lifecycle)
   .enableContractTest
   .enablePlugins(JavaAppPackaging)
+  .enablePlugins(DockerPlugin)
   .enablePlugins(NoPublishPlugin)
   .setupBuildInfo
 
