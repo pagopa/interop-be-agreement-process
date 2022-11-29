@@ -466,6 +466,49 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  '/agreements/{agreementId}/update':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
+    post:
+      tags:
+        - agreement
+      summary: update an agreement in draft state.
+      description: update agreement fields.
+      operationId: updateAgreementById
+      parameters:
+        - name: agreementId
+          in: path
+          description: The identifier of the agreement to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementUpdatePayload'
+        required: true
+      responses:
+        '200':
+          description: Agreement updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Invalid ID supplied
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   '/agreements/{agreementId}/upgrade':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'
@@ -642,6 +685,14 @@ components:
           type: string
       required:
         - reason
+    AgreementUpdatePayload:
+      type: object
+      description: contains the information for agreement update.
+      properties:
+        consumerNotes:
+          type: string
+      required:
+        - consumerNotes
     VerifiedAttribute:
       title: VerifiedAttribute
       type: object
