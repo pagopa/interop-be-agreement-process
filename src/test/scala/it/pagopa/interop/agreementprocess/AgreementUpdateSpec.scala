@@ -2,13 +2,10 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import it.pagopa.interop.agreementmanagement.client.model.UpgradeAgreementSeed
+import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
+import it.pagopa.interop.agreementprocess.model.AgreementUpdatePayload
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
-import it.pagopa.interop.authorizationmanagement.client.model.{
-  ClientAgreementAndEServiceDetailsUpdate,
-  ClientComponentState
-}
 
 import java.util.UUID
 
@@ -16,51 +13,111 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
 
   import agreementApiMarshaller._
 
-  "Agreement update" should {
-    "succedd" in {
-      val newerDescriptor   = SpecData.publishedDescriptor.copy(version = "10")
-      val currentDescriptor = SpecData.deprecatedDescriptor.copy(version = "1")
-      val eService          = SpecData.eService.copy(descriptors = Seq(newerDescriptor, currentDescriptor))
-      val consumer          = SpecData.tenant.copy(id = requesterOrgId)
-      val agreement         =
-        SpecData.activeAgreement.copy(
-          eserviceId = eService.id,
-          descriptorId = currentDescriptor.id,
-          consumerId = consumer.id
-        )
-      val newAgreement      =
-        agreement.copy(
-          id = UUID.randomUUID(),
-          eserviceId = eService.id,
-          descriptorId = newerDescriptor.id,
-          consumerId = consumer.id
+  "Agreement Update" should {
+    "succeed if agreement is in draft" in {
+
+      val eServiceId   = UUID.randomUUID()
+      val descriptorId = UUID.randomUUID()
+      val consumerId   = UUID.randomUUID()
+
+      val payload = AgreementUpdatePayload("consumer-notes")
+
+      val agreement =
+        SpecData.draftAgreement.copy(
+          eserviceId = eServiceId,
+          descriptorId = descriptorId,
+          consumerId = consumerId,
+          producerId = requesterOrgId,
+          consumerNotes = Some("old-consumer-notes")
         )
 
-      val seed = UpgradeAgreementSeed(descriptorId = newerDescriptor.id, SpecData.defaultStamp.get)
+      val updatedAgreement =
+        agreement.copy(consumerNotes = Some(payload.consumerNotes))
 
-      mockAgreementRetrieve(agreement)
-      mockEServiceRetrieve(eService.id, eService)
-      mockAgreementUpgrade(agreement.id, seed, newAgreement)
-      mockUpdateAgreementAndEServiceStates(
-        eService.id,
-        agreement.consumerId,
-        ClientAgreementAndEServiceDetailsUpdate(
-          agreementId = newAgreement.id,
-          agreementState = ClientComponentState.ACTIVE,
-          descriptorId = newAgreement.descriptorId,
-          audience = newerDescriptor.audience,
-          voucherLifespan = newerDescriptor.voucherLifespan,
-          eserviceState = ClientComponentState.ACTIVE
-        )
+      val seed = UpdateAgreementSeed(
+        state = agreement.state,
+        certifiedAttributes = agreement.certifiedAttributes,
+        declaredAttributes = agreement.declaredAttributes,
+        verifiedAttributes = agreement.verifiedAttributes,
+        suspendedByConsumer = agreement.suspendedByConsumer,
+        suspendedByProducer = agreement.suspendedByProducer,
+        suspendedByPlatform = agreement.suspendedByPlatform,
+        consumerNotes = Some(payload.consumerNotes),
+        stamps = agreement.stamps
       )
 
-      /* | Maybe a trivial test ? |
-      val payload = AgreementUpdatePayload("consumer-notes")
-      Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
-              status shouldEqual StatusCodes.InternalServerError
-      }*/
+      mockAgreementRetrieve(agreement)
+      mockAgreementUpdate(agreement.id, seed, updatedAgreement)
 
-      Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
+      Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
+  "Agreement Update" should {
+    "fail if agreement is not in draft" in {
+
+      val eServiceId   = UUID.randomUUID()
+      val descriptorId = UUID.randomUUID()
+      val consumerId   = UUID.randomUUID()
+
+      val payload = AgreementUpdatePayload("consumer-notes")
+
+      val agreement =
+        SpecData.activeAgreement.copy(
+          eserviceId = eServiceId,
+          descriptorId = descriptorId,
+          consumerId = consumerId,
+          producerId = requesterOrgId,
+          consumerNotes = Some("old-consumer-notes")
+        )
+
+      mockAgreementRetrieve(agreement)
+
+      Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "Agreement Update" should {
+    "fail if requester is not the producerId" in {
+
+      val eServiceId   = UUID.randomUUID()
+      val descriptorId = UUID.randomUUID()
+      val consumerId   = UUID.randomUUID()
+      val requester    = UUID.randomUUID()
+      val payload      = AgreementUpdatePayload("consumer-notes")
+
+      val agreement =
+        SpecData.draftAgreement.copy(
+          eserviceId = eServiceId,
+          descriptorId = descriptorId,
+          consumerId = consumerId,
+          producerId = requesterOrgId,
+          consumerNotes = Some("old-consumer-notes")
+        )
+
+      val updatedAgreement =
+        agreement.copy(consumerNotes = Some(payload.consumerNotes), producerId = requester)
+
+      val seed = UpdateAgreementSeed(
+        state = agreement.state,
+        certifiedAttributes = agreement.certifiedAttributes,
+        declaredAttributes = agreement.declaredAttributes,
+        verifiedAttributes = agreement.verifiedAttributes,
+        suspendedByConsumer = agreement.suspendedByConsumer,
+        suspendedByProducer = agreement.suspendedByProducer,
+        suspendedByPlatform = agreement.suspendedByPlatform,
+        consumerNotes = Some(payload.consumerNotes),
+        stamps = agreement.stamps
+      )
+
+      mockAgreementRetrieve(agreement)
+      mockAgreementUpdate(agreement.id, seed, updatedAgreement)
+
+      Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
       }
     }

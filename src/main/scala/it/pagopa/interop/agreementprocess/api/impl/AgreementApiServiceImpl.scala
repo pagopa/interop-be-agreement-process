@@ -206,9 +206,13 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = {
-    val result = for {
-      agreementUUID <- agreementId.toFutureUUID
-      agreement     <- agreementManagementService.getAgreementById(agreementUUID)
+    val result: Future[Agreement] = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsProducer(requesterOrgId, agreement)
+      // Correct way to check if agreement is in draft state?
+      _              <- agreement.assertUpdateableState.toFuture
       seed = AgreementManagement.UpdateAgreementSeed(
         state = agreement.state,
         certifiedAttributes = agreement.certifiedAttributes,
