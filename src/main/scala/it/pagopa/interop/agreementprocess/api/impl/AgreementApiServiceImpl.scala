@@ -11,7 +11,7 @@ import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
-import it.pagopa.interop.agreementprocess.error.ErrorHandlers._
+import it.pagopa.interop.agreementprocess.error.Handlers._
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules.certifiedAttributesSatisfied
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
@@ -20,7 +20,7 @@ import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationM
 import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
 import it.pagopa.interop.commons.files.service.FileManager
-import it.pagopa.interop.commons.jwt.{ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE}
+import it.pagopa.interop.commons.jwt._
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, getUidFutureUUID}
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
@@ -441,7 +441,7 @@ final case class AgreementApiServiceImpl(
       case AgreementState.ACTIVE  =>
         Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
       case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => Future.successful(agreement.stamps)
-      case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString(), newState))
+      case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString, newState))
     }
 
     def validateResultState(state: AgreementManagement.AgreementState) = Future
@@ -795,6 +795,7 @@ final case class AgreementApiServiceImpl(
         AuthorizationManagement.ClientComponentState.ACTIVE
       case _ => AuthorizationManagement.ClientComponentState.INACTIVE
     }
+
   private def verifyConflictingAgreements(
     agreement: AgreementManagement.Agreement,
     conflictingStates: List[AgreementManagement.AgreementState]
