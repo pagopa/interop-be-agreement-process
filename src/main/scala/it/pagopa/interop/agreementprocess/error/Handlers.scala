@@ -110,8 +110,9 @@ object Handlers extends AkkaResponses {
   def handleComputeAgreementsStateError(logMessage: String)(implicit
     contexts: Seq[(String, String)],
     logger: LoggerTakingImplicit[ContextFieldsToLog]
-  ): PartialFunction[Try[_], StandardRoute] = { case Failure(ex) =>
-    internalServerError(ex, logMessage)
+  ): PartialFunction[Try[_], StandardRoute] = {
+    case Failure(ex: TenantIdNotFound) => notFound(ex, logMessage)
+    case Failure(ex)                   => internalServerError(ex, logMessage)
   }
 
   def handleAddDocumentError(logMessage: String)(implicit

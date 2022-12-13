@@ -56,7 +56,7 @@ trait Dependencies {
     new TenantManagementServiceImpl(
       TenantManagementInvoker(blockingEc)(actorSystem.classicSystem),
       TenantApi(ApplicationConfiguration.tenantManagementURL)
-    )
+    )(blockingEc)
 
   def attributeRegistryManagement(
     blockingEc: ExecutionContextExecutor
