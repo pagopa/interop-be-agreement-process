@@ -65,7 +65,9 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = authorize(ADMIN_ROLE) {
-    logger.info(s"Creating agreement $payload")
+    val operationLabel = s"Creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
+    logger.info(operationLabel)
+
     val result = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       eService       <- catalogManagementService.getEServiceById(payload.eserviceId)
@@ -77,9 +79,7 @@ final case class AgreementApiServiceImpl(
     } yield agreement.toApi
 
     onComplete(result) {
-      handleCreationError(
-        s"Error creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
-      ) orElse { case Success(agreement) => createAgreement200(agreement) }
+      handleCreationError(operationLabel) orElse { case Success(agreement) => createAgreement200(agreement) }
     }
   }
 
@@ -87,88 +87,87 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route =
-    authorize(ADMIN_ROLE) {
-      logger.info("Submitting agreement {}", agreementId)
-      val result = for {
-        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreementUUID  <- agreementId.toFutureUUID
-        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
-        _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
-        _              <- agreement.assertSubmittableState.toFuture
-        _              <- verifySubmissionConflictingAgreements(agreement)
-        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
-        consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-        updated        <- submit(agreement, eService, consumer, payload)
-      } yield updated.toApi
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Submitting agreement $agreementId"
+    logger.info(operationLabel)
 
-      onComplete(result) {
-        handleSubmissionError(s"Error while submitting agreement $agreementId") orElse { case Success(agreement) =>
-          submitAgreement200(agreement)
-        }
-      }
+    val result = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+      _              <- agreement.assertSubmittableState.toFuture
+      _              <- verifySubmissionConflictingAgreements(agreement)
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
+      consumer       <- tenantManagementService.getTenant(agreement.consumerId)
+      updated        <- submit(agreement, eService, consumer, payload)
+    } yield updated.toApi
+
+    onComplete(result) {
+      handleSubmissionError(operationLabel) orElse { case Success(agreement) => submitAgreement200(agreement) }
     }
+  }
 
   override def activateAgreement(agreementId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route =
-    authorize(ADMIN_ROLE) {
-      logger.info("Activating agreement {}", agreementId)
-      val result = for {
-        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreementUUID  <- agreementId.toFutureUUID
-        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
-        _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
-        _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
-        _              <- agreement.assertActivableState.toFuture
-        _              <- verifyActivationConflictingAgreements(agreement)
-        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        _              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
-        consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-        updated        <- activate(agreement, eService, consumer, requesterOrgId)
-      } yield updated.toApi
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Activating agreement $agreementId"
+    logger.info(operationLabel)
 
-      onComplete(result) {
-        handleActivationError(s"Error while activating agreement $agreementId") orElse { case Success(agreement) =>
-          activateAgreement200(agreement)
-        }
-      }
+    val result = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
+      _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
+      _              <- agreement.assertActivableState.toFuture
+      _              <- verifyActivationConflictingAgreements(agreement)
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      _              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
+      consumer       <- tenantManagementService.getTenant(agreement.consumerId)
+      updated        <- activate(agreement, eService, consumer, requesterOrgId)
+    } yield updated.toApi
+
+    onComplete(result) {
+      handleActivationError(operationLabel) orElse { case Success(agreement) => activateAgreement200(agreement) }
     }
+  }
 
   override def suspendAgreement(agreementId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route =
-    authorize(ADMIN_ROLE) {
-      logger.info("Suspending agreement {}", agreementId)
-      val result = for {
-        requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-        agreementUUID  <- agreementId.toFutureUUID
-        agreement      <- agreementManagementService.getAgreementById(agreementUUID)
-        _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
-        _              <- agreement.assertSuspendableState.toFuture
-        eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-        consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-        updated        <- suspend(agreement, eService, consumer, requesterOrgId)
-      } yield updated.toApi
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Suspending agreement $agreementId"
+    logger.info(operationLabel)
 
-      onComplete(result) {
-        handleSuspensionError(s"Error while suspending agreement $agreementId") orElse { case Success(agreement) =>
-          suspendAgreement200(agreement)
-        }
-      }
+    val result = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
+      _              <- agreement.assertSuspendableState.toFuture
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      consumer       <- tenantManagementService.getTenant(agreement.consumerId)
+      updated        <- suspend(agreement, eService, consumer, requesterOrgId)
+    } yield updated.toApi
+
+    onComplete(result) {
+      handleSuspensionError(operationLabel) orElse { case Success(agreement) => suspendAgreement200(agreement) }
     }
+  }
 
   override def upgradeAgreementById(agreementId: String)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = authorize(ADMIN_ROLE) {
-    logger.info(s"Upgrading agreement $agreementId")
+    val operationLabel = s"Upgrading agreement $agreementId"
+    logger.info(operationLabel)
+
     val result = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
@@ -190,9 +189,7 @@ final case class AgreementApiServiceImpl(
     } yield newAgreement.toApi
 
     onComplete(result) {
-      handleUpgradeError(s"Error while updating agreement $agreementId") orElse { case Success(agreement) =>
-        upgradeAgreementById200(agreement)
-      }
+      handleUpgradeError(operationLabel) orElse { case Success(agreement) => upgradeAgreementById200(agreement) }
     }
   }
 
@@ -200,7 +197,9 @@ final case class AgreementApiServiceImpl(
     agreementId: String
   )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
     authorize(ADMIN_ROLE) {
-      logger.info(s"Deleting agreement $agreementId")
+      val operationLabel = s"Deleting agreement $agreementId"
+      logger.info(operationLabel)
+
       val result = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
         agreementUUID  <- agreementId.toFutureUUID
@@ -214,9 +213,7 @@ final case class AgreementApiServiceImpl(
       } yield ()
 
       onComplete(result) {
-        handleDeletionError(s"Error while deleting agreement $agreementId") orElse { case Success(_) =>
-          deleteAgreement204
-        }
+        handleDeletionError(operationLabel) orElse { case Success(_) => deleteAgreement204 }
       }
     }
 
@@ -239,7 +236,9 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = authorize(ADMIN_ROLE) {
-    logger.info(s"Rejecting agreement $agreementId")
+    val operationLabel = s"Rejecting agreement $agreementId"
+    logger.info(operationLabel)
+
     val result = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
@@ -253,9 +252,7 @@ final case class AgreementApiServiceImpl(
     } yield updated.toApi
 
     onComplete(result) {
-      handleRejectionError(s"Error while rejecting agreement $agreementId") orElse { case Success(agreement) =>
-        rejectAgreement200(agreement)
-      }
+      handleRejectionError(operationLabel) orElse { case Success(agreement) => rejectAgreement200(agreement) }
     }
   }
 
@@ -271,9 +268,10 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
-    logger.info(
-      s"Getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
-    )
+    val operationLabel =
+      s"Retrieving agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
+    logger.info(operationLabel)
+
     val result: Future[Seq[Agreement]] = for {
       statesEnums <- parseArrayParameters(states).traverse(AgreementManagement.AgreementState.fromValue).toFuture
       agreements  <- agreementManagementService.getAgreements(
@@ -291,11 +289,7 @@ final case class AgreementApiServiceImpl(
     } yield filtered.map(_.toApi)
 
     onComplete(result) {
-      handleListingError(
-        s"Error while getting agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
-      ) orElse { case Success(agreement) =>
-        getAgreements200(agreement)
-      }
+      handleListingError(operationLabel) orElse { case Success(agreement) => getAgreements200(agreement) }
     }
   }
 
@@ -304,126 +298,122 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
   ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
-    logger.info(s"Getting agreement by id $agreementId")
+    val operationLabel = s"Retrieving agreement by id $agreementId"
+    logger.info(operationLabel)
+
     val result: Future[Agreement] = for {
       agreementUUID <- agreementId.toFutureUUID
       agreement     <- agreementManagementService.getAgreementById(agreementUUID)
     } yield agreement.toApi
 
     onComplete(result) {
-      handleRetrieveError(s"Error while getting agreement by id $agreementId") orElse { case Success(agreement) =>
-        getAgreementById200(agreement)
-      }
+      handleRetrieveError(operationLabel) orElse { case Success(agreement) => getAgreementById200(agreement) }
     }
   }
 
   override def computeAgreementsByAttribute(consumerId: String, attributeId: String)(implicit
     contexts: Seq[(String, String)]
-  ): Route =
-    authorize(ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE) {
-      logger.info(s"Recalculating agreements status for attribute $attributeId")
+  ): Route = authorize(ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE) {
+    val operationLabel = s"Recalculating agreements status for attribute $attributeId"
+    logger.info(operationLabel)
 
-      val allowedStateTransitions: Map[AgreementManagement.AgreementState, List[AgreementManagement.AgreementState]] =
-        Map(
-          AgreementManagement.AgreementState.DRAFT                        ->
-            List(AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES),
-          AgreementManagement.AgreementState.PENDING                      ->
-            List(AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES),
-          AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES ->
-            List(AgreementManagement.AgreementState.DRAFT),
-          AgreementManagement.AgreementState.ACTIVE    -> List(AgreementManagement.AgreementState.SUSPENDED),
-          AgreementManagement.AgreementState.SUSPENDED -> List(
-            AgreementManagement.AgreementState.ACTIVE,
-            AgreementManagement.AgreementState.SUSPENDED
-          )
+    val allowedStateTransitions: Map[AgreementManagement.AgreementState, List[AgreementManagement.AgreementState]] =
+      Map(
+        AgreementManagement.AgreementState.DRAFT                        ->
+          List(AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES),
+        AgreementManagement.AgreementState.PENDING                      ->
+          List(AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES),
+        AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES ->
+          List(AgreementManagement.AgreementState.DRAFT),
+        AgreementManagement.AgreementState.ACTIVE    -> List(AgreementManagement.AgreementState.SUSPENDED),
+        AgreementManagement.AgreementState.SUSPENDED -> List(
+          AgreementManagement.AgreementState.ACTIVE,
+          AgreementManagement.AgreementState.SUSPENDED
+        )
+      )
+
+    def updateAgreement(
+      agreement: AgreementManagement.Agreement
+    )(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
+      val newSuspendedByPlatform = suspendedByPlatformFlag(fsmState)
+
+      val finalState = agreementStateByFlags(
+        fsmState,
+        agreement.suspendedByProducer,
+        agreement.suspendedByConsumer,
+        newSuspendedByPlatform
+      )
+
+      val seed = AgreementManagement.UpdateAgreementSeed(
+        state = finalState,
+        certifiedAttributes = agreement.certifiedAttributes,
+        declaredAttributes = agreement.declaredAttributes,
+        verifiedAttributes = agreement.verifiedAttributes,
+        suspendedByConsumer = agreement.suspendedByConsumer,
+        suspendedByProducer = agreement.suspendedByProducer,
+        suspendedByPlatform = newSuspendedByPlatform,
+        consumerNotes = agreement.consumerNotes,
+        stamps = agreement.stamps
+      )
+
+      lazy val updateAgreement   = agreementManagementService.updateAgreement(agreement.id, seed)
+      lazy val updateClientState = authorizationManagementService
+        .updateStateOnClients(
+          eServiceId = agreement.eserviceId,
+          consumerId = agreement.consumerId,
+          agreementId = agreement.id,
+          state = toClientState(finalState)
+        )
+        .whenA(
+          (agreement.state == AgreementManagement.AgreementState.ACTIVE && finalState == AgreementManagement.AgreementState.SUSPENDED) ||
+            (agreement.state == AgreementManagement.AgreementState.SUSPENDED && finalState == AgreementManagement.AgreementState.ACTIVE)
         )
 
-      def updateAgreement(
-        agreement: AgreementManagement.Agreement
-      )(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
-        val newSuspendedByPlatform = suspendedByPlatformFlag(fsmState)
-
-        val finalState = agreementStateByFlags(
-          fsmState,
-          agreement.suspendedByProducer,
-          agreement.suspendedByConsumer,
-          newSuspendedByPlatform
+      (updateAgreement >> updateClientState)
+        .whenA(
+          newSuspendedByPlatform != agreement.suspendedByPlatform && allowedStateTransitions
+            .get(agreement.state)
+            .exists(_.contains(finalState))
         )
 
-        val seed = AgreementManagement.UpdateAgreementSeed(
-          state = finalState,
-          certifiedAttributes = agreement.certifiedAttributes,
-          declaredAttributes = agreement.declaredAttributes,
-          verifiedAttributes = agreement.verifiedAttributes,
-          suspendedByConsumer = agreement.suspendedByConsumer,
-          suspendedByProducer = agreement.suspendedByProducer,
-          suspendedByPlatform = newSuspendedByPlatform,
-          consumerNotes = agreement.consumerNotes,
-          stamps = agreement.stamps
-        )
-
-        lazy val updateAgreement   = agreementManagementService.updateAgreement(agreement.id, seed)
-        lazy val updateClientState = authorizationManagementService
-          .updateStateOnClients(
-            eServiceId = agreement.eserviceId,
-            consumerId = agreement.consumerId,
-            agreementId = agreement.id,
-            state = toClientState(finalState)
-          )
-          .whenA(
-            (agreement.state == AgreementManagement.AgreementState.ACTIVE && finalState == AgreementManagement.AgreementState.SUSPENDED) ||
-              (agreement.state == AgreementManagement.AgreementState.SUSPENDED && finalState == AgreementManagement.AgreementState.ACTIVE)
-          )
-
-        (updateAgreement >> updateClientState)
-          .whenA(
-            newSuspendedByPlatform != agreement.suspendedByPlatform && allowedStateTransitions
-              .get(agreement.state)
-              .exists(_.contains(finalState))
-          )
-
-      }
-
-      def updateStates(consumer: TenantManagement.Tenant, eServices: Map[UUID, CatalogManagement.EService])(
-        agreement: AgreementManagement.Agreement
-      ): Future[Unit] =
-        eServices
-          .get(agreement.eserviceId)
-          .map(AgreementStateByAttributesFSM.nextState(agreement, _, consumer))
-          .fold {
-            logger.error(s"EService ${agreement.eserviceId} not found for agreement ${agreement.id}")
-            Future.unit
-          }(updateAgreement(agreement))
-
-      val updatableStates = allowedStateTransitions.map { case (startingState, _) => startingState }.toList
-
-      def eServiceContainsAttribute(attributeId: UUID)(eService: CatalogManagement.EService): Boolean =
-        (eService.attributes.certified ++ eService.attributes.declared ++ eService.attributes.verified)
-          .flatMap(attr => attr.single.map(_.id).toSeq ++ attr.group.traverse(_.map(_.id)).flatten)
-          .contains(attributeId)
-
-      val result: Future[Unit] = for {
-        consumerUuid  <- consumerId.toFutureUUID
-        attributeUuid <- attributeId.toFutureUUID
-        agreements <- agreementManagementService.getAgreements(consumerId = consumerId.some, states = updatableStates)
-        consumer   <- tenantManagementService.getTenant(consumerUuid)
-        uniqueEServiceIds = agreements.map(_.eserviceId).distinct
-        // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
-        eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
-        filteredEServices = eServices.filter(eServiceContainsAttribute(attributeUuid))
-        eServicesMap      = filteredEServices.fproductLeft(_.id).toMap
-        filteredAgreement = agreements.filter(a => filteredEServices.exists(_.id == a.eserviceId))
-        _ <- filteredAgreement.traverse(updateStates(consumer, eServicesMap))
-      } yield ()
-
-      onComplete(result) {
-        handleComputeAgreementsStateError(
-          s"Error while recalculating agreements status for attribute $attributeId"
-        ) orElse { case Success(_) =>
-          computeAgreementsByAttribute204
-        }
-      }
     }
+
+    def updateStates(consumer: TenantManagement.Tenant, eServices: Map[UUID, CatalogManagement.EService])(
+      agreement: AgreementManagement.Agreement
+    ): Future[Unit] =
+      eServices
+        .get(agreement.eserviceId)
+        .map(AgreementStateByAttributesFSM.nextState(agreement, _, consumer))
+        .fold {
+          logger.error(s"EService ${agreement.eserviceId} not found for agreement ${agreement.id}")
+          Future.unit
+        }(updateAgreement(agreement))
+
+    val updatableStates = allowedStateTransitions.map { case (startingState, _) => startingState }.toList
+
+    def eServiceContainsAttribute(attributeId: UUID)(eService: CatalogManagement.EService): Boolean =
+      (eService.attributes.certified ++ eService.attributes.declared ++ eService.attributes.verified)
+        .flatMap(attr => attr.single.map(_.id).toSeq ++ attr.group.traverse(_.map(_.id)).flatten)
+        .contains(attributeId)
+
+    val result: Future[Unit] = for {
+      consumerUuid  <- consumerId.toFutureUUID
+      attributeUuid <- attributeId.toFutureUUID
+      agreements    <- agreementManagementService.getAgreements(consumerId = consumerId.some, states = updatableStates)
+      consumer      <- tenantManagementService.getTenant(consumerUuid)
+      uniqueEServiceIds = agreements.map(_.eserviceId).distinct
+      // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
+      eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
+      filteredEServices = eServices.filter(eServiceContainsAttribute(attributeUuid))
+      eServicesMap      = filteredEServices.fproductLeft(_.id).toMap
+      filteredAgreement = agreements.filter(a => filteredEServices.exists(_.id == a.eserviceId))
+      _ <- filteredAgreement.traverse(updateStates(consumer, eServicesMap))
+    } yield ()
+
+    onComplete(result) {
+      handleComputeAgreementsStateError(operationLabel) orElse { case Success(_) => computeAgreementsByAttribute204 }
+    }
+  }
 
   def submit(
     agreement: AgreementManagement.Agreement,
@@ -838,8 +828,8 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerDocument: ToEntityMarshaller[Document],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = authorize(ADMIN_ROLE) {
-
-    logger.info(s"Adding a consumer document to agreement $agreementId")
+    val operationLabel = s"Adding a consumer document to agreement $agreementId"
+    logger.info(operationLabel)
 
     val result: Future[Document] = for {
       organizationId <- getOrganizationIdFutureUUID(contexts)
@@ -860,9 +850,8 @@ final case class AgreementApiServiceImpl(
     } yield document.toApi
 
     onComplete(result) {
-      handleAddDocumentError(s"Error adding a consumer document to agreement $agreementId") orElse {
-        case Success(document) =>
-          addAgreementConsumerDocument200(document)
+      handleAddDocumentError(operationLabel) orElse { case Success(document) =>
+        addAgreementConsumerDocument200(document)
       }
     }
   }
@@ -872,8 +861,8 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerDocument: ToEntityMarshaller[Document],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = authorize(ADMIN_ROLE) {
-
-    logger.info(s"Getting consumer document $documentId from agreement $agreementId")
+    val operationLabel = s"Retrieving consumer document $documentId from agreement $agreementId"
+    logger.info(operationLabel)
 
     val result: Future[Document] = for {
       organizationId <- getOrganizationIdFutureUUID(contexts)
@@ -885,9 +874,8 @@ final case class AgreementApiServiceImpl(
     } yield document.toApi
 
     onComplete(result) {
-      handleGetDocumentError(s"Error getting consumer document $documentId from agreement $agreementId") orElse {
-        case Success(document) =>
-          getAgreementConsumerDocument200(document)
+      handleGetDocumentError(operationLabel) orElse { case Success(document) =>
+        getAgreementConsumerDocument200(document)
       }
     }
   }
@@ -896,8 +884,8 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = authorize(ADMIN_ROLE) {
-
-    logger.info(s"Removing consumer document $documentId from agreement $agreementId")
+    val operationLabel = s"Removing consumer document $documentId from agreement $agreementId"
+    logger.info(operationLabel)
 
     val result: Future[Unit] = for {
       organizationId <- getOrganizationIdFutureUUID(contexts)
@@ -914,9 +902,7 @@ final case class AgreementApiServiceImpl(
     } yield result
 
     onComplete(result) {
-      handleGetDocumentError(s"Error removing consumer document $documentId from agreement $agreementId") orElse {
-        case Success(_) => removeAgreementConsumerDocument204
-      }
+      handleGetDocumentError(operationLabel) orElse { case Success(_) => removeAgreementConsumerDocument204 }
     }
   }
 
