@@ -266,17 +266,10 @@ class ApiInvoker(formats: Formats, ec: ExecutionContextExecutor)(implicit system
     : (ContextFieldsToLog, LoggerTakingImplicit[ContextFieldsToLog], String) => PartialFunction[Throwable, Future[T]] =
     (context, logger, message) => {
       case ex @ ApiError(code, apiMessage, response, throwable, _) =>
-        logger.error(
-          "{} FAILED. code > {} - message > {} - response > {}",
-          message,
-          code,
-          apiMessage,
-          response,
-          throwable
-        )(context)
+        logger.warn(s"$message FAILED. code > $code - message > $apiMessage - response > $response", throwable)(context)
         Future.failed[T](ex)
       case ex                                                      =>
-        logger.error("{} FAILED. Error: {}", message, ex.getMessage, ex)(context)
+        logger.error(s"$message FAILED. Error: ${ex.getMessage}", ex)(context)
         Future.failed[T](ex)
     }
 }
