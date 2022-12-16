@@ -16,6 +16,8 @@ object Adapters {
   val ARCHIVABLE_STATES: Set[AgreementManagement.AgreementState]  =
     Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
   val SUBMITTABLE_STATES: Set[AgreementManagement.AgreementState] = Set(AgreementManagement.AgreementState.DRAFT)
+  val UPDATEABLE_STATES: Set[AgreementManagement.AgreementState]  =
+    Set(AgreementManagement.AgreementState.DRAFT)
   val UPGRADABLE_STATES: Set[AgreementManagement.AgreementState]  =
     Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
   val REJECTABLE_STATES: Set[AgreementManagement.AgreementState]  = Set(AgreementManagement.AgreementState.PENDING)
@@ -39,6 +41,10 @@ object Adapters {
     def assertArchivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
       .withRight[Unit]
       .unlessA(ARCHIVABLE_STATES.contains(a.state))
+
+    def assertUpdateableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
+      .withRight[Unit]
+      .unlessA(UPDATEABLE_STATES.contains(a.state))
 
     def assertUpgradableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(a.id.toString, a.state))
       .withRight[Unit]
