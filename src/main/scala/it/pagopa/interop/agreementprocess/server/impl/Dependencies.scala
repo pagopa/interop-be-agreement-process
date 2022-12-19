@@ -11,7 +11,7 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.api.impl.{HealthApiMarshallerImpl, HealthServiceApiImpl, _}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-import it.pagopa.interop.agreementprocess.error.Handlers.serviceCode
+import ResponseHandlers.serviceCode
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
 import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi

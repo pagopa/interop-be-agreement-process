@@ -8,10 +8,10 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, Stamp, Stamps, UpdateAgreementSeed}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
+import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers._
 import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
-import it.pagopa.interop.agreementprocess.error.Handlers._
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules.certifiedAttributesSatisfied
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
@@ -30,7 +30,6 @@ import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
@@ -68,7 +67,7 @@ final case class AgreementApiServiceImpl(
     val operationLabel = s"Creating agreement for EService ${payload.eserviceId} and Descriptor ${payload.descriptorId}"
     logger.info(operationLabel)
 
-    val result = for {
+    val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       eService       <- catalogManagementService.getEServiceById(payload.eserviceId)
       _              <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
@@ -79,7 +78,7 @@ final case class AgreementApiServiceImpl(
     } yield agreement.toApi
 
     onComplete(result) {
-      handleCreationError(operationLabel) orElse { case Success(agreement) => createAgreement200(agreement) }
+      createAgreementResponse[Agreement](operationLabel)(createAgreement200)
     }
   }
 
@@ -91,7 +90,7 @@ final case class AgreementApiServiceImpl(
     val operationLabel = s"Submitting agreement $agreementId"
     logger.info(operationLabel)
 
-    val result = for {
+    val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
@@ -105,7 +104,7 @@ final case class AgreementApiServiceImpl(
     } yield updated.toApi
 
     onComplete(result) {
-      handleSubmissionError(operationLabel) orElse { case Success(agreement) => submitAgreement200(agreement) }
+      submitAgreementResponse[Agreement](operationLabel)(submitAgreement200)
     }
   }
 
@@ -117,7 +116,7 @@ final case class AgreementApiServiceImpl(
     val operationLabel = s"Activating agreement $agreementId"
     logger.info(operationLabel)
 
-    val result = for {
+    val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
@@ -132,7 +131,7 @@ final case class AgreementApiServiceImpl(
     } yield updated.toApi
 
     onComplete(result) {
-      handleActivationError(operationLabel) orElse { case Success(agreement) => activateAgreement200(agreement) }
+      activateAgreementResponse[Agreement](operationLabel)(activateAgreement200)
     }
   }
 
@@ -144,7 +143,7 @@ final case class AgreementApiServiceImpl(
     val operationLabel = s"Suspending agreement $agreementId"
     logger.info(operationLabel)
 
-    val result = for {
+    val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
@@ -156,7 +155,7 @@ final case class AgreementApiServiceImpl(
     } yield updated.toApi
 
     onComplete(result) {
-      handleSuspensionError(operationLabel) orElse { case Success(agreement) => suspendAgreement200(agreement) }
+      suspendAgreementResponse[Agreement](operationLabel)(suspendAgreement200)
     }
   }
 
@@ -168,7 +167,7 @@ final case class AgreementApiServiceImpl(
     val operationLabel = s"Upgrading agreement $agreementId"
     logger.info(operationLabel)
 
-    val result = for {
+    val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
@@ -189,7 +188,7 @@ final case class AgreementApiServiceImpl(
     } yield newAgreement.toApi
 
     onComplete(result) {
-      handleUpgradeError(operationLabel) orElse { case Success(agreement) => upgradeAgreementById200(agreement) }
+      upgradeAgreementByIdResponse[Agreement](operationLabel)(upgradeAgreementById200)
     }
   }
 
@@ -200,7 +199,7 @@ final case class AgreementApiServiceImpl(
       val operationLabel = s"Deleting agreement $agreementId"
       logger.info(operationLabel)
 
-      val result = for {
+      val result: Future[Unit] = for {
         requesterOrgId <- getOrganizationIdFutureUUID(contexts)
         agreementUUID  <- agreementId.toFutureUUID
         agreement      <- agreementManagementService.getAgreementById(agreementUUID)
@@ -213,7 +212,7 @@ final case class AgreementApiServiceImpl(
       } yield ()
 
       onComplete(result) {
-        handleDeletionError(operationLabel) orElse { case Success(_) => deleteAgreement204 }
+        deleteAgreementResponse[Unit](operationLabel)(_ => deleteAgreement204)
       }
     }
 
@@ -239,7 +238,7 @@ final case class AgreementApiServiceImpl(
     val operationLabel = s"Rejecting agreement $agreementId"
     logger.info(operationLabel)
 
-    val result = for {
+    val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
@@ -252,7 +251,7 @@ final case class AgreementApiServiceImpl(
     } yield updated.toApi
 
     onComplete(result) {
-      handleRejectionError(operationLabel) orElse { case Success(agreement) => rejectAgreement200(agreement) }
+      rejectAgreementResponse[Agreement](operationLabel)(rejectAgreement200)
     }
   }
 
@@ -289,7 +288,7 @@ final case class AgreementApiServiceImpl(
     } yield filtered.map(_.toApi)
 
     onComplete(result) {
-      handleListingError(operationLabel) orElse { case Success(agreement) => getAgreements200(agreement) }
+      getAgreementsResponse[Seq[Agreement]](operationLabel)(getAgreements200)
     }
   }
 
@@ -307,7 +306,7 @@ final case class AgreementApiServiceImpl(
     } yield agreement.toApi
 
     onComplete(result) {
-      handleRetrieveError(operationLabel) orElse { case Success(agreement) => getAgreementById200(agreement) }
+      getAgreementByIdResponse[Agreement](operationLabel)(getAgreementById200)
     }
   }
 
@@ -411,7 +410,7 @@ final case class AgreementApiServiceImpl(
     } yield ()
 
     onComplete(result) {
-      handleComputeAgreementsStateError(operationLabel) orElse { case Success(_) => computeAgreementsByAttribute204 }
+      computeAgreementsByAttributeResponse[Unit](operationLabel)(_ => computeAgreementsByAttribute204)
     }
   }
 
@@ -850,9 +849,7 @@ final case class AgreementApiServiceImpl(
     } yield document.toApi
 
     onComplete(result) {
-      handleAddDocumentError(operationLabel) orElse { case Success(document) =>
-        addAgreementConsumerDocument200(document)
-      }
+      addAgreementConsumerDocumentResponse[Document](operationLabel)(addAgreementConsumerDocument200)
     }
   }
 
@@ -874,9 +871,7 @@ final case class AgreementApiServiceImpl(
     } yield document.toApi
 
     onComplete(result) {
-      handleGetDocumentError(operationLabel) orElse { case Success(document) =>
-        getAgreementConsumerDocument200(document)
-      }
+      getAgreementConsumerDocumentResponse[Document](operationLabel)(getAgreementConsumerDocument200)
     }
   }
 
@@ -902,7 +897,7 @@ final case class AgreementApiServiceImpl(
     } yield result
 
     onComplete(result) {
-      handleGetDocumentError(operationLabel) orElse { case Success(_) => removeAgreementConsumerDocument204 }
+      removeAgreementConsumerDocumentResponse[Unit](operationLabel)(_ => removeAgreementConsumerDocument204)
     }
   }
 
