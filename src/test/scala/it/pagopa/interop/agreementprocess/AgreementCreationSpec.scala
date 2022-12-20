@@ -88,7 +88,7 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       mockAgreementsRetrieve(Seq(SpecData.agreement))
 
       Get() ~> service.createAgreement(payload) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+        status shouldEqual StatusCodes.Conflict
       }
     }
 

@@ -18,9 +18,9 @@ object ResponseHandlers extends AkkaResponses {
     result match {
       case Success(s)                                => success(s)
       case Failure(ex: DescriptorNotInExpectedState) => badRequest(ex, logMessage)
-      case Failure(ex: AgreementAlreadyExists)       => badRequest(ex, logMessage)
       case Failure(ex: MissingCertifiedAttributes)   => badRequest(ex, logMessage)
       case Failure(ex: EServiceNotFound)             => badRequest(ex, logMessage)
+      case Failure(ex: AgreementAlreadyExists)       => conflict(ex, logMessage)
       case Failure(ex)                               => internalServerError(ex, logMessage)
     }
 
@@ -30,12 +30,12 @@ object ResponseHandlers extends AkkaResponses {
     result match {
       case Success(s)                                => success(s)
       case Failure(ex: AgreementNotFound)            => notFound(ex, logMessage)
-      case Failure(ex: AgreementAlreadyExists)       => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState)  => badRequest(ex, logMessage)
       case Failure(ex: AgreementSubmissionFailed)    => badRequest(ex, logMessage)
       case Failure(ex: MissingCertifiedAttributes)   => badRequest(ex, logMessage)
       case Failure(ex: DescriptorNotInExpectedState) => badRequest(ex, logMessage)
       case Failure(ex: OperationNotAllowed)          => forbidden(ex, logMessage)
+      case Failure(ex: AgreementAlreadyExists)       => conflict(ex, logMessage)
       case Failure(ex)                               => internalServerError(ex, logMessage)
     }
 
@@ -45,11 +45,11 @@ object ResponseHandlers extends AkkaResponses {
     result match {
       case Success(s)                                => success(s)
       case Failure(ex: AgreementNotFound)            => notFound(ex, logMessage)
-      case Failure(ex: AgreementAlreadyExists)       => badRequest(ex, logMessage)
       case Failure(ex: AgreementActivationFailed)    => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState)  => badRequest(ex, logMessage)
-      case Failure(ex: OperationNotAllowed)          => forbidden(ex, logMessage)
       case Failure(ex: DescriptorNotInExpectedState) => badRequest(ex, logMessage)
+      case Failure(ex: OperationNotAllowed)          => forbidden(ex, logMessage)
+      case Failure(ex: AgreementAlreadyExists)       => conflict(ex, logMessage)
       case Failure(ex)                               => internalServerError(ex, logMessage)
     }
 
@@ -113,8 +113,7 @@ object ResponseHandlers extends AkkaResponses {
   )(result: Try[T])(implicit contexts: Seq[(String, String)], logger: LoggerTakingImplicit[ContextFieldsToLog]): Route =
     result match {
       case Success(s)  => success(s)
-      case Failure(ex) =>
-        internalServerError(ex, logMessage)
+      case Failure(ex) => internalServerError(ex, logMessage)
     }
 
   def computeAgreementsByAttributeResponse[T](logMessage: String)(
