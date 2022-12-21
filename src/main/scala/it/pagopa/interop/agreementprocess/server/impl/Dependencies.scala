@@ -29,6 +29,8 @@ import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
 import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import com.typesafe.scalalogging.Logger
+import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 
 trait Dependencies {
 
@@ -117,7 +119,7 @@ trait Dependencies {
         UUIDSupplier
       ),
       AgreementApiMarshallerImpl,
-      jwtReader.OAuth2JWTValidatorAsContexts
+      jwtReader.OAuth2JWTValidatorAsContexts(Logger.takingImplicit[ContextFieldsToLog]("OAuth2JWTValidatorAsContexts"))
     )
 
   val healthApi: HealthApi = new HealthApi(
