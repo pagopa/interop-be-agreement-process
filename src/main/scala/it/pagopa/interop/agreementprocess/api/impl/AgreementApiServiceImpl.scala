@@ -192,6 +192,44 @@ final case class AgreementApiServiceImpl(
     }
   }
 
+  /**
+    * Code: 200, Message: Agreement updated., DataType: Agreement
+    * Code: 404, Message: Agreement not found, DataType: Problem
+    * Code: 400, Message: Invalid ID supplied, DataType: Problem
+    */
+  override def updateAgreementById(agreementId: String, agreementUpdatePayload: AgreementUpdatePayload)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route = {
+    val result: Future[Agreement] = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsProducer(requesterOrgId, agreement)
+      // Correct way to check if agreement is in draft state?
+      _              <- agreement.assertUpdateableState.toFuture
+      seed = AgreementManagement.UpdateAgreementSeed(
+        state = agreement.state,
+        certifiedAttributes = agreement.certifiedAttributes,
+        declaredAttributes = agreement.declaredAttributes,
+        verifiedAttributes = agreement.verifiedAttributes,
+        suspendedByConsumer = agreement.suspendedByConsumer,
+        suspendedByProducer = agreement.suspendedByProducer,
+        suspendedByPlatform = agreement.suspendedByPlatform,
+        consumerNotes = agreementUpdatePayload.consumerNotes.some,
+        stamps = agreement.stamps
+      )
+      updatedAgreement <- agreementManagementService.updateAgreement(agreementUUID, seed)
+    } yield updatedAgreement.toApi
+
+    onComplete(result) {
+      handleRejectionError(s"Error while updating agreement $agreementId") orElse { case Success(updatedAgreement) =>
+        updateAgreementById200(updatedAgreement)
+      }
+    }
+  }
+
   override def deleteAgreement(
     agreementId: String
   )(implicit contexts: Seq[(String, String)], toEntityMarshallerProblem: ToEntityMarshaller[Problem]): Route =
@@ -900,5 +938,4 @@ final case class AgreementApiServiceImpl(
       removeAgreementConsumerDocumentResponse[Unit](operationLabel)(_ => removeAgreementConsumerDocument204)
     }
   }
-
 }
