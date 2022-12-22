@@ -192,16 +192,14 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  /**
-    * Code: 200, Message: Agreement updated., DataType: Agreement
-    * Code: 404, Message: Agreement not found, DataType: Problem
-    * Code: 400, Message: Invalid ID supplied, DataType: Problem
-    */
   override def updateAgreementById(agreementId: String, agreementUpdatePayload: AgreementUpdatePayload)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = {
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Updating agreement $agreementId"
+    logger.info(operationLabel)
+
     val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
@@ -224,9 +222,7 @@ final case class AgreementApiServiceImpl(
     } yield updatedAgreement.toApi
 
     onComplete(result) {
-      handleRejectionError(s"Error while updating agreement $agreementId") orElse { case Success(updatedAgreement) =>
-        updateAgreementById200(updatedAgreement)
-      }
+      updateAgreementByIdResponse(operationLabel)(updateAgreementById200)
     }
   }
 
