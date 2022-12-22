@@ -31,11 +31,4 @@ final class AttributeManagementServiceImpl(invoker: AttributeRegistryManagementI
       invoker.invoke(request, s"Retrieving attribute by id = $attributeId")
     }
 
-  override def getAttributeByOriginAndCode(origin: String, code: String)(implicit
-    contexts: Seq[(String, String)]
-  ): Future[ClientAttribute] = withHeaders { (bearerToken, correlationId, ip) =>
-    val request = api.getAttributeByOriginAndCode(correlationId, origin, code, ip)(BearerToken(bearerToken))
-    invoker.invoke(request, s"Retrieving attribute by origin = $origin and code = $code")
-  }
-
 }

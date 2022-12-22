@@ -91,4 +91,7 @@ object AgreementProcessErrors {
   final case class SelfcareIdNotFound(tenantId: UUID)
       extends ComponentError("0019", s"Selfcare id not found for tenant ${tenantId.toString()}")
 
+  final case class TenantIdNotFound(tenantId: UUID)
+      extends ComponentError("0020", s"Tenant ${tenantId.toString} not found")
+
 }

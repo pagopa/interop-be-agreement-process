@@ -171,7 +171,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Seq(SpecData.agreement))
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+        status shouldEqual StatusCodes.Conflict
       }
     }
 

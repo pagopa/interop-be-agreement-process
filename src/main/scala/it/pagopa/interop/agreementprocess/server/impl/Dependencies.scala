@@ -11,6 +11,7 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import it.pagopa.interop.agreementprocess.api._
 import it.pagopa.interop.agreementprocess.api.impl.{HealthApiMarshallerImpl, HealthServiceApiImpl, _}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
+import ResponseHandlers.serviceCode
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
 import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
@@ -21,6 +22,7 @@ import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
 import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, SerializedKey}
 import it.pagopa.interop.commons.utils.TypeConversions._
+import it.pagopa.interop.commons.utils.errors.{Problem => CommonProblem}
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
 import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
@@ -54,7 +56,7 @@ trait Dependencies {
     new TenantManagementServiceImpl(
       TenantManagementInvoker(blockingEc)(actorSystem.classicSystem),
       TenantApi(ApplicationConfiguration.tenantManagementURL)
-    )
+    )(blockingEc)
 
   def attributeRegistryManagement(
     blockingEc: ExecutionContextExecutor
@@ -127,8 +129,7 @@ trait Dependencies {
 
   val validationExceptionToRoute: ValidationReport => Route = report => {
     val error =
-      problemOf(StatusCodes.BadRequest, OpenapiUtils.errorFromRequestValidationReport(report))
-    complete(error.status, error)(HealthApiMarshallerImpl.toEntityMarshallerProblem)
+      CommonProblem(StatusCodes.BadRequest, OpenapiUtils.errorFromRequestValidationReport(report), serviceCode)
+    complete(error.status, error)
   }
-
 }

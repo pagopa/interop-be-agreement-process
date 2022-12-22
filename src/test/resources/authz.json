@@ -41,6 +41,11 @@
       "roles": ["admin", "m2m"]
     },
     {
+      "route": "updateAgreementById",
+      "verb": "POST",
+      "roles": ["admin"]
+    },
+    {
       "route": "upgradeAgreementById",
       "verb": "POST",
       "roles": ["admin"]

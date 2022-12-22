@@ -34,9 +34,6 @@ object FakeDependencies {
     override def getAttribute(attributeId: String)(implicit contexts: Seq[(String, String)]): Future[ClientAttribute] =
       Future.successful(attribute)
 
-    override def getAttributeByOriginAndCode(origin: String, code: String)(implicit
-      contexts: Seq[(String, String)]
-    ): Future[ClientAttribute] = Future.successful(attribute)
   }
 
   class FakeAgreementManagementService extends AgreementManagementService {

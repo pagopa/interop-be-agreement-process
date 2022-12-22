@@ -39,7 +39,8 @@ object SpecData {
     interface = None,
     docs = Nil,
     state = EServiceDescriptorState.PUBLISHED,
-    agreementApprovalPolicy = AUTOMATIC
+    agreementApprovalPolicy = AUTOMATIC,
+    serverUrls = Nil
   )
 
   def publishedDescriptor: EServiceDescriptor  = descriptor.copy(state = EServiceDescriptorState.PUBLISHED)
