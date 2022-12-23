@@ -34,6 +34,9 @@ import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLo
 
 trait Dependencies {
 
+  implicit val loggerTI: LoggerTakingImplicit[ContextFieldsToLog] =
+    Logger.takingImplicit[ContextFieldsToLog]("OAuth2JWTValidatorAsContexts")
+
   implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue = UserRegistryApiKeyValue()
 
   def agreementManagement(
@@ -119,7 +122,7 @@ trait Dependencies {
         UUIDSupplier
       ),
       AgreementApiMarshallerImpl,
-      jwtReader.OAuth2JWTValidatorAsContexts(Logger.takingImplicit[ContextFieldsToLog]("OAuth2JWTValidatorAsContexts"))
+      jwtReader.OAuth2JWTValidatorAsContexts
     )
 
   val healthApi: HealthApi = new HealthApi(
