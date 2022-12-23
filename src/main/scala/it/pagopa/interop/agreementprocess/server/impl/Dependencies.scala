@@ -29,7 +29,7 @@ import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
 import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 
 trait Dependencies {
