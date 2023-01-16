@@ -18,7 +18,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
 
       val eServiceId   = UUID.randomUUID()
       val descriptorId = UUID.randomUUID()
-      val consumerId   = UUID.randomUUID()
+      val producerId   = UUID.randomUUID()
 
       val payload = AgreementUpdatePayload("consumer-notes")
 
@@ -26,8 +26,8 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
         SpecData.draftAgreement.copy(
           eserviceId = eServiceId,
           descriptorId = descriptorId,
-          consumerId = consumerId,
-          producerId = requesterOrgId,
+          consumerId = requesterOrgId,
+          producerId = producerId,
           consumerNotes = Some("old-consumer-notes")
         )
 
@@ -60,7 +60,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
 
       val eServiceId   = UUID.randomUUID()
       val descriptorId = UUID.randomUUID()
-      val consumerId   = UUID.randomUUID()
+      val producerId   = UUID.randomUUID()
 
       val payload = AgreementUpdatePayload("consumer-notes")
 
@@ -68,8 +68,8 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
         SpecData.activeAgreement.copy(
           eserviceId = eServiceId,
           descriptorId = descriptorId,
-          consumerId = consumerId,
-          producerId = requesterOrgId,
+          consumerId = requesterOrgId,
+          producerId = producerId,
           consumerNotes = Some("old-consumer-notes")
         )
 
@@ -86,7 +86,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
 
       val eServiceId   = UUID.randomUUID()
       val descriptorId = UUID.randomUUID()
-      val consumerId   = UUID.randomUUID()
+      val producerId   = UUID.randomUUID()
       val requester    = UUID.randomUUID()
       val payload      = AgreementUpdatePayload("consumer-notes")
 
@@ -94,8 +94,8 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
         SpecData.draftAgreement.copy(
           eserviceId = eServiceId,
           descriptorId = descriptorId,
-          consumerId = consumerId,
-          producerId = requesterOrgId,
+          consumerId = requesterOrgId,
+          producerId = producerId,
           consumerNotes = Some("old-consumer-notes")
         )
 
