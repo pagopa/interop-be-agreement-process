@@ -204,8 +204,7 @@ final case class AgreementApiServiceImpl(
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
-      _              <- assertRequesterIsProducer(requesterOrgId, agreement)
-      // Correct way to check if agreement is in draft state?
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- agreement.assertUpdateableState.toFuture
       seed = AgreementManagement.UpdateAgreementSeed(
         state = agreement.state,
