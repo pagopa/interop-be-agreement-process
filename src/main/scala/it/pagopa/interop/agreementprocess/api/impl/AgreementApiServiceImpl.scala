@@ -5,7 +5,13 @@ import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, Stamp, Stamps, UpdateAgreementSeed}
+import it.pagopa.interop.agreementmanagement.client.model.{
+  AgreementSeed,
+  AgreementState,
+  Stamp,
+  Stamps,
+  UpdateAgreementSeed
+}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers._
@@ -189,6 +195,54 @@ final case class AgreementApiServiceImpl(
 
     onComplete(result) {
       upgradeAgreementByIdResponse[Agreement](operationLabel)(upgradeAgreementById200)
+    }
+  }
+
+  override def cloneAgreement(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Cloning agreement $agreementId"
+    logger.info(operationLabel)
+
+    val result: Future[Agreement] = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+      _              <- Future
+        .failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
+        .unlessA(agreement.state == AgreementState.REJECTED)
+      newAgreement   <- agreementManagementService.createAgreement(
+        AgreementSeed(
+          agreement.eserviceId,
+          agreement.descriptorId,
+          agreement.producerId,
+          agreement.consumerId,
+          Nil,
+          Nil,
+          Nil,
+          agreement.consumerNotes
+        )
+      )
+      documents      <- Future.traverse(agreement.consumerDocuments)(doc =>
+        agreementManagementService.addConsumerDocument(
+          newAgreement.id,
+          AgreementManagement.DocumentSeed(
+            id = doc.id,
+            name = doc.name,
+            prettyName = doc.prettyName,
+            contentType = doc.contentType,
+            path = doc.path
+          )
+        )
+      )
+      newAgreement   <- Future.successful(newAgreement.copy(consumerDocuments = documents))
+    } yield newAgreement.toApi
+
+    onComplete(result) {
+      cloneAgreementResponse[Agreement](operationLabel)(cloneAgreement200)
     }
   }
 
