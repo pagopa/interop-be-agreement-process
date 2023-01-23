@@ -12,7 +12,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
   import agreementApiMarshaller._
 
   "Agreement Clone" should {
-    "succeed on rejected agreement when requested by consumer" in {
+    "succeed on Rejected agreement when requested by Consumer" in {
 
       val agreement =
         SpecData.rejectedAgreement.copy(
@@ -32,7 +32,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
     }
 
   }
-  "fail if agreement to clone is not exists" in {
+  "fail if agreement to clone does not exists" in {
 
     val agreement =
       SpecData.rejectedAgreement.copy(
@@ -65,7 +65,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
     }
   }
 
-  "fail if clone is not requested by consumer" in {
+  "fail if agreement to clone is not requested by consumer" in {
 
     val agreement =
       SpecData.rejectedAgreement.copy(
