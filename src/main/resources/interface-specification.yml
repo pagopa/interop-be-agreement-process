@@ -683,6 +683,7 @@ components:
       properties:
         reason:
           type: string
+          maxLength: 1000
       required:
         - reason
     AgreementUpdatePayload:
@@ -691,6 +692,7 @@ components:
       properties:
         consumerNotes:
           type: string
+          maxLength: 1000
       required:
         - consumerNotes
     VerifiedAttribute:
@@ -757,6 +759,7 @@ components:
           type: string
         prettyName:
           type: string
+          maxLength: 60
         contentType:
           type: string
         path:
@@ -778,6 +781,7 @@ components:
           type: string
         prettyName:
           type: string
+          maxLength: 60
         contentType:
           type: string
         createdAt:
