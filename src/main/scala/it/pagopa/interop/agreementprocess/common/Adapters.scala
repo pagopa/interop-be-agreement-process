@@ -78,6 +78,17 @@ object Adapters {
       updatedAt = a.updatedAt,
       contract = a.contract.map(_.toApi)
     )
+
+    def toCloneSeed: AgreementManagement.AgreementSeed = AgreementManagement.AgreementSeed(
+      eserviceId = a.eserviceId,
+      descriptorId = a.descriptorId,
+      producerId = a.producerId,
+      consumerId = a.consumerId,
+      verifiedAttributes = Nil,
+      certifiedAttributes = Nil,
+      declaredAttributes = Nil,
+      consumerNotes = a.consumerNotes
+    )
   }
 
   implicit class AgreementStateWrapper(private val s: AgreementManagement.AgreementState) extends AnyVal {
@@ -111,12 +122,19 @@ object Adapters {
   }
 
   implicit class DocumentWrapper(private val d: AgreementManagement.Document) extends AnyVal {
-    def toApi: Document = Document(
+    def toApi: Document                               = Document(
       id = d.id,
       name = d.name,
       prettyName = d.prettyName,
       contentType = d.contentType,
       createdAt = d.createdAt,
+      path = d.path
+    )
+    def toCloneSeed: AgreementManagement.DocumentSeed = AgreementManagement.DocumentSeed(
+      id = d.id,
+      name = d.name,
+      prettyName = d.prettyName,
+      contentType = d.contentType,
       path = d.path
     )
   }
