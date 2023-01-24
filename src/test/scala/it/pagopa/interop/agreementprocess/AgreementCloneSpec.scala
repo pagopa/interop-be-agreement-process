@@ -14,15 +14,33 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
   "Agreement Clone" should {
     "succeed on Rejected agreement when requested by Consumer" in {
 
+      val descriptor                             = SpecData.publishedDescriptor
+      val (eServiceAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
+      val eService = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttributes)
+      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(tenantAttributes))
+
+      val consumerDoc1 = SpecData.document()
+      val consumerDoc2 = SpecData.document()
+
       val agreement =
         SpecData.rejectedAgreement.copy(
           eserviceId = UUID.randomUUID(),
           descriptorId = UUID.randomUUID(),
           consumerId = requesterOrgId,
-          producerId = UUID.randomUUID()
+          producerId = UUID.randomUUID(),
+          consumerDocuments = Seq(consumerDoc1, consumerDoc2)
         )
 
       mockAgreementRetrieve(agreement)
+      mockAgreementsRetrieve(Nil)
+      mockEServiceRetrieve(agreement.eserviceId, eService)
+      mockTenantRetrieve(consumer.id, consumer)
+
+      mockFileCopy
+      mockFileCopy
+
+      mockAddConsumerDocument
+      mockAddConsumerDocument
 
       mockAgreementCreation(SpecData.draftAgreement)
 
@@ -48,6 +66,50 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
       status shouldEqual StatusCodes.NotFound
     }
   }
+
+  "fail if EService does not exist" in {
+
+    val agreement =
+      SpecData.rejectedAgreement.copy(
+        eserviceId = UUID.randomUUID(),
+        descriptorId = UUID.randomUUID(),
+        consumerId = requesterOrgId,
+        producerId = UUID.randomUUID()
+      )
+
+    mockAgreementRetrieve(agreement)
+    mockEServiceRetrieveNotFound(agreement.eserviceId)
+
+    Get() ~> service.cloneAgreement(agreement.id.toString) ~> check {
+      status shouldEqual StatusCodes.BadRequest
+    }
+  }
+
+  "fail on missing certified attributes" in {
+
+    val agreement =
+      SpecData.rejectedAgreement.copy(
+        eserviceId = UUID.randomUUID(),
+        descriptorId = UUID.randomUUID(),
+        consumerId = requesterOrgId,
+        producerId = UUID.randomUUID()
+      )
+
+    val descriptor = SpecData.publishedDescriptor
+    val eService   =
+      SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute())
+    val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute()))
+
+    mockEServiceRetrieve(agreement.eserviceId, eService)
+    mockAgreementsRetrieve(Nil)
+    mockAgreementRetrieve(agreement)
+    mockTenantRetrieve(consumer.id, consumer)
+
+    Get() ~> service.cloneAgreement(agreement.id.toString) ~> check {
+      status shouldEqual StatusCodes.BadRequest
+    }
+  }
+
   "fail if agreement to clone is not in REJECTED state" in {
 
     val agreement =
