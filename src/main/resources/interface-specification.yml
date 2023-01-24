@@ -607,6 +607,7 @@ components:
       properties:
         consumerNotes:
           type: string
+          maxLength: 1000
     Agreement:
       type: object
       properties:
@@ -757,8 +758,11 @@ components:
           format: uuid
         name:
           type: string
+          minLength: 5
+          maxLength: 60
         prettyName:
           type: string
+          minLength: 5
           maxLength: 60
         contentType:
           type: string
@@ -781,7 +785,6 @@ components:
           type: string
         prettyName:
           type: string
-          maxLength: 60
         contentType:
           type: string
         createdAt:
