@@ -1,7 +1,6 @@
 package it.pagopa.interop.agreementprocess
 
 import it.pagopa.interop.commons.cqrs.model.ReadModelConfig
-import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.agreementprocess.api.impl.AgreementApiMarshallerImpl._
 import it.pagopa.interop.agreementprocess.api.impl.AgreementApiServiceImpl
 import it.pagopa.interop.agreementprocess.model.{
@@ -15,6 +14,7 @@ import it.pagopa.interop.agreementprocess.util.FakeDependencies._
 import it.pagopa.interop.agreementprocess.util.{AuthorizedRoutes, AuthzScalatestRouteTest}
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
+import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -32,7 +32,7 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
   val fakePDFCreator: PDFCreator                                         = new FakePDFCreator()
   val fakeFileManager: FileManager                                       = new FakeFileManager()
 
-  val fakeReadModel: ReadModelService = new ReadModelService(
+  val fakeReadModel: ReadModelService = new MongoDbReadModelService(
     ReadModelConfig(
       "mongodb://localhost/?socketTimeoutMS=1&serverSelectionTimeoutMS=1&connectTimeoutMS=1&&autoReconnect=false&keepAlive=false",
       "db"

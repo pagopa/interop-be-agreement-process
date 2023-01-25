@@ -12,13 +12,13 @@ import it.pagopa.interop.authorizationmanagement.client.model.{
 }
 
 import it.pagopa.interop.commons.cqrs.model.ReadModelConfig
-import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, UID, USER_ROLES}
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
+import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import org.scalamock.scalatest.MockFactory
 
 import java.util.UUID
@@ -53,7 +53,7 @@ trait SpecHelper extends MockFactory {
   val mockOffsetDateTimeSupplier: OffsetDateTimeSupplier                 = () => SpecData.when
   val mockUUIDSupplier: UUIDSupplier                                     = () => UUID.randomUUID()
 
-  val mockReadModel: ReadModelService = new ReadModelService(
+  val mockReadModel: ReadModelService = new MongoDbReadModelService(
     ReadModelConfig(
       "mongodb://localhost/?socketTimeoutMS=1&serverSelectionTimeoutMS=1&connectTimeoutMS=1&&autoReconnect=false&keepAlive=false",
       "db"
