@@ -122,7 +122,7 @@ object Adapters {
   }
 
   implicit class DocumentWrapper(private val d: AgreementManagement.Document) extends AnyVal {
-    def toApi: Document                          = Document(
+    def toApi: Document                                                        = Document(
       id = d.id,
       name = d.name,
       prettyName = d.prettyName,
@@ -130,12 +130,12 @@ object Adapters {
       createdAt = d.createdAt,
       path = d.path
     )
-    def toSeed: AgreementManagement.DocumentSeed = AgreementManagement.DocumentSeed(
-      id = d.id,
+    def toSeed(newId: UUID, newPath: String): AgreementManagement.DocumentSeed = AgreementManagement.DocumentSeed(
+      id = newId,
       name = d.name,
       prettyName = d.prettyName,
       contentType = d.contentType,
-      path = d.path
+      path = newPath
     )
   }
 

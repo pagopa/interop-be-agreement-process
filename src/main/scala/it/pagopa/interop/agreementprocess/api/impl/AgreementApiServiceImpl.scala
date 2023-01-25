@@ -837,7 +837,7 @@ final case class AgreementApiServiceImpl(
     oldAgreement: AgreementManagement.Agreement,
     newAgreement: AgreementManagement.Agreement
   )(implicit contexts: Seq[(String, String)]): Future[Seq[AgreementManagement.Document]] = {
-    Future.traverse(oldAgreement.consumerDocuments)(doc => {
+    Future.traverse(oldAgreement.consumerDocuments) { doc =>
       val newDocumentId: UUID     = uuidSupplier.get()
       val newDocumentPath: String =
         s"${ApplicationConfiguration.consumerDocumentsPath}/${newAgreement.id.toString}/${newDocumentId.toString}"
@@ -846,9 +846,9 @@ final case class AgreementApiServiceImpl(
         .copy(ApplicationConfiguration.storageContainer, doc.path)(newDocumentPath, newDocumentId.toString, doc.name)
         .flatMap(storageFilePath =>
           agreementManagementService
-            .addConsumerDocument(newAgreement.id, doc.toSeed.copy(id = newDocumentId, path = storageFilePath))
+            .addConsumerDocument(newAgreement.id, doc.toSeed(newDocumentId, storageFilePath))
         )
-    })
+    }
   }
 
   def validateCertifiedAttributes(
