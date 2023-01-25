@@ -11,7 +11,7 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import it.pagopa.interop.agreementprocess.api.{AgreementApi, HealthApi}
 import it.pagopa.interop.agreementprocess.api.impl.{HealthApiMarshallerImpl, HealthServiceApiImpl, _}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-import it.pagopa.interop.commons.cqrs.service.ReadModelService
+import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import ResponseHandlers.serviceCode
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
@@ -40,7 +40,7 @@ trait Dependencies {
 
   implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue = UserRegistryApiKeyValue()
 
-  val readModelService: ReadModelService = new ReadModelService(ApplicationConfiguration.readModelConfig)
+  val readModelService: ReadModelService = new MongoDbReadModelService(ApplicationConfiguration.readModelConfig)
 
   def agreementManagement(
     blockingEc: ExecutionContextExecutor
