@@ -22,5 +22,6 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
     jsonFormat1(AgreementRejectionPayload)
   implicit def problemErrorFormat: RootJsonFormat[ProblemError] = jsonFormat2(ProblemError)
   implicit def problemFormat: RootJsonFormat[Problem]           = jsonFormat6(Problem)
+  implicit def agreementsFormat: RootJsonFormat[Agreements]     = jsonFormat2(Agreements)
 
 }

@@ -1,5 +1,7 @@
 package it.pagopa.interop.agreementprocess
 
+import it.pagopa.interop.commons.cqrs.model.ReadModelConfig
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.agreementprocess.api.impl.AgreementApiMarshallerImpl._
 import it.pagopa.interop.agreementprocess.api.impl.AgreementApiServiceImpl
 import it.pagopa.interop.agreementprocess.model.{
@@ -30,17 +32,25 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
   val fakePDFCreator: PDFCreator                                         = new FakePDFCreator()
   val fakeFileManager: FileManager                                       = new FakeFileManager()
 
+  val fakeReadModel: ReadModelService = new ReadModelService(
+    ReadModelConfig(
+      "mongodb://localhost/?socketTimeoutMS=1&serverSelectionTimeoutMS=1&connectTimeoutMS=1&&autoReconnect=false&keepAlive=false",
+      "db"
+    )
+  )
+
   val service: AgreementApiServiceImpl = AgreementApiServiceImpl(
-    fakeAgreementManagementService,
-    fakeCatalogManagementService,
-    fakeTenantManagementService,
-    fakeAttributeManagementService,
-    fakeAuthorizationManagementService,
-    fakeUserRegistryService,
-    fakePDFCreator,
-    fakeFileManager,
-    OffsetDateTimeSupplier,
-    UUIDSupplier
+    agreementManagementService = fakeAgreementManagementService,
+    catalogManagementService = fakeCatalogManagementService,
+    tenantManagementService = fakeTenantManagementService,
+    attributeManagementService = fakeAttributeManagementService,
+    authorizationManagementService = fakeAuthorizationManagementService,
+    userRegistry = fakeUserRegistryService,
+    readModel = fakeReadModel,
+    pdfCreator = fakePDFCreator,
+    fileManager = fakeFileManager,
+    offsetDateTimeSupplier = OffsetDateTimeSupplier,
+    uuidSupplier = UUIDSupplier
   )(ExecutionContext.global)
 
   "Agreement api operation authorization spec" should {
@@ -90,9 +100,12 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
       val endpoint = AuthorizedRoutes.endpoints("getAgreements")
       validateAuthorization(
         endpoint,
-        { implicit c: Seq[(String, String)] => service.getAgreements(None, None, None, None, "", None) }
+        { implicit c: Seq[(String, String)] =>
+          service.getAgreements("eservicesIds", "consumersIds", "producersIds", "states", 0, 0, false)
+        }
       )
     }
+
     "accept authorized roles for getAgreementById" in {
       val endpoint = AuthorizedRoutes.endpoints("getAgreementById")
       validateAuthorization(endpoint, { implicit c: Seq[(String, String)] => service.getAgreementById("fake") })
