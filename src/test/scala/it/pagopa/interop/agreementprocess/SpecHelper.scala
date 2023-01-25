@@ -10,6 +10,9 @@ import it.pagopa.interop.authorizationmanagement.client.model.{
   ClientAgreementAndEServiceDetailsUpdate,
   ClientComponentState
 }
+
+import it.pagopa.interop.commons.cqrs.model.ReadModelConfig
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
@@ -50,13 +53,20 @@ trait SpecHelper extends MockFactory {
   val mockOffsetDateTimeSupplier: OffsetDateTimeSupplier                 = () => SpecData.when
   val mockUUIDSupplier: UUIDSupplier                                     = () => UUID.randomUUID()
 
-  val service: AgreementApiService = AgreementApiServiceImpl(
+  val mockReadModel: ReadModelService = new ReadModelService(
+    ReadModelConfig(
+      "mongodb://localhost/?socketTimeoutMS=1&serverSelectionTimeoutMS=1&connectTimeoutMS=1&&autoReconnect=false&keepAlive=false",
+      "db"
+    )
+  )
+  val service: AgreementApiService    = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
     mockTenantManagementService,
     mockAttributeManagementService,
     mockAuthorizationManagementService,
     mockUserRegistryService,
+    mockReadModel,
     mockPDFCreator,
     mockFileManager,
     mockOffsetDateTimeSupplier,

@@ -1,6 +1,7 @@
 package it.pagopa.interop.agreementprocess.common.system
 
 import com.typesafe.config.{Config, ConfigFactory}
+import it.pagopa.interop.commons.cqrs.model.ReadModelConfig
 
 object ApplicationConfiguration {
   val config: Config = ConfigFactory.load()
@@ -21,4 +22,11 @@ object ApplicationConfiguration {
   val storageContainer: String      = config.getString("agreement-process.storage.container")
   val agreementContractPath: String = config.getString("agreement-process.storage.agreement-contract-path")
   val userRegistryApiKey: String    = config.getString("agreement-process.user-registry-api-key")
+
+  val readModelConfig: ReadModelConfig = {
+    val connectionString: String = config.getString("agreement-process.read-model.db.connection-string")
+    val dbName: String           = config.getString("agreement-process.read-model.db.name")
+
+    ReadModelConfig(connectionString, dbName)
+  }
 }
