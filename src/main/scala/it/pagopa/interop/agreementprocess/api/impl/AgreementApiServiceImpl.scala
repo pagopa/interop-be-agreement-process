@@ -309,25 +309,19 @@ final case class AgreementApiServiceImpl(
     logger.info(operationLabel)
 
     val result: Future[Agreements] = for {
-      organizationId <- getOrganizationIdFutureUUID(contexts)
-      statesEnum     <- parseArrayParameters(states).traverse(AgreementState.fromValue).toFuture
-      agreements     <- ReadModelQueries.listAgreements(
-        organizationId,
+      statesEnum <- parseArrayParameters(states).traverse(AgreementState.fromValue).toFuture
+      agreements <- ReadModelQueries.listAgreements(
         parseArrayParameters(eservicesIds),
         parseArrayParameters(consumersIds),
         parseArrayParameters(producersIds),
         statesEnum,
+        showOnlyUpgradeable,
         offset,
         limit
       )(readModel)
       apiAgreements = agreements.results
     } yield Agreements(results = apiAgreements.map(_.toApi), totalCount = agreements.totalCount)
 
-    // filtered    <- latest
-    //     .filter(identity)
-    //     .fold(Future.successful(agreements))(_ =>
-    //       AgreementFilter.filterAgreementsByLatestVersion(catalogManagementService, agreements)
-    //     )
     onComplete(result) { getAgreementsResponse[Agreements](operationLabel)(getAgreements200) }
 
   }

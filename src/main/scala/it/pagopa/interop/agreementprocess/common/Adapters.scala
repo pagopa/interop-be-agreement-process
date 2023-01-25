@@ -81,7 +81,7 @@ object Adapters {
     )
   }
 
-  implicit class AgreementStateWrapper(private val s: AgreementManagement.AgreementState) extends AnyVal {
+  implicit class AgreementManagementStateWrapper(private val s: AgreementManagement.AgreementState) extends AnyVal {
     def toApi: AgreementState = s match {
       case AgreementManagement.AgreementState.DRAFT                        => AgreementState.DRAFT
       case AgreementManagement.AgreementState.PENDING                      => AgreementState.PENDING
@@ -91,6 +91,18 @@ object Adapters {
       case AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES =>
         AgreementState.MISSING_CERTIFIED_ATTRIBUTES
       case AgreementManagement.AgreementState.REJECTED                     => AgreementState.REJECTED
+    }
+  }
+  implicit class AgreementStateWrapper(private val s: AgreementState)                               extends AnyVal {
+
+    def toPersistentApi: PersistentAgreementState = s match {
+      case AgreementState.DRAFT                        => Draft
+      case AgreementState.PENDING                      => Pending
+      case AgreementState.ACTIVE                       => Active
+      case AgreementState.SUSPENDED                    => Suspended
+      case AgreementState.ARCHIVED                     => Archived
+      case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => MissingCertifiedAttributes
+      case AgreementState.REJECTED                     => Rejected
     }
   }
 
@@ -158,7 +170,7 @@ object Adapters {
     )
   }
 
-  implicit class PersistentAgreementStateWrapper(private val p: PersistentAgreementState)         extends AnyVal {
+  implicit class PersistentAgreementStateWrapper(private val p: PersistentAgreementState) extends AnyVal {
     def toApi: AgreementState = p match {
       case Draft                      => AgreementState.DRAFT
       case Active                     => AgreementState.ACTIVE
@@ -169,6 +181,7 @@ object Adapters {
       case Suspended                  => AgreementState.SUSPENDED
     }
   }
+
   implicit class PersistentVerifiedAttributeWrapper(private val p: PersistentVerifiedAttribute)   extends AnyVal {
     def toApi: VerifiedAttribute = VerifiedAttribute(id = p.id)
   }
