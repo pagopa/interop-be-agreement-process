@@ -684,6 +684,7 @@ components:
       properties:
         reason:
           type: string
+          minLength: 20
           maxLength: 1000
       required:
         - reason
