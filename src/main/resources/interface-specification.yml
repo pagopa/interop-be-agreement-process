@@ -546,6 +546,49 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  '/agreements/{agreementId}/clone':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
+    post:
+      tags:
+        - agreement
+      summary: clones an agreement.
+      description: clones an agreement with a valid status.
+      operationId: cloneAgreement
+      parameters:
+        - name: agreementId
+          in: path
+          description: The identifier of the agreement to clone
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agreement cloned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'          
   '/compute/agreementsState/consumers/{consumerId}/attributes/{attributeId}':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'

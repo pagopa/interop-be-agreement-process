@@ -192,6 +192,36 @@ final case class AgreementApiServiceImpl(
     }
   }
 
+  override def cloneAgreement(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Cloning agreement $agreementId"
+    logger.info(operationLabel)
+
+    val result: Future[Agreement] = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+      _              <- Future
+        .failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
+        .unlessA(agreement.state == AgreementState.REJECTED)
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      _              <- verifyCloningConflictingAgreements(requesterOrgId, agreement.eserviceId)
+      consumer       <- tenantManagementService.getTenant(requesterOrgId)
+      _              <- validateCertifiedAttributes(eService, consumer).whenA(eService.producerId != consumer.id)
+      newAgreement   <- agreementManagementService.createAgreement(agreement.toSeed)
+      documents      <- createAndCopyDocumentsForClonedAgreement(agreement, newAgreement)
+      newAgreement   <- Future.successful(newAgreement.copy(consumerDocuments = documents))
+    } yield newAgreement.toApi
+
+    onComplete(result) {
+      cloneAgreementResponse[Agreement](operationLabel)(cloneAgreement200)
+    }
+  }
+
   override def updateAgreementById(agreementId: String, agreementUpdatePayload: AgreementUpdatePayload)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
@@ -749,6 +779,19 @@ final case class AgreementApiServiceImpl(
     verifyConflictingAgreements(consumerId, payload.eserviceId, conflictingStates)
   }
 
+  def verifyCloningConflictingAgreements(consumerId: UUID, eserviceId: UUID)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Unit] = {
+    val conflictingStates: List[AgreementManagement.AgreementState] = List(
+      AgreementManagement.AgreementState.DRAFT,
+      AgreementManagement.AgreementState.PENDING,
+      AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+      AgreementManagement.AgreementState.ACTIVE,
+      AgreementManagement.AgreementState.SUSPENDED
+    )
+    verifyConflictingAgreements(consumerId, eserviceId, conflictingStates)
+  }
+
   def verifySubmissionConflictingAgreements(
     agreement: AgreementManagement.Agreement
   )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
@@ -783,6 +826,24 @@ final case class AgreementApiServiceImpl(
     val conflictingStates: List[AgreementManagement.AgreementState] =
       List(AgreementManagement.AgreementState.ACTIVE)
     verifyConflictingAgreements(agreement, conflictingStates)
+  }
+
+  def createAndCopyDocumentsForClonedAgreement(
+    oldAgreement: AgreementManagement.Agreement,
+    newAgreement: AgreementManagement.Agreement
+  )(implicit contexts: Seq[(String, String)]): Future[Seq[AgreementManagement.Document]] = {
+    Future.traverse(oldAgreement.consumerDocuments) { doc =>
+      val newDocumentId: UUID     = uuidSupplier.get()
+      val newDocumentPath: String =
+        s"${ApplicationConfiguration.consumerDocumentsPath}/${newAgreement.id.toString}/${newDocumentId.toString}"
+
+      fileManager
+        .copy(ApplicationConfiguration.storageContainer, doc.path)(newDocumentPath, newDocumentId.toString, doc.name)
+        .flatMap(storageFilePath =>
+          agreementManagementService
+            .addConsumerDocument(newAgreement.id, doc.toSeed(newDocumentId, storageFilePath))
+        )
+    }
   }
 
   def validateCertifiedAttributes(
