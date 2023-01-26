@@ -650,6 +650,7 @@ components:
       properties:
         consumerNotes:
           type: string
+          maxLength: 1000
     Agreement:
       type: object
       properties:
@@ -726,6 +727,8 @@ components:
       properties:
         reason:
           type: string
+          minLength: 20
+          maxLength: 1000
       required:
         - reason
     AgreementUpdatePayload:
@@ -734,6 +737,7 @@ components:
       properties:
         consumerNotes:
           type: string
+          maxLength: 1000
       required:
         - consumerNotes
     VerifiedAttribute:
@@ -798,8 +802,12 @@ components:
           format: uuid
         name:
           type: string
+          minLength: 5
+          maxLength: 60
         prettyName:
           type: string
+          minLength: 5
+          maxLength: 60
         contentType:
           type: string
         path:
