@@ -7,10 +7,9 @@ import it.pagopa.interop.agreementprocess.model.AgreementState
 import scala.concurrent.{ExecutionContext, Future}
 import org.mongodb.scala.Document
 import org.mongodb.scala.bson.conversions.Bson
-import org.mongodb.scala.model.Aggregates.{`match`, count, project, sort}
+import org.mongodb.scala.model.Aggregates.{`match`, count, project}
 import org.mongodb.scala.model.{Filters}
 import org.mongodb.scala.model.Projections.{computed, fields, include}
-import org.mongodb.scala.model.Sorts.ascending
 import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
 
 object ReadModelQueries {
@@ -30,11 +29,7 @@ object ReadModelQueries {
 
       agreements <- readModel.aggregate[PersistentAgreement](
         "agreements",
-        Seq(
-          `match`(query),
-          project(fields(include("data"), computed("lowerName", Document("""{ "$toLower" : "$data.name" }""")))),
-          sort(ascending("lowerName"))
-        ),
+        Seq(`match`(query), project(fields(include("data")))),
         offset = offset,
         limit = limit
       )
@@ -60,22 +55,30 @@ object ReadModelQueries {
     showOnlyUpgradeable: Boolean
   ): Bson = {
 
-    val onlyUpgradableFilter: Bson = if (showOnlyUpgradeable) Filters.empty() else Filters.empty()
+    val statesFilter: Option[Bson] =
+      if (showOnlyUpgradeable)
+        listStatesFilter(List(AgreementState.DRAFT, AgreementState.ACTIVE, AgreementState.SUSPENDED))
+      else
+        listStatesFilter(states)
 
-    val statesPartialFilter: Seq[Bson] = states
-      .map(_.toPersistentApi)
-      .map(_.toString)
-      .map(Filters.eq("data.state", _))
-
-    val statesFilter       = mapToVarArgs(statesPartialFilter)(Filters.or)
+    //TBD 
+    val eservicesFilter    = Filters.empty()
     val eServicesIdsFilter = mapToVarArgs(eServicesIds.map(Filters.eq("data.eserviceId", _)))(Filters.or)
     val consumersIdsFilter = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
     val producersIdsFilter = mapToVarArgs(producersIds.map(Filters.eq("data.producerId", _)))(Filters.or)
 
     mapToVarArgs(
-      eServicesIdsFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter ++ statesFilter.toList :+ onlyUpgradableFilter
+      eServicesIdsFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList ++ statesFilter.toList :+ eservicesFilter
     )(Filters.and).getOrElse(Filters.empty())
   }
+
+  def listStatesFilter(states: List[AgreementState]): Option[Bson] =
+    mapToVarArgs(
+      states
+        .map(_.toPersistentApi)
+        .map(_.toString)
+        .map(Filters.eq("data.state", _))
+    )(Filters.or)
 
   def mapToVarArgs[A, B](l: Seq[A])(f: Seq[A] => B): Option[B] = Option.when(l.nonEmpty)(f(l))
 
