@@ -33,12 +33,12 @@
     {
       "route": "getAgreements",
       "verb": "GET",
-      "roles": ["admin", "m2m"]
+      "roles": ["admin", "api", "security", "m2m"]
     },
     {
       "route": "getAgreementById",
       "verb": "GET",
-      "roles": ["admin", "m2m"]
+      "roles": ["admin", "api", "security", "m2m"]
     },
     {
       "route": "updateAgreementById",

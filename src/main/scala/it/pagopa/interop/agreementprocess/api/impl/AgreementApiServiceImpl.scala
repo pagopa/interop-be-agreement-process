@@ -299,7 +299,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
     val operationLabel =
       s"Retrieving agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
     logger.info(operationLabel)
@@ -329,7 +329,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = authorize(ADMIN_ROLE, M2M_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
     val operationLabel = s"Retrieving agreement by id $agreementId"
     logger.info(operationLabel)
 
