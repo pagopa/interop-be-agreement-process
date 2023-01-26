@@ -53,11 +53,8 @@ object AgreementProcessErrors {
   final case class AgreementNotFound(agreementId: String)
       extends ComponentError("0009", s"Agreement $agreementId not found")
 
-  final case class AgreementAlreadyExists(producerId: UUID, consumerId: UUID, eServiceId: UUID, descriptorId: UUID)
-      extends ComponentError(
-        "0010",
-        s"Agreement already exists for Producer = $producerId, Consumer = $consumerId, EService = $eServiceId, Descriptor = $descriptorId"
-      )
+  final case class AgreementAlreadyExists(consumerId: UUID, eServiceId: UUID)
+      extends ComponentError("0010", s"Agreement already exists for Consumer = $consumerId, EService = $eServiceId")
 
   final case class NoNewerDescriptorExists(eServiceId: UUID, currentDescriptorId: UUID)
       extends ComponentError(
