@@ -101,7 +101,7 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
       validateAuthorization(
         endpoint,
         { implicit c: Seq[(String, String)] =>
-          service.getAgreements("eservicesIds", "consumersIds", "producersIds", "states", 0, 0, false)
+          service.getAgreements("eservicesIds", "consumersIds", "producersIds", "descriptorsIds", "states", 0, 0, false)
         }
       )
     }

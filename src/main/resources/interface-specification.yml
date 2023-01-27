@@ -413,6 +413,16 @@ paths:
             default: []
           explode: false
         - in: query
+          name: descriptorsIds
+          description: comma separated sequence of descriptors IDs
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+            default: []
+          explode: false  
+        - in: query
           name: states
           description: comma separated sequence of states
           schema:

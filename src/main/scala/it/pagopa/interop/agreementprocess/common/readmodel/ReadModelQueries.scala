@@ -17,13 +17,15 @@ object ReadModelQueries {
     eServicesIds: List[String],
     consumersIds: List[String],
     producersIds: List[String],
+    descriptorsIds: List[String],
     states: List[AgreementState],
     showOnlyUpgradeable: Boolean,
     offset: Int,
     limit: Int
   )(readModel: ReadModelService)(implicit ec: ExecutionContext): Future[PaginatedResult[PersistentAgreement]] = {
 
-    val query: Bson = listAgreementsFilters(eServicesIds, consumersIds, producersIds, states, showOnlyUpgradeable)
+    val query: Bson =
+      listAgreementsFilters(eServicesIds, consumersIds, producersIds, descriptorsIds, states, showOnlyUpgradeable)
 
     for {
 
@@ -51,6 +53,7 @@ object ReadModelQueries {
     eServicesIds: List[String],
     consumersIds: List[String],
     producersIds: List[String],
+    descriptorsIds: List[String],
     states: List[AgreementState],
     showOnlyUpgradeable: Boolean
   ): Bson = {
@@ -61,14 +64,15 @@ object ReadModelQueries {
       else
         listStatesFilter(states)
 
-    //TBD 
-    val eservicesFilter    = Filters.empty()
-    val eServicesIdsFilter = mapToVarArgs(eServicesIds.map(Filters.eq("data.eserviceId", _)))(Filters.or)
-    val consumersIdsFilter = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
-    val producersIdsFilter = mapToVarArgs(producersIds.map(Filters.eq("data.producerId", _)))(Filters.or)
+    // TBD
+    val eservicesFilter      = Filters.empty()
+    val eServicesIdsFilter   = mapToVarArgs(eServicesIds.map(Filters.eq("data.eserviceId", _)))(Filters.or)
+    val consumersIdsFilter   = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
+    val producersIdsFilter   = mapToVarArgs(producersIds.map(Filters.eq("data.producerId", _)))(Filters.or)
+    val descriptorsIdsFilter = mapToVarArgs(descriptorsIds.map(Filters.eq("data.descriptorId", _)))(Filters.or)
 
     mapToVarArgs(
-      eServicesIdsFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList ++ statesFilter.toList :+ eservicesFilter
+      eServicesIdsFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList ++ descriptorsIdsFilter.toList ++ statesFilter.toList :+ eservicesFilter
     )(Filters.and).getOrElse(Filters.empty())
   }
 
