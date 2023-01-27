@@ -158,6 +158,13 @@ object SpecData {
     stamps = Stamps()
   )
 
+  def rejectedAgreement: Agreement =
+    agreement.copy(
+      state = AgreementState.REJECTED,
+      stamps = rejectionStamps,
+      rejectionReason = Some("Document not valid")
+    )
+
   def draftAgreement: Agreement     = agreement.copy(state = AgreementState.DRAFT)
   def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING, stamps = submissionStamps)
   def suspendedAgreement: Agreement =

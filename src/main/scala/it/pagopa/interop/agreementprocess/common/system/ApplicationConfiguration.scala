@@ -21,6 +21,7 @@ object ApplicationConfiguration {
   val storageKind: String           = config.getString("agreement-process.storage.kind")
   val storageContainer: String      = config.getString("agreement-process.storage.container")
   val agreementContractPath: String = config.getString("agreement-process.storage.agreement-contract-path")
+  val consumerDocumentsPath: String = config.getString("agreement-process.storage.consumer-documents-path")
   val userRegistryApiKey: String    = config.getString("agreement-process.user-registry-api-key")
 
   val readModelConfig: ReadModelConfig = {

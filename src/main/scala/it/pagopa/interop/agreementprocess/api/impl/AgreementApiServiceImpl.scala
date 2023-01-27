@@ -74,7 +74,7 @@ final case class AgreementApiServiceImpl(
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       eService       <- catalogManagementService.getEServiceById(payload.eserviceId)
       _              <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
-      _              <- verifyCreationConflictingAgreements(eService.producerId, requesterOrgId, payload)
+      _              <- verifyCreationConflictingAgreements(requesterOrgId, payload)
       consumer       <- tenantManagementService.getTenant(requesterOrgId)
       _              <- validateCertifiedAttributes(eService, consumer).whenA(eService.producerId != consumer.id)
       agreement      <- agreementManagementService.createAgreement(payload.toSeed(eService.producerId, requesterOrgId))
@@ -192,6 +192,36 @@ final case class AgreementApiServiceImpl(
 
     onComplete(result) {
       upgradeAgreementByIdResponse[Agreement](operationLabel)(upgradeAgreementById200)
+    }
+  }
+
+  override def cloneAgreement(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Cloning agreement $agreementId"
+    logger.info(operationLabel)
+
+    val result: Future[Agreement] = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+      _              <- Future
+        .failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
+        .unlessA(agreement.state == AgreementState.REJECTED)
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      _              <- verifyCloningConflictingAgreements(requesterOrgId, agreement.eserviceId)
+      consumer       <- tenantManagementService.getTenant(requesterOrgId)
+      _              <- validateCertifiedAttributes(eService, consumer).whenA(eService.producerId != consumer.id)
+      newAgreement   <- agreementManagementService.createAgreement(agreement.toSeed)
+      documents      <- createAndCopyDocumentsForClonedAgreement(agreement, newAgreement)
+      newAgreement   <- Future.successful(newAgreement.copy(consumerDocuments = documents))
+    } yield newAgreement.toApi
+
+    onComplete(result) {
+      cloneAgreementResponse[Agreement](operationLabel)(cloneAgreement200)
     }
   }
 
@@ -740,7 +770,7 @@ final case class AgreementApiServiceImpl(
   ): Future[Unit] =
     assertRequesterIsConsumer(requesterOrgId, agreement) orElse assertRequesterIsProducer(requesterOrgId, agreement)
 
-  def verifyCreationConflictingAgreements(producerId: UUID, consumerId: UUID, payload: AgreementPayload)(implicit
+  def verifyCreationConflictingAgreements(consumerId: UUID, payload: AgreementPayload)(implicit
     contexts: Seq[(String, String)]
   ): Future[Unit] = {
     val conflictingStates: List[AgreementManagement.AgreementState] = List(
@@ -750,7 +780,20 @@ final case class AgreementApiServiceImpl(
       AgreementManagement.AgreementState.ACTIVE,
       AgreementManagement.AgreementState.SUSPENDED
     )
-    verifyConflictingAgreements(producerId, consumerId, payload.eserviceId, payload.descriptorId, conflictingStates)
+    verifyConflictingAgreements(consumerId, payload.eserviceId, conflictingStates)
+  }
+
+  def verifyCloningConflictingAgreements(consumerId: UUID, eserviceId: UUID)(implicit
+    contexts: Seq[(String, String)]
+  ): Future[Unit] = {
+    val conflictingStates: List[AgreementManagement.AgreementState] = List(
+      AgreementManagement.AgreementState.DRAFT,
+      AgreementManagement.AgreementState.PENDING,
+      AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+      AgreementManagement.AgreementState.ACTIVE,
+      AgreementManagement.AgreementState.SUSPENDED
+    )
+    verifyConflictingAgreements(consumerId, eserviceId, conflictingStates)
   }
 
   def verifySubmissionConflictingAgreements(
@@ -789,6 +832,24 @@ final case class AgreementApiServiceImpl(
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 
+  def createAndCopyDocumentsForClonedAgreement(
+    oldAgreement: AgreementManagement.Agreement,
+    newAgreement: AgreementManagement.Agreement
+  )(implicit contexts: Seq[(String, String)]): Future[Seq[AgreementManagement.Document]] = {
+    Future.traverse(oldAgreement.consumerDocuments) { doc =>
+      val newDocumentId: UUID     = uuidSupplier.get()
+      val newDocumentPath: String =
+        s"${ApplicationConfiguration.consumerDocumentsPath}/${newAgreement.id.toString}/${newDocumentId.toString}"
+
+      fileManager
+        .copy(ApplicationConfiguration.storageContainer, doc.path)(newDocumentPath, newDocumentId.toString, doc.name)
+        .flatMap(storageFilePath =>
+          agreementManagementService
+            .addConsumerDocument(newAgreement.id, doc.toSeed(newDocumentId, storageFilePath))
+        )
+    }
+  }
+
   def validateCertifiedAttributes(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant
@@ -825,31 +886,22 @@ final case class AgreementApiServiceImpl(
   private def verifyConflictingAgreements(
     agreement: AgreementManagement.Agreement,
     conflictingStates: List[AgreementManagement.AgreementState]
-  )(implicit contexts: Seq[(String, String)]): Future[Unit] = verifyConflictingAgreements(
-    agreement.producerId,
-    agreement.consumerId,
-    agreement.eserviceId,
-    agreement.descriptorId,
-    conflictingStates
-  )
+  )(implicit contexts: Seq[(String, String)]): Future[Unit] =
+    verifyConflictingAgreements(agreement.consumerId, agreement.eserviceId, conflictingStates)
 
   private def verifyConflictingAgreements(
-    producerId: UUID,
     consumerId: UUID,
     eServiceId: UUID,
-    descriptorId: UUID,
     conflictingStates: List[AgreementManagement.AgreementState]
   )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
     for {
       activeAgreement <- agreementManagementService.getAgreements(
-        producerId = Some(producerId.toString),
         consumerId = Some(consumerId.toString),
         eserviceId = Some(eServiceId.toString),
-        descriptorId = Some(descriptorId.toString),
         states = conflictingStates
       )
       _               <- Future
-        .failed(AgreementAlreadyExists(producerId, consumerId, eServiceId, descriptorId))
+        .failed(AgreementAlreadyExists(consumerId, eServiceId))
         .whenA(activeAgreement.nonEmpty)
     } yield ()
   }

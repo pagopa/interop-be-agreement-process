@@ -210,6 +210,12 @@ trait SpecHelper extends MockFactory {
       .expects(*, *, *, *, *)
       .returns(Future.successful("path"))
 
+  def mockAddConsumerDocument =
+    (mockAgreementManagementService
+      .addConsumerDocument(_: UUID, _: DocumentSeed)(_: Seq[(String, String)]))
+      .expects(*, *, *)
+      .returns(Future.successful(SpecData.document(UUID.randomUUID())))
+
   def mockAgreementContract =
     (mockAgreementManagementService
       .addAgreementContract(_: UUID, _: DocumentSeed)(_: Seq[(String, String)]))
@@ -222,6 +228,13 @@ trait SpecHelper extends MockFactory {
       .expects(containerPath, filePath)
       .once()
       .returns(Future.successful(true))
+
+  def mockFileCopy =
+    (mockFileManager
+      .copy(_: String, _: String)(_: String, _: String, _: String))
+      .expects(*, *, *, *, *)
+      .once()
+      .returns(Future.successful("path"))
 
   def mockContractCreation(
     agreement: Agreement,
