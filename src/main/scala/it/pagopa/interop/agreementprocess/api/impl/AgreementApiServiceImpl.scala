@@ -210,7 +210,7 @@ final case class AgreementApiServiceImpl(
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- Future
         .failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
-        .unlessA(agreement.state == AgreementState.REJECTED)
+        .unlessA(agreement.state == AgreementManagement.AgreementState.REJECTED)
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       _              <- verifyCloningConflictingAgreements(requesterOrgId, agreement.eserviceId)
       consumer       <- tenantManagementService.getTenant(requesterOrgId)
