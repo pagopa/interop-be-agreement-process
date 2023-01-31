@@ -7,10 +7,12 @@ import it.pagopa.interop.agreementprocess.model.AgreementState
 import scala.concurrent.{ExecutionContext, Future}
 import org.mongodb.scala.Document
 import org.mongodb.scala.bson.conversions.Bson
-import org.mongodb.scala.model.Aggregates.{`match`, count, project}
-import org.mongodb.scala.model.{Filters}
+import org.mongodb.scala.model.Aggregates.{`match`, count, lookup, project, sort, unwind, addFields}
+import org.mongodb.scala.model.{Filters, Field}
 import org.mongodb.scala.model.Projections.{computed, fields, include}
+import org.mongodb.scala.model.Sorts.ascending
 import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
+import it.pagopa.interop.catalogmanagement.{model => CatalogManagement}
 
 object ReadModelQueries {
   def listAgreements(
@@ -27,11 +29,54 @@ object ReadModelQueries {
     val query: Bson =
       listAgreementsFilters(eServicesIds, consumersIds, producersIds, descriptorsIds, states, showOnlyUpgradeable)
 
-    for {
+    val filterPipeline: Seq[Bson] = Seq(`match`(query), lookup("eservices", "data.eserviceId", "data.id", "eservices"))
 
+    val upgradablePipeline: Seq[Bson] = {
+      if (showOnlyUpgradeable) {
+        Seq(
+          unwind(fieldName = "eservices.data.descriptors"),
+          addFields(
+            Field(
+              "currentDescriptor",
+              Document("""{ $filter: {
+              input: "$eservices.data.descriptors",
+              as: "descr",         
+              cond: {  $eq: ["$$descr.id" , "$data.descriptorId"]}}} }""")
+            )
+          ),
+          unwind(fieldName = "$currentDescriptor"),
+          addFields(
+            Field(
+              "upgradableDescriptor",
+              Document(
+                """{ $filter: {
+              input: "$eservices.data.descriptors",
+              as: "upgradable",         
+              cond: { $and: [
+                      {$gt:["$$upgradable.version" , "$currentDescriptor.version"]}, 
+                      {$in:["$$upgradable.state", [""" + CatalogManagement.Published + """, """ +
+                  CatalogManagement.Suspended + """]]}
+                  ]}}} }"""
+              )
+            )
+          ),
+          `match`(Filters.exists("upgradableDescriptor.0", true))
+        )
+
+      } else
+        Seq.empty
+    }
+
+    for {
       agreements <- readModel.aggregate[PersistentAgreement](
         "agreements",
-        Seq(`match`(query), project(fields(include("data")))),
+        filterPipeline ++ upgradablePipeline ++
+          Seq(
+            project(
+              fields(include("data"), computed("lowerName", Document("""{ "$toLower" : "$eservices.data.name" }""")))
+            ),
+            sort(ascending("lowerName"))
+          ),
         offset = offset,
         limit = limit
       )
@@ -45,6 +90,7 @@ object ReadModelQueries {
         offset = 0,
         limit = Int.MaxValue
       )
+
     } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
 
   }
@@ -64,15 +110,13 @@ object ReadModelQueries {
       else
         listStatesFilter(states)
 
-    // TBD
-    val eservicesFilter      = Filters.empty()
     val eServicesIdsFilter   = mapToVarArgs(eServicesIds.map(Filters.eq("data.eserviceId", _)))(Filters.or)
     val consumersIdsFilter   = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
     val producersIdsFilter   = mapToVarArgs(producersIds.map(Filters.eq("data.producerId", _)))(Filters.or)
     val descriptorsIdsFilter = mapToVarArgs(descriptorsIds.map(Filters.eq("data.descriptorId", _)))(Filters.or)
 
     mapToVarArgs(
-      eServicesIdsFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList ++ descriptorsIdsFilter.toList ++ statesFilter.toList :+ eservicesFilter
+      eServicesIdsFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList ++ descriptorsIdsFilter.toList ++ statesFilter.toList
     )(Filters.and).getOrElse(Filters.empty())
   }
 

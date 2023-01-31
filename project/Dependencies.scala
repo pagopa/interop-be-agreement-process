@@ -27,7 +27,7 @@ object Dependencies {
     lazy val namespace                 = "it.pagopa"
     lazy val agreementManagementClient =
       namespace %% "interop-be-agreement-management-client" % agreementManagementVersion
-       lazy val agreementManagementModels =
+    lazy val agreementManagementModels =
       namespace %% "interop-be-agreement-management-models" % agreementManagementVersion
     lazy val attributeRegistryManagementClient =
       namespace %% "interop-be-attribute-registry-management-client" % attributeRegistryManagementVersion
@@ -35,6 +35,8 @@ object Dependencies {
       namespace %% "interop-be-authorization-management-client" % authorizationManagementVersion
     lazy val catalogManagementClient =
       namespace %% "interop-be-catalog-management-client" % catalogManagementVersion
+    lazy val catalogManagementModels =
+      namespace %% "interop-be-catalog-management-models" % catalogManagementVersion  
     lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client" % tenantManagementVersion
     lazy val userRegistryManagement =
       namespace %% "interop-selfcare-user-registry-client" % userRegistryManagementVersion
@@ -119,6 +121,7 @@ object Dependencies {
       pagopa.attributeRegistryManagementClient % Compile,
       pagopa.authorizationManagementClient     % Compile,
       pagopa.catalogManagementClient           % Compile,
+      pagopa.catalogManagementModels           % Compile,
       pagopa.commons                           % Compile,
       pagopa.commonsFileManager                % Compile,
       pagopa.commonsJWT                        % Compile,
