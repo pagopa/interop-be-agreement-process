@@ -29,7 +29,8 @@ object ReadModelQueries {
     val query: Bson =
       listAgreementsFilters(eServicesIds, consumersIds, producersIds, descriptorsIds, states, showOnlyUpgradeable)
 
-    val filterPipeline: Seq[Bson] = Seq(`match`(query), lookup("eservices", "data.eserviceId", "data.id", "eservices"))
+    val eServicesLookupPipeline: Seq[Bson] =
+      Seq(`match`(query), lookup("eservices", "data.eserviceId", "data.id", "eservices"))
 
     val upgradablePipeline: Seq[Bson] = {
       if (showOnlyUpgradeable) {
@@ -53,9 +54,9 @@ object ReadModelQueries {
               input: "$eservices.data.descriptors",
               as: "upgradable",         
               cond: { $and: [
-                      {$gt:["$$upgradable.version" , "$currentDescriptor.version"]}, 
-                      {$in:["$$upgradable.state", [""" + CatalogManagement.Published + """, """ +
-                  CatalogManagement.Suspended + """]]}
+                      {$gt:[ {"$toInt" : "$$upgradable.version"} , {"$toInt": "$currentDescriptor.version"}]}, 
+                      {$in:["$$upgradable.state", ['""" + CatalogManagement.Published + """', '""" +
+                  CatalogManagement.Suspended + """']]}
                   ]}}} }"""
               )
             )
@@ -70,7 +71,7 @@ object ReadModelQueries {
     for {
       agreements <- readModel.aggregate[PersistentAgreement](
         "agreements",
-        filterPipeline ++ upgradablePipeline ++
+        eServicesLookupPipeline ++ upgradablePipeline ++
           Seq(
             project(
               fields(include("data"), computed("lowerName", Document("""{ "$toLower" : "$eservices.data.name" }""")))
@@ -82,11 +83,13 @@ object ReadModelQueries {
       )
       count      <- readModel.aggregate[TotalCountResult](
         "agreements",
-        Seq(
-          `match`(query),
-          count("totalCount"),
-          project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))
-        ),
+        if (upgradablePipeline.nonEmpty) eServicesLookupPipeline ++ upgradablePipeline
+        else
+          Nil ++ Seq(
+            `match`(query),
+            count("totalCount"),
+            project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))
+          ),
         offset = 0,
         limit = Int.MaxValue
       )
@@ -104,11 +107,13 @@ object ReadModelQueries {
     showOnlyUpgradeable: Boolean
   ): Bson = {
 
-    val statesFilter: Option[Bson] =
-      if (showOnlyUpgradeable)
-        listStatesFilter(List(AgreementState.DRAFT, AgreementState.ACTIVE, AgreementState.SUSPENDED))
-      else
-        listStatesFilter(states)
+    val upgreadableStates = (List(AgreementState.DRAFT, AgreementState.ACTIVE, AgreementState.SUSPENDED))
+    val statesForFilter   = states match {
+      case _ if showOnlyUpgradeable => upgreadableStates
+      case other                    => other
+    }
+
+    val statesFilter = listStatesFilter(statesForFilter)
 
     val eServicesIdsFilter   = mapToVarArgs(eServicesIds.map(Filters.eq("data.eserviceId", _)))(Filters.or)
     val consumersIdsFilter   = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
