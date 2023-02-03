@@ -109,8 +109,9 @@ object ReadModelQueries {
 
     val upgreadableStates = (List(AgreementState.DRAFT, AgreementState.ACTIVE, AgreementState.SUSPENDED))
     val statesForFilter   = states match {
-      case _ if showOnlyUpgradeable => upgreadableStates
-      case other                    => other
+      case Nil if showOnlyUpgradeable  => upgreadableStates
+      case list if showOnlyUpgradeable => upgreadableStates.intersect(list)
+      case other                       => other
     }
 
     val statesFilter = listStatesFilter(statesForFilter)
