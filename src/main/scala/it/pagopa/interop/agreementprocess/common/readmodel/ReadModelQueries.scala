@@ -30,12 +30,11 @@ object ReadModelQueries {
       listAgreementsFilters(eServicesIds, consumersIds, producersIds, descriptorsIds, states, showOnlyUpgradeable)
 
     val eServicesLookupPipeline: Seq[Bson] =
-      Seq(`match`(query), lookup("eservices", "data.eserviceId", "data.id", "eservices"))
+      Seq(`match`(query), lookup("eservices", "data.eserviceId", "data.id", "eservices"), unwind("$eservices"))
 
     val upgradablePipeline: Seq[Bson] = {
       if (showOnlyUpgradeable) {
         Seq(
-          unwind(fieldName = "eservices.data.descriptors"),
           addFields(
             Field(
               "currentDescriptor",
@@ -45,7 +44,7 @@ object ReadModelQueries {
               cond: {  $eq: ["$$descr.id" , "$data.descriptorId"]}}} }""")
             )
           ),
-          unwind(fieldName = "$currentDescriptor"),
+          unwind("$currentDescriptor"),
           addFields(
             Field(
               "upgradableDescriptor",
@@ -68,13 +67,20 @@ object ReadModelQueries {
         Seq.empty
     }
 
+    val countPipeline: Seq[Bson] = {
+      Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }"""))))
+    }
+
     for {
       agreements <- readModel.aggregate[PersistentAgreement](
         "agreements",
         eServicesLookupPipeline ++ upgradablePipeline ++
           Seq(
             project(
-              fields(include("data"), computed("lowerName", Document("""{ "$toLower" : "$eservices.data.name" }""")))
+              fields(
+                include("data", "eservices"),
+                computed("lowerName", Document("""{ "$toLower" : "$eservices.data.name" }"""))
+              )
             ),
             sort(ascending("lowerName"))
           ),
@@ -83,13 +89,9 @@ object ReadModelQueries {
       )
       count      <- readModel.aggregate[TotalCountResult](
         "agreements",
-        if (upgradablePipeline.nonEmpty) eServicesLookupPipeline ++ upgradablePipeline
+        if (upgradablePipeline.nonEmpty) eServicesLookupPipeline ++ upgradablePipeline ++ countPipeline
         else
-          Nil ++ Seq(
-            `match`(query),
-            count("totalCount"),
-            project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))
-          ),
+          Seq(`match`(query)) ++ countPipeline,
         offset = 0,
         limit = Int.MaxValue
       )
