@@ -53,7 +53,7 @@ object ReadModelQueries {
               input: "$eservices.data.descriptors",
               as: "upgradable",         
               cond: { $and: [
-                      {$gt:[ {"$toInt" : "$$upgradable.version"} , {"$toInt": "$currentDescriptor.version"}]}, 
+                      {$gt:["$$upgradable.activatedAt", "$currentDescriptor.activatedAt"]}, 
                       {$in:["$$upgradable.state", ['""" + CatalogManagement.Published + """', '""" +
                   CatalogManagement.Suspended + """']]}
                   ]}}} }"""
