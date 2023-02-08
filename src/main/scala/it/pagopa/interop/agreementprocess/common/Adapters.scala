@@ -4,6 +4,7 @@ import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotInExpectedState
 import it.pagopa.interop.agreementprocess.model._
+import it.pagopa.interop.agreementmanagement.model.agreement._
 
 import java.util.UUID
 
@@ -91,7 +92,7 @@ object Adapters {
     )
   }
 
-  implicit class AgreementStateWrapper(private val s: AgreementManagement.AgreementState) extends AnyVal {
+  implicit class AgreementManagementStateWrapper(private val s: AgreementManagement.AgreementState) extends AnyVal {
     def toApi: AgreementState = s match {
       case AgreementManagement.AgreementState.DRAFT                        => AgreementState.DRAFT
       case AgreementManagement.AgreementState.PENDING                      => AgreementState.PENDING
@@ -101,6 +102,18 @@ object Adapters {
       case AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES =>
         AgreementState.MISSING_CERTIFIED_ATTRIBUTES
       case AgreementManagement.AgreementState.REJECTED                     => AgreementState.REJECTED
+    }
+  }
+  implicit class AgreementStateWrapper(private val s: AgreementState)                               extends AnyVal {
+
+    def toPersistentApi: PersistentAgreementState = s match {
+      case AgreementState.DRAFT                        => Draft
+      case AgreementState.PENDING                      => Pending
+      case AgreementState.ACTIVE                       => Active
+      case AgreementState.SUSPENDED                    => Suspended
+      case AgreementState.ARCHIVED                     => Archived
+      case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => MissingCertifiedAttributes
+      case AgreementState.REJECTED                     => Rejected
     }
   }
 
@@ -150,5 +163,60 @@ object Adapters {
         certifiedAttributes = Nil,
         declaredAttributes = Nil
       )
+  }
+
+  implicit class PersistentAgreementWrapper(private val p: PersistentAgreement) extends AnyVal {
+    def toApi: Agreement = Agreement(
+      id = p.id,
+      eserviceId = p.eserviceId,
+      descriptorId = p.descriptorId,
+      producerId = p.producerId,
+      consumerId = p.consumerId,
+      state = p.state.toApi,
+      verifiedAttributes = p.verifiedAttributes.map(_.toApi),
+      certifiedAttributes = p.certifiedAttributes.map(_.toApi),
+      declaredAttributes = p.declaredAttributes.map(_.toApi),
+      suspendedByConsumer = p.suspendedByConsumer,
+      suspendedByProducer = p.suspendedByProducer,
+      suspendedByPlatform = p.suspendedByPlatform,
+      consumerNotes = p.consumerNotes,
+      rejectionReason = p.rejectionReason,
+      consumerDocuments = p.consumerDocuments.map(_.toApi),
+      createdAt = p.createdAt,
+      updatedAt = p.updatedAt,
+      contract = p.contract.map(_.toApi)
+    )
+  }
+
+  implicit class PersistentAgreementStateWrapper(private val p: PersistentAgreementState) extends AnyVal {
+    def toApi: AgreementState = p match {
+      case Draft                      => AgreementState.DRAFT
+      case Active                     => AgreementState.ACTIVE
+      case Archived                   => AgreementState.ARCHIVED
+      case MissingCertifiedAttributes => AgreementState.MISSING_CERTIFIED_ATTRIBUTES
+      case Pending                    => AgreementState.PENDING
+      case Rejected                   => AgreementState.REJECTED
+      case Suspended                  => AgreementState.SUSPENDED
+    }
+  }
+
+  implicit class PersistentVerifiedAttributeWrapper(private val p: PersistentVerifiedAttribute)   extends AnyVal {
+    def toApi: VerifiedAttribute = VerifiedAttribute(id = p.id)
+  }
+  implicit class PersistentCertifiedAttributeWrapper(private val p: PersistentCertifiedAttribute) extends AnyVal {
+    def toApi: CertifiedAttribute = CertifiedAttribute(id = p.id)
+  }
+  implicit class PersistentDeclaredAttributeWrapper(private val p: PersistentDeclaredAttribute)   extends AnyVal {
+    def toApi: DeclaredAttribute = DeclaredAttribute(id = p.id)
+  }
+  implicit class PersistentAgreementDocumentWrapper(private val p: PersistentAgreementDocument)   extends AnyVal {
+    def toApi: Document = Document(
+      id = p.id,
+      name = p.name,
+      prettyName = p.prettyName,
+      contentType = p.contentType,
+      createdAt = p.createdAt,
+      path = p.path
+    )
   }
 }

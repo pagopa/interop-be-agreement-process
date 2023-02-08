@@ -8,9 +8,10 @@ import akka.http.scaladsl.server.directives.SecurityDirectives
 import com.atlassian.oai.validator.report.ValidationReport
 import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
-import it.pagopa.interop.agreementprocess.api._
+import it.pagopa.interop.agreementprocess.api.{AgreementApi, HealthApi}
 import it.pagopa.interop.agreementprocess.api.impl.{HealthApiMarshallerImpl, HealthServiceApiImpl, _}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
+import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import ResponseHandlers.serviceCode
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
@@ -38,6 +39,8 @@ trait Dependencies {
     Logger.takingImplicit[ContextFieldsToLog]("OAuth2JWTValidatorAsContexts")
 
   implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue = UserRegistryApiKeyValue()
+
+  val readModelService: ReadModelService = new MongoDbReadModelService(ApplicationConfiguration.readModelConfig)
 
   def agreementManagement(
     blockingEc: ExecutionContextExecutor
@@ -116,6 +119,7 @@ trait Dependencies {
         attributeRegistryManagement(blockingEc),
         authorizationManagement(blockingEc),
         userRegistry,
+        readModelService,
         PDFCreator,
         fileManager(blockingEc),
         OffsetDateTimeSupplier,

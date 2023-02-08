@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, Stamp, Stamps, UpdateAgreementSeed}
+import it.pagopa.interop.agreementmanagement.client.model.{Stamp, Stamps, UpdateAgreementSeed}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers._
@@ -27,6 +27,8 @@ import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
+import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelQueries
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,6 +40,7 @@ final case class AgreementApiServiceImpl(
   attributeManagementService: AttributeManagementService,
   authorizationManagementService: AuthorizationManagementService,
   userRegistry: UserRegistryService,
+  readModel: ReadModelService,
   pdfCreator: PDFCreator,
   fileManager: FileManager,
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
@@ -207,7 +210,7 @@ final case class AgreementApiServiceImpl(
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- Future
         .failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
-        .unlessA(agreement.state == AgreementState.REJECTED)
+        .unlessA(agreement.state == AgreementManagement.AgreementState.REJECTED)
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       _              <- verifyCloningConflictingAgreements(requesterOrgId, agreement.eserviceId)
       consumer       <- tenantManagementService.getTenant(requesterOrgId)
@@ -319,40 +322,40 @@ final case class AgreementApiServiceImpl(
   }
 
   override def getAgreements(
-    producerId: Option[String],
-    consumerId: Option[String],
-    eserviceId: Option[String],
-    descriptorId: Option[String],
+    eservicesIds: String,
+    consumersIds: String,
+    producersIds: String,
+    descriptorsIds: String,
     states: String,
-    latest: Option[Boolean]
+    offset: Int,
+    limit: Int,
+    showOnlyUpgradeable: Boolean
   )(implicit
     contexts: Seq[(String, String)],
-    toEntityMarshallerAgreementarray: ToEntityMarshaller[Seq[Agreement]],
+    toEntityMarshallerAgreementarray: ToEntityMarshaller[Agreements],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
     val operationLabel =
-      s"Retrieving agreements by producer = $producerId, consumer = $consumerId, eservice = $eserviceId, descriptor = $descriptorId, states = $states, latest = $latest"
+      s"Retrieving agreements by EServices $eservicesIds, Consumers $consumersIds, Producers $producersIds, states = $states, showOnlyUpgradeable = $showOnlyUpgradeable"
     logger.info(operationLabel)
 
-    val result: Future[Seq[Agreement]] = for {
-      statesEnums <- parseArrayParameters(states).traverse(AgreementManagement.AgreementState.fromValue).toFuture
-      agreements  <- agreementManagementService.getAgreements(
-        producerId = producerId,
-        consumerId = consumerId,
-        eserviceId = eserviceId,
-        descriptorId = descriptorId,
-        states = statesEnums
-      )
-      filtered    <- latest
-        .filter(identity)
-        .fold(Future.successful(agreements))(_ =>
-          AgreementFilter.filterAgreementsByLatestVersion(catalogManagementService, agreements)
-        )
-    } yield filtered.map(_.toApi)
+    val result: Future[Agreements] = for {
+      statesEnum <- parseArrayParameters(states).traverse(AgreementState.fromValue).toFuture
+      agreements <- ReadModelQueries.listAgreements(
+        parseArrayParameters(eservicesIds),
+        parseArrayParameters(consumersIds),
+        parseArrayParameters(producersIds),
+        parseArrayParameters(descriptorsIds),
+        statesEnum,
+        showOnlyUpgradeable,
+        offset,
+        limit
+      )(readModel)
+      apiAgreements = agreements.results
+    } yield Agreements(results = apiAgreements.map(_.toApi), totalCount = agreements.totalCount)
 
-    onComplete(result) {
-      getAgreementsResponse[Seq[Agreement]](operationLabel)(getAgreements200)
-    }
+    onComplete(result) { getAgreementsResponse[Agreements](operationLabel)(getAgreements200) }
+
   }
 
   override def getAgreementById(agreementId: String)(implicit
@@ -487,12 +490,13 @@ final case class AgreementApiServiceImpl(
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
     val newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
 
-    def calculateStamps(state: AgreementState, stamp: Stamp): Future[Stamps] = state match {
-      case AgreementState.DRAFT   => Future.successful(agreement.stamps)
-      case AgreementState.PENDING => Future.successful(agreement.stamps.copy(submission = stamp.some))
-      case AgreementState.ACTIVE  =>
+    def calculateStamps(state: AgreementManagement.AgreementState, stamp: Stamp): Future[Stamps] = state match {
+      case AgreementManagement.AgreementState.DRAFT                        => Future.successful(agreement.stamps)
+      case AgreementManagement.AgreementState.PENDING                      =>
+        Future.successful(agreement.stamps.copy(submission = stamp.some))
+      case AgreementManagement.AgreementState.ACTIVE                       =>
         Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
-      case AgreementState.MISSING_CERTIFIED_ATTRIBUTES => Future.successful(agreement.stamps)
+      case AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES => Future.successful(agreement.stamps)
       case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString, newState))
     }
 
@@ -902,10 +906,15 @@ final case class AgreementApiServiceImpl(
     } yield ()
   }
 
-  def assertCanWorkOnConsumerDocuments(agreementState: AgreementState): Future[Unit] =
+  def assertCanWorkOnConsumerDocuments(agreementState: AgreementManagement.AgreementState): Future[Unit] =
     Future
       .failed(DocumentsChangeNotAllowed(agreementState))
-      .unlessA(Set[AgreementState](AgreementState.DRAFT, AgreementState.PENDING).contains(agreementState))
+      .unlessA(
+        Set[AgreementManagement.AgreementState](
+          AgreementManagement.AgreementState.DRAFT,
+          AgreementManagement.AgreementState.PENDING
+        ).contains(agreementState)
+      )
 
   override def addAgreementConsumerDocument(agreementId: String, documentSeed: DocumentSeed)(implicit
     contexts: Seq[(String, String)],

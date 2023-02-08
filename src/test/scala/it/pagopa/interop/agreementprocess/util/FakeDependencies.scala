@@ -170,6 +170,9 @@ object FakeDependencies {
   }
 
   class FakeFileManager extends FileManager {
+
+    override def close(): Unit = ()
+
     override def store(containerPath: String, path: String)(
       resourceId: String,
       fileParts: (FileInfo, File)

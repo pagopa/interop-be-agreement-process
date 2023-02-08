@@ -27,12 +27,16 @@ object Dependencies {
     lazy val namespace                 = "it.pagopa"
     lazy val agreementManagementClient =
       namespace %% "interop-be-agreement-management-client" % agreementManagementVersion
+    lazy val agreementManagementModels =
+      namespace %% "interop-be-agreement-management-models" % agreementManagementVersion
     lazy val attributeRegistryManagementClient =
       namespace %% "interop-be-attribute-registry-management-client" % attributeRegistryManagementVersion
     lazy val authorizationManagementClient =
       namespace %% "interop-be-authorization-management-client" % authorizationManagementVersion
     lazy val catalogManagementClient =
       namespace %% "interop-be-catalog-management-client" % catalogManagementVersion
+    lazy val catalogManagementModels =
+      namespace %% "interop-be-catalog-management-models" % catalogManagementVersion  
     lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client" % tenantManagementVersion
     lazy val userRegistryManagement =
       namespace %% "interop-selfcare-user-registry-client" % userRegistryManagementVersion
@@ -45,6 +49,9 @@ object Dependencies {
 
     lazy val commonsJWT =
       namespace %% "interop-commons-jwt" % commonsVersion
+
+      
+    lazy val commonsCqrs  = namespace %% "interop-commons-cqrs"  % commonsVersion
 
   }
 
@@ -109,13 +116,16 @@ object Dependencies {
       cats.core                                % Compile,
       logback.classic                          % Compile,
       mustache.mustache                        % Compile,
-      pagopa.agreementManagementClient         % Compile,
+      pagopa.agreementManagementClient         % Compile,      
+      pagopa.agreementManagementModels         % Compile,
       pagopa.attributeRegistryManagementClient % Compile,
       pagopa.authorizationManagementClient     % Compile,
       pagopa.catalogManagementClient           % Compile,
+      pagopa.catalogManagementModels           % Compile,
       pagopa.commons                           % Compile,
       pagopa.commonsFileManager                % Compile,
       pagopa.commonsJWT                        % Compile,
+      pagopa.commonsCqrs                       % Compile,
       pagopa.tenantManagementClient            % Compile,
       pagopa.userRegistryManagement            % Compile,
       akka.httpTestkit                         % Test,

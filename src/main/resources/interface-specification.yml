@@ -383,24 +383,48 @@ paths:
         - agreement
       parameters:
         - in: query
-          name: producerId
+          name: eservicesIds
+          description: comma separated sequence of EService IDs
           schema:
-            type: string
+            type: array
+            items:
+              type: string
+              format: uuid
+            default: []
+          explode: false
         - in: query
-          name: consumerId
+          name: consumersIds
+          description: comma separated sequence of consumers IDs
           schema:
-            type: string
+            type: array
+            items:
+              type: string
+              format: uuid
+            default: []
+          explode: false
         - in: query
-          name: eserviceId
+          name: producersIds
+          description: comma separated sequence of producers IDs
           schema:
-            type: string
+            type: array
+            items:
+              type: string
+              format: uuid
+            default: []
+          explode: false
         - in: query
-          name: descriptorId
+          name: descriptorsIds
+          description: comma separated sequence of descriptors IDs
           schema:
-            type: string
+            type: array
+            items:
+              type: string
+              format: uuid
+            default: []
+          explode: false  
         - in: query
           name: states
-          description: comma separated sequence of agreement states to filter the response with
+          description: comma separated sequence of states
           schema:
             type: array
             items:
@@ -408,9 +432,25 @@ paths:
             default: []
           explode: false
         - in: query
-          name: latest
+          name: offset
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+        - in: query
+          name: limit
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50
+        - in: query
+          name: showOnlyUpgradeable
           schema:
             type: boolean
+            default: false
   '/agreements/{agreementId}':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'
@@ -774,9 +814,18 @@ components:
       required:
         - id
     Agreements:
-      type: array
-      items:
-        $ref: '#/components/schemas/Agreement'
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agreement'
+        totalCount:
+          type: integer
+          format: int32
+      required:
+        - results
+        - totalCount
     AgreementState:
       type: string
       description: Agreement State
