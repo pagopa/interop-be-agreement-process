@@ -7,12 +7,14 @@ import it.pagopa.interop.agreementprocess.model.AgreementState
 import scala.concurrent.{ExecutionContext, Future}
 import org.mongodb.scala.Document
 import org.mongodb.scala.bson.conversions.Bson
-import org.mongodb.scala.model.Aggregates.{`match`, count, lookup, project, sort, unwind, addFields}
-import org.mongodb.scala.model.{Filters, Field}
+import org.mongodb.scala.model.Accumulators.first
+import org.mongodb.scala.model.Aggregates.{`match`, count, lookup, project, sort, unwind, addFields, group}
+import org.mongodb.scala.model.{Filters, Field, UnwindOptions}
 import org.mongodb.scala.model.Projections.{computed, fields, include}
 import org.mongodb.scala.model.Sorts.ascending
 import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
 import it.pagopa.interop.catalogmanagement.{model => CatalogManagement}
+import it.pagopa.interop.agreementprocess.common.readmodel.model._
 
 object ReadModelQueries {
   def listAgreements(
@@ -135,6 +137,59 @@ object ReadModelQueries {
         .map(_.toString)
         .map(Filters.eq("data.state", _))
     )(Filters.or)
+
+  private def listEServiceFilters(name: Option[String]): Bson = {
+    val nameFilter = name.map(Filters.regex("eservices.data.name", _, "i"))
+
+    mapToVarArgs(nameFilter.toList)(Filters.and).getOrElse(Filters.empty())
+  }
+
+  @scala.annotation.nowarn
+  def listProducers(name: Option[String], offset: Int, limit: Int)(
+    readModel: ReadModelService
+  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactTenant]] = {
+    val query: Bson               = listEServiceFilters(name)
+    val filterPipeline: Seq[Bson] = Seq(
+      lookup("eservices", "data.eserviceId", "data.id", "eservices"),
+      unwind("$eservices", UnwindOptions().preserveNullAndEmptyArrays(false)),
+      `match`(query),
+      lookup("tenants", "data.producerId", "data.id", "tenants"),
+      unwind("$tenants", UnwindOptions().preserveNullAndEmptyArrays(false)),
+      addFields(
+        Field("id", Document("""{ id: "$data.producerId" }""")),
+        Field("name", Document("""{ name: "$tenants.data.name" }"""))
+      ),
+      group(
+        Document("""{ _id: "$data.producerId" } """),
+        first("id", Document("""{ "id": "$data.producerId" } """)),
+        first("name", Document("""{ "name": "$tenants.data.name" } """))
+      ),
+      project(Document(""" { "data": { "id" : "$id", "name": "$name" }}""")),
+      sort(ascending("lowerName"))
+    )
+
+    println(filterPipeline.map(_.toBsonDocument().toJson()))
+    for {
+      // Using aggregate to perform case insensitive sorting
+      //   N.B.: Required because DocumentDB does not support collation
+      agreements <- readModel.aggregate[CompactTenant](
+        "agreements",
+        filterPipeline, // ++
+        // Seq(project(Document(""" { "data": { "id" : "$id", "name": "$name" }}""")), sort(ascending("lowerName"))),
+        offset = offset,
+        limit = limit
+      )
+      // Note: This could be obtained using $facet function (avoiding to execute the query twice),
+      //   but it is not supported by DocumentDB
+      // count      <- readModel.aggregate[TotalCountResult](
+      //   "agreements",
+      //   filterPipeline ++
+      //     Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))),
+      //   offset = 0,
+      //   limit = Int.MaxValue
+      // )
+    } yield PaginatedResult(results = agreements, totalCount = 0) // count.headOption.map(_.totalCount).getOrElse(0))
+  }
 
   def mapToVarArgs[A, B](l: Seq[A])(f: Seq[A] => B): Option[B] = Option.when(l.nonEmpty)(f(l))
 

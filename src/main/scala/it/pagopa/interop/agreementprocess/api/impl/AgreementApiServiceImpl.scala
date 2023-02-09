@@ -994,4 +994,24 @@ final case class AgreementApiServiceImpl(
       removeAgreementConsumerDocumentResponse[Unit](operationLabel)(_ => removeAgreementConsumerDocument204)
     }
   }
+
+  override def getAgreementProducers(q: Option[String], offset: Int, limit: Int)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
+    val operationLabel =
+      s"Retrieving Producers by EServices with filter on the name $q"
+    logger.info(operationLabel)
+
+    val result: Future[CompactOrganizations] = for {
+      compactTenants <- ReadModelQueries.listProducers(q, offset, limit)(readModel)
+    } yield {
+      compactTenants.results.foreach(r => logger.info(r.id.toString()))
+      CompactOrganizations(results = compactTenants.results.map(_.toApi), totalCount = compactTenants.totalCount)
+    }
+
+    onComplete(result) { getAgreementProducersResponse[CompactOrganizations](operationLabel)(getAgreementProducers200) }
+  }
+
 }
