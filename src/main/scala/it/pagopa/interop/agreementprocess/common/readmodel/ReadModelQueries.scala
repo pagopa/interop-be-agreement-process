@@ -155,40 +155,42 @@ object ReadModelQueries {
       `match`(query),
       lookup("tenants", "data.producerId", "data.id", "tenants"),
       unwind("$tenants", UnwindOptions().preserveNullAndEmptyArrays(false)),
-      addFields(
-        Field("id", Document("""{ id: "$data.producerId" }""")),
-        Field("name", Document("""{ name: "$tenants.data.name" }"""))
-      ),
       group(
-        Document("""{ _id: "$data.producerId" } """),
-        first("id", Document("""{ "id": "$data.producerId" } """)),
-        first("name", Document("""{ "name": "$tenants.data.name" } """))
-      ),
-      project(Document(""" { "data": { "id" : "$id", "name": "$name" }}""")),
-      sort(ascending("lowerName"))
+        Document("""{ "_id": "$data.producerId" } """),
+        first("id", "$data.producerId"),
+        first("name", "$tenants.data.name")
+      )
     )
 
-    println(filterPipeline.map(_.toBsonDocument().toJson()))
     for {
       // Using aggregate to perform case insensitive sorting
       //   N.B.: Required because DocumentDB does not support collation
       agreements <- readModel.aggregate[CompactTenant](
         "agreements",
-        filterPipeline, // ++
-        // Seq(project(Document(""" { "data": { "id" : "$id", "name": "$name" }}""")), sort(ascending("lowerName"))),
+        filterPipeline ++
+          Seq(
+            project(
+              fields(
+                computed("data", Document("""{ "id": "$id", "name": "$name" }""")),
+                computed("lowerName", Document("""{ "$toLower" : "$tenants.data.name" }"""))
+              )
+            ),
+            sort(ascending("lowerName"))
+          ),
         offset = offset,
         limit = limit
       )
+
       // Note: This could be obtained using $facet function (avoiding to execute the query twice),
       //   but it is not supported by DocumentDB
-      // count      <- readModel.aggregate[TotalCountResult](
-      //   "agreements",
-      //   filterPipeline ++
-      //     Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))),
-      //   offset = 0,
-      //   limit = Int.MaxValue
-      // )
-    } yield PaginatedResult(results = agreements, totalCount = 0) // count.headOption.map(_.totalCount).getOrElse(0))
+      count      <- readModel.aggregate[TotalCountResult](
+        "agreements",
+        filterPipeline ++
+          Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))),
+        offset = 0,
+        limit = Int.MaxValue
+      )
+    } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
   }
 
   def mapToVarArgs[A, B](l: Seq[A])(f: Seq[A] => B): Option[B] = Option.when(l.nonEmpty)(f(l))

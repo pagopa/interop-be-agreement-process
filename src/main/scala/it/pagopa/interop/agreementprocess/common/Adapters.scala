@@ -222,6 +222,6 @@ object Adapters {
   }
 
   implicit class CompactTenantWrapper(private val ct: CompactTenant) extends AnyVal {
-    def toApi: CompactOrganization = CompactOrganization(id = UUID.fromString(ct.id), name = "ct.name")
+    def toApi: CompactOrganization = CompactOrganization(id = ct.id, name = ct.name)
   }
 }
