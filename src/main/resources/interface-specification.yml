@@ -451,7 +451,7 @@ paths:
           schema:
             type: boolean
             default: false
-  '/agreements/a/producers':
+  '/agreements/filter/producers':
       parameters:
         - $ref: '#/components/parameters/CorrelationIdHeader'
         - $ref: '#/components/parameters/IpAddress'
