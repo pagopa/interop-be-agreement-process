@@ -458,12 +458,12 @@ paths:
       get:
         tags:
           - agreement
-        summary: Retrieves Producers from Agreements
+        summary: Retrieves Tenants that are producers with existing Agreements
         description: Retrieves Producers from Agreements filtered by EService Name
         operationId: getAgreementProducers
         parameters:
           - in: query
-            name: q
+            name: eserviceName
             description: Query to filter EServices by name
             schema:
               type: string
@@ -489,76 +489,18 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/CompactOrganizations'
-            headers:
-              'X-Rate-Limit-Limit':
-                schema:
-                  type: integer
-                description: Max allowed requests within time interval
-              'X-Rate-Limit-Remaining':
-                schema:
-                  type: integer
-                description: Remaining requests within time interval
-              'X-Rate-Limit-Interval':
-                schema:
-                  type: integer
-                description: Time interval in milliseconds. Allowed requests will be constantly replenished during the interval. At the end of the interval the max allowed requests will be available
           '400':
             description: Bad Request
             content:
               application/problem+json:
                 schema:
                   $ref: '#/components/schemas/Problem'
-            headers:
-              'X-Rate-Limit-Limit':
-                schema:
-                  type: integer
-                description: Max allowed requests within time interval
-              'X-Rate-Limit-Remaining':
-                schema:
-                  type: integer
-                description: Remaining requests within time interval
-              'X-Rate-Limit-Interval':
-                schema:
-                  type: integer
-                description: Time interval in milliseconds. Allowed requests will be constantly replenished during the interval. At the end of the interval the max allowed requests will be available
           '404':
             description: Producers not found
             content:
               application/problem+json:
                 schema:
                   $ref: '#/components/schemas/Problem'
-            headers:
-              'X-Rate-Limit-Limit':
-                schema:
-                  type: integer
-                description: Max allowed requests within time interval
-              'X-Rate-Limit-Remaining':
-                schema:
-                  type: integer
-                description: Remaining requests within time interval
-              'X-Rate-Limit-Interval':
-                schema:
-                  type: integer
-                description: Time interval in milliseconds. Allowed requests will be constantly replenished during the interval. At the end of the interval the max allowed requests will be available
-          '429':
-            description: Too Many Requests
-            content:
-              application/problem+json:
-                schema:
-                  $ref: '#/components/schemas/Problem'
-            headers:
-              'X-Rate-Limit-Limit':
-                schema:
-                  type: integer
-                description: Max allowed requests within time interval
-              'X-Rate-Limit-Remaining':
-                schema:
-                  type: integer
-                description: Remaining requests within time interval
-              'X-Rate-Limit-Interval':
-                schema:
-                  type: integer
-                description: Time interval in milliseconds. Allowed requests will be constantly replenished during the interval. At the end of the interval the max allowed requests will be available        
   '/agreements/{agreementId}':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'

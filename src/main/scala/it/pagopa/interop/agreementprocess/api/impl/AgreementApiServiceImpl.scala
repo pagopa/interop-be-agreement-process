@@ -995,17 +995,17 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  override def getAgreementProducers(q: Option[String], offset: Int, limit: Int)(implicit
+  override def getAgreementProducers(eserviceName: Option[String], offset: Int, limit: Int)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
     val operationLabel =
-      s"Retrieving producers from agrements with eservices with name filtered by $q"
+      s"Retrieving producers from agreements with eservices name $eserviceName"
     logger.info(operationLabel)
 
     val result: Future[CompactOrganizations] = for {
-      compactTenants <- ReadModelQueries.listProducers(q, offset, limit)(readModel)
+      compactTenants <- ReadModelQueries.listProducers(eserviceName, offset, limit)(readModel)
     } yield CompactOrganizations(results = compactTenants.results.map(_.toApi), totalCount = compactTenants.totalCount)
 
     onComplete(result) { getAgreementProducersResponse[CompactOrganizations](operationLabel)(getAgreementProducers200) }
