@@ -48,10 +48,12 @@ trait SpecHelper extends MockFactory {
   val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
   val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
   val mockUserRegistryService: UserRegistryService                       = mock[UserRegistryService]
+  val mockPartyProcessService: PartyProcessService                       = mock[PartyProcessService]
   val mockPDFCreator: PDFCreator                                         = mock[PDFCreator]
   val mockFileManager: FileManager                                       = mock[FileManager]
   val mockOffsetDateTimeSupplier: OffsetDateTimeSupplier                 = () => SpecData.when
   val mockUUIDSupplier: UUIDSupplier                                     = () => UUID.randomUUID()
+  val mockQueueService: QueueService                                     = mock[QueueService]
 
   val mockReadModel: ReadModelService = new MongoDbReadModelService(
     ReadModelConfig(
@@ -65,12 +67,14 @@ trait SpecHelper extends MockFactory {
     mockTenantManagementService,
     mockAttributeManagementService,
     mockAuthorizationManagementService,
+    mockPartyProcessService,
     mockUserRegistryService,
     mockReadModel,
     mockPDFCreator,
     mockFileManager,
     mockOffsetDateTimeSupplier,
-    mockUUIDSupplier
+    mockUUIDSupplier,
+    mockQueueService
   )(ExecutionContext.global)
 
   def contextWithRole(role: String): Seq[(String, String)] = contexts.filter { case (key, _) =>

@@ -10,6 +10,7 @@ import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagemen
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers._
 import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelQueries
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules.certifiedAttributesSatisfied
@@ -19,17 +20,19 @@ import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAnd
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
+import it.pagopa.interop.certifiedMailSender.model.InteropEnvelope
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt._
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
 import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, getUidFutureUUID}
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
-import it.pagopa.interop.commons.utils.TypeConversions._
+import it.pagopa.interop.commons.utils.TypeConversions.{StringOps, _}
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
-import it.pagopa.interop.commons.cqrs.service.ReadModelService
-import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelQueries
 
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,17 +42,23 @@ final case class AgreementApiServiceImpl(
   tenantManagementService: TenantManagementService,
   attributeManagementService: AttributeManagementService,
   authorizationManagementService: AuthorizationManagementService,
+  partyProcessService: PartyProcessService,
   userRegistry: UserRegistryService,
   readModel: ReadModelService,
   pdfCreator: PDFCreator,
   fileManager: FileManager,
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
-  uuidSupplier: UUIDSupplier
+  uuidSupplier: UUIDSupplier,
+  queueService: QueueService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
   implicit val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
+
+  private val activationMailTemplate: MailTemplate = MailTemplate.activation()
+
+  private val mailDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
   val agreementContractCreator: AgreementContractCreator = new AgreementContractCreator(
     pdfCreator,
@@ -130,12 +139,69 @@ final case class AgreementApiServiceImpl(
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       _              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-      updated        <- activate(agreement, eService, consumer, requesterOrgId)
+      producer       <- tenantManagementService.getTenant(agreement.producerId)
+      (updated, isFirstActivation) <- activate(agreement, eService, consumer, requesterOrgId)
+      _ <- sendActivationEnvelope(updated, producer, consumer, eService).whenA(isFirstActivation)
     } yield updated.toApi
 
     onComplete(result) {
       activateAgreementResponse[Agreement](operationLabel)(activateAgreement200)
     }
+  }
+
+  private def sendActivationEnvelope(
+    agreement: AgreementManagement.Agreement,
+    producerTenant: TenantManagement.Tenant,
+    consumerTenant: TenantManagement.Tenant,
+    eservice: CatalogManagement.EService
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Unit] = {
+    val envelopId: UUID = UUIDSupplier.get()
+
+    def createBody(
+      activationDate: OffsetDateTime,
+      eserviceName: String,
+      eserviceVersion: String,
+      producer: String,
+      consumer: String
+    ): String = activationMailTemplate.body.interpolate(
+      Map(
+        "activationDate"  -> activationDate.format(mailDateFormat),
+        "agreementId"     -> agreement.id.toString,
+        "eserviceName"    -> eserviceName,
+        "eserviceVersion" -> eserviceVersion,
+        "producerName"    -> producer,
+        "consumerName"    -> consumer
+      )
+    )
+
+    val subject: String = activationMailTemplate.subject.interpolate(Map("agreementId" -> agreement.id.toString))
+
+    val envelope: Future[InteropEnvelope] = for {
+      producerSelfcareId <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(producerTenant.id))
+      consumerSelfcareId <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(consumerTenant.id))
+      activationDate     <- agreement.stamps.activation.map(_.when).toFuture(StampNotFound("activation"))
+      producer           <- partyProcessService.getInstitution(producerSelfcareId)
+      consumer           <- partyProcessService.getInstitution(consumerSelfcareId)
+      version            <- eservice.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
+    } yield InteropEnvelope(
+      id = envelopId,
+      to = List(producer.digitalAddress, consumer.digitalAddress),
+      cc = List.empty,
+      bcc = List.empty,
+      subject = subject,
+      body = createBody(
+        activationDate = activationDate,
+        producer = producer.description,
+        consumer = consumer.description,
+        eserviceName = eservice.name,
+        eserviceVersion = version.version
+      ),
+      attachments = List.empty
+    )
+
+    envelope.flatMap(queueService.send[InteropEnvelope]).map(_ => ())
   }
 
   override def suspendAgreement(agreementId: String)(implicit
@@ -563,7 +629,7 @@ final case class AgreementApiServiceImpl(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant,
     requesterOrgId: UUID
-  )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
+  )(implicit contexts: Seq[(String, String)]): Future[(AgreementManagement.Agreement, Boolean)] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
@@ -625,7 +691,7 @@ final case class AgreementApiServiceImpl(
           state = toClientState(newState)
         )
         .unlessA(failureStates.contains(newState))
-    } yield updated
+    } yield updated -> firstActivation
   }
 
   def suspend(

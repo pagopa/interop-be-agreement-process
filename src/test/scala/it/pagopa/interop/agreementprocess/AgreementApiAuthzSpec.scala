@@ -28,9 +28,11 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
   val fakeTenantManagementService: TenantManagementService               = new FakeTenantManagementService()
   val fakeAttributeManagementService: AttributeManagementService         = new FakeAttributeManagementService()
   val fakeAuthorizationManagementService: AuthorizationManagementService = new FakeAuthorizationManagementService()
+  val fakePartyProcessService: PartyProcessService                       = new FakePartyProcessService()
   val fakeUserRegistryService: UserRegistryService                       = new FakeUserRegistryService()
   val fakePDFCreator: PDFCreator                                         = new FakePDFCreator()
   val fakeFileManager: FileManager                                       = new FakeFileManager()
+  val fakerQueueService: QueueService                                    = new FakeQueueService()
 
   val fakeReadModel: ReadModelService = new MongoDbReadModelService(
     ReadModelConfig(
@@ -45,12 +47,14 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     tenantManagementService = fakeTenantManagementService,
     attributeManagementService = fakeAttributeManagementService,
     authorizationManagementService = fakeAuthorizationManagementService,
+    partyProcessService = fakePartyProcessService,
     userRegistry = fakeUserRegistryService,
     readModel = fakeReadModel,
     pdfCreator = fakePDFCreator,
     fileManager = fakeFileManager,
     offsetDateTimeSupplier = OffsetDateTimeSupplier,
-    uuidSupplier = UUIDSupplier
+    uuidSupplier = UUIDSupplier,
+    fakerQueueService
   )(ExecutionContext.global)
 
   "Agreement api operation authorization spec" should {
