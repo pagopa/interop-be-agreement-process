@@ -3,7 +3,7 @@ package it.pagopa.interop.agreementprocess.common.readmodel
 import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreement
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
-import it.pagopa.interop.agreementprocess.model.AgreementState
+import it.pagopa.interop.agreementprocess.model.{AgreementState, CompactEService}
 import scala.concurrent.{ExecutionContext, Future}
 import org.mongodb.scala.Document
 import org.mongodb.scala.bson.conversions.Bson
@@ -135,6 +135,14 @@ object ReadModelQueries {
         .map(_.toString)
         .map(Filters.eq("data.state", _))
     )(Filters.or)
+
+  def listEServicesAgreements(
+    eServiceName: Option[String],
+    consumersIds: List[String],
+    producersIds: List[String],
+    offset: Int,
+    limit: Int
+  )(readModel: ReadModelService)(implicit ec: ExecutionContext): Future[PaginatedResult[CompactEService]] = ???
 
   def mapToVarArgs[A, B](l: Seq[A])(f: Seq[A] => B): Option[B] = Option.when(l.nonEmpty)(f(l))
 
