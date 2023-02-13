@@ -156,8 +156,8 @@ object ReadModelQueries {
       unwind("$tenants", UnwindOptions().preserveNullAndEmptyArrays(false)),
       group(
         Document("""{ "_id": "$data.producerId" } """),
-        first("producerId", "$data.producerId"),
-        first("producerName", "$tenants.data.name")
+        first("tenantId", "$data.producerId"),
+        first("tenantName", "$tenants.data.name")
       )
     )
 
@@ -170,7 +170,7 @@ object ReadModelQueries {
           Seq(
             project(
               fields(
-                computed("data", Document("""{ "id": "$producerId", "name": "$producerName" }""")),
+                computed("data", Document("""{ "id": "$tenantId", "name": "$tenantName" }""")),
                 computed("lowerName", Document("""{ "$toLower" : "$tenants.data.name" }"""))
               )
             ),
