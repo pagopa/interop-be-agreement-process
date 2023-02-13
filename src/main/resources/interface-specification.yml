@@ -459,7 +459,7 @@ paths:
         tags:
           - agreement
         summary: Retrieves Tenants that are producers with existing Agreements
-        description: Retrieves Producers from Agreements filtered by EService Name
+        description: Retrieves Tenants that are producers with existing Agreements
         operationId: getAgreementProducers
         parameters:
           - in: query
