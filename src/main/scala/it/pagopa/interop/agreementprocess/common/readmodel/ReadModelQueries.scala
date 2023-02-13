@@ -144,7 +144,6 @@ object ReadModelQueries {
     mapToVarArgs(nameFilter.toList)(Filters.and).getOrElse(Filters.empty())
   }
 
-  @scala.annotation.nowarn
   def listProducers(name: Option[String], offset: Int, limit: Int)(
     readModel: ReadModelService
   )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactTenant]] = {
@@ -157,8 +156,8 @@ object ReadModelQueries {
       unwind("$tenants", UnwindOptions().preserveNullAndEmptyArrays(false)),
       group(
         Document("""{ "_id": "$data.producerId" } """),
-        first("id", "$data.producerId"),
-        first("name", "$tenants.data.name")
+        first("producerId", "$data.producerId"),
+        first("producerName", "$tenants.data.name")
       )
     )
 
@@ -171,7 +170,7 @@ object ReadModelQueries {
           Seq(
             project(
               fields(
-                computed("data", Document("""{ "id": "$id", "name": "$name" }""")),
+                computed("data", Document("""{ "id": "$producerId", "name": "$producerName" }""")),
                 computed("lowerName", Document("""{ "$toLower" : "$tenants.data.name" }"""))
               )
             ),
