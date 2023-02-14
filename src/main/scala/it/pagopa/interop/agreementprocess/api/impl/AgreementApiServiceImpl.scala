@@ -995,7 +995,7 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  def getAgreementEServiceProducers(
+  def getAgreementEServices(
     eServiceName: Option[String],
     consumersIds: String,
     producersIds: String,
@@ -1022,7 +1022,7 @@ final case class AgreementApiServiceImpl(
     } yield CompactEServices(results = apiEServices, totalCount = eservices.totalCount)
 
     onComplete(result) {
-      getAgreementEServiceProducersResponse[CompactEServices](operationLabel)(getAgreementEServiceProducers200)
+      getAgreementEServicesResponse[CompactEServices](operationLabel)(getAgreementEServices200)
     }
 
   }

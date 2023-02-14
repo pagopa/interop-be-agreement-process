@@ -664,9 +664,9 @@ paths:
     get:
       tags:
         - agreement
-      summary: Retrieves eservices for producers in agreements
-      description: Retrieves eservices for producers in agreements
-      operationId: getAgreementEServiceProducers
+      summary: Retrieves eservices for producers or consumers in agreements
+      description: Retrieves eservices for producers or consumers in agreements
+      operationId: getAgreementEServices
       parameters:
         - in: query
           name: eServiceName

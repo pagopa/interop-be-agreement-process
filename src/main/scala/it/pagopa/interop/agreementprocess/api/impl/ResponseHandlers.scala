@@ -180,7 +180,7 @@ object ResponseHandlers extends AkkaResponses {
       case Failure(ex)                            => internalServerError(ex, logMessage)
     }
 
-  def getAgreementEServiceProducersResponse[T](logMessage: String)(
+  def getAgreementEServicesResponse[T](logMessage: String)(
     success: T => Route
   )(result: Try[T])(implicit contexts: Seq[(String, String)], logger: LoggerTakingImplicit[ContextFieldsToLog]): Route =
     result match {

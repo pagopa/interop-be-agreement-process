@@ -36,7 +36,7 @@
       "roles": ["admin", "api", "security", "m2m"]
     },
     {
-      "route": "getAgreementEServiceProducers",
+      "route": "getAgreementEServices",
       "verb": "GET",
       "roles": ["admin", "api", "security"]
     },
