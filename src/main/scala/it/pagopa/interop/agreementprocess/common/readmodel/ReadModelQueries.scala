@@ -180,7 +180,7 @@ object ReadModelQueries {
             project(
               fields(
                 computed("data", Document("""{ "id": "$eserviceId", "name": "$eserviceName" }""")),
-                computed("lowerName", Document("""{ "$toLower" : "$eservices.data.name" }"""))
+                computed("lowerName", Document("""{ "$toLower" : "$eserviceName" }"""))
               )
             ),
             sort(ascending("lowerName"))
