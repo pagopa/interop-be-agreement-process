@@ -4,7 +4,6 @@ import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotInExpectedState
 import it.pagopa.interop.agreementprocess.model._
-import it.pagopa.interop.agreementprocess.common.readmodel.model._
 import it.pagopa.interop.agreementmanagement.model.agreement._
 
 import java.util.UUID
@@ -221,7 +220,4 @@ object Adapters {
     )
   }
 
-  implicit class CompactTenantWrapper(private val ct: CompactTenant) extends AnyVal {
-    def toApi: CompactOrganization = CompactOrganization(id = ct.id, name = ct.name)
-  }
 }

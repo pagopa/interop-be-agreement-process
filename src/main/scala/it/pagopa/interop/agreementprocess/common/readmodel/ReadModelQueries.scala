@@ -14,7 +14,8 @@ import org.mongodb.scala.model.Projections.{computed, fields, include}
 import org.mongodb.scala.model.Sorts.ascending
 import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
 import it.pagopa.interop.catalogmanagement.{model => CatalogManagement}
-import it.pagopa.interop.agreementprocess.common.readmodel.model._
+import it.pagopa.interop.agreementprocess.model.CompactOrganization
+import it.pagopa.interop.agreementprocess.api.impl._
 
 object ReadModelQueries {
   def listAgreements(
@@ -146,7 +147,7 @@ object ReadModelQueries {
 
   def listProducers(name: Option[String], offset: Int, limit: Int)(
     readModel: ReadModelService
-  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactTenant]] = {
+  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
     val query: Bson               = listEServiceFilters(name)
     val filterPipeline: Seq[Bson] = Seq(
       lookup("eservices", "data.eserviceId", "data.id", "eservices"),
@@ -164,7 +165,7 @@ object ReadModelQueries {
     for {
       // Using aggregate to perform case insensitive sorting
       //   N.B.: Required because DocumentDB does not support collation
-      agreements <- readModel.aggregate[CompactTenant](
+      agreements <- readModel.aggregate[CompactOrganization](
         "agreements",
         filterPipeline ++
           Seq(

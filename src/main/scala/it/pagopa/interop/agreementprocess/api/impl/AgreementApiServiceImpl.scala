@@ -1006,7 +1006,7 @@ final case class AgreementApiServiceImpl(
 
     val result: Future[CompactOrganizations] = for {
       compactTenants <- ReadModelQueries.listProducers(eserviceName, offset, limit)(readModel)
-    } yield CompactOrganizations(results = compactTenants.results.map(_.toApi), totalCount = compactTenants.totalCount)
+    } yield CompactOrganizations(results = compactTenants.results, totalCount = compactTenants.totalCount)
 
     onComplete(result) { getAgreementProducersResponse[CompactOrganizations](operationLabel)(getAgreementProducers200) }
   }
