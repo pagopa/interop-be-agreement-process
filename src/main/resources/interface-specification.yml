@@ -657,7 +657,7 @@ paths:
       responses:
         '204':
           description: Bulk operation executed
-  '/agreements/eservices':
+  '/agreements/filter/eservices':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'
       - $ref: '#/components/parameters/IpAddress'
