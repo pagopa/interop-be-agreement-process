@@ -145,22 +145,31 @@ object ReadModelQueries {
     mapToVarArgs(nameFilter.toList)(Filters.and).getOrElse(Filters.empty())
   }
 
-  def listProducers(name: Option[String], offset: Int, limit: Int)(
-    readModel: ReadModelService
-  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
-    val query: Bson               = listEServiceFilters(name)
-    val filterPipeline: Seq[Bson] = Seq(
+  private def listTenantsFilterPipeline(query: Bson, input: String): Seq[Bson] = {
+
+    val placeHolder: String             = s"data.${input}"
+    val placeHolderDoubleDollar: String = s"$$data.${input}"
+
+    Seq(
       lookup("eservices", "data.eserviceId", "data.id", "eservices"),
       unwind("$eservices", UnwindOptions().preserveNullAndEmptyArrays(false)),
       `match`(query),
-      lookup("tenants", "data.producerId", "data.id", "tenants"),
+      lookup("tenants", placeHolder, "data.id", "tenants"),
       unwind("$tenants", UnwindOptions().preserveNullAndEmptyArrays(false)),
       group(
-        Document("""{ "_id": "$data.producerId" } """),
-        first("tenantId", "$data.producerId"),
+        Document("""{ "_id":"""" + placeHolderDoubleDollar + """"} """),
+        first("tenantId", placeHolderDoubleDollar),
         first("tenantName", "$tenants.data.name")
       )
     )
+  }
+
+  def listProducers(name: Option[String], offset: Int, limit: Int)(
+    readModel: ReadModelService
+  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
+
+    val query: Bson               = listEServiceFilters(name)
+    val filterPipeline: Seq[Bson] = listTenantsFilterPipeline(query, "producerId")
 
     for {
       // Using aggregate to perform case insensitive sorting
