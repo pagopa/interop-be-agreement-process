@@ -1012,11 +1012,11 @@ final case class AgreementApiServiceImpl(
 
     val result: Future[CompactEServices] = for {
       eservices <- ReadModelQueries.listEServicesAgreements(
-        eServiceName,
-        parseArrayParameters(consumersIds),
-        parseArrayParameters(producersIds),
-        offset,
-        limit
+        eServiceName = eServiceName,
+        consumersIds = parseArrayParameters(consumersIds),
+        producersIds = parseArrayParameters(producersIds),
+        offset = offset,
+        limit = limit
       )(readModel)
       apiEServices = eservices.results
     } yield CompactEServices(results = apiEServices, totalCount = eservices.totalCount)
