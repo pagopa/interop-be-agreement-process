@@ -139,8 +139,8 @@ object ReadModelQueries {
         .map(Filters.eq("data.state", _))
     )(Filters.or)
 
-  private def listEServiceFilters(name: Option[String]): Bson = {
-    val nameFilter = name.map(Filters.regex("eservices.data.name", _, "i"))
+  private def listTenantFilters(name: Option[String]): Bson = {
+    val nameFilter = name.map(Filters.regex("tenants.data.name", _, "i"))
 
     mapToVarArgs(nameFilter.toList)(Filters.and).getOrElse(Filters.empty())
   }
@@ -151,11 +151,9 @@ object ReadModelQueries {
     val placeHolderDoubleDollar: String = s"$$data.${input}"
 
     Seq(
-      lookup("eservices", "data.eserviceId", "data.id", "eservices"),
-      unwind("$eservices", UnwindOptions().preserveNullAndEmptyArrays(false)),
-      `match`(query),
       lookup("tenants", placeHolder, "data.id", "tenants"),
       unwind("$tenants", UnwindOptions().preserveNullAndEmptyArrays(false)),
+      `match`(query),
       group(
         Document("""{ "_id":"""" + placeHolderDoubleDollar + """"} """),
         first("tenantId", placeHolderDoubleDollar),
@@ -168,7 +166,7 @@ object ReadModelQueries {
     readModel: ReadModelService
   )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
 
-    val query: Bson               = listEServiceFilters(name)
+    val query: Bson               = listTenantFilters(name)
     val filterPipeline: Seq[Bson] = listTenantsFilterPipeline(query, "producerId")
 
     for {

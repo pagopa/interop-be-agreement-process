@@ -463,8 +463,8 @@ paths:
         operationId: getAgreementProducers
         parameters:
           - in: query
-            name: eserviceName
-            description: Query to filter EServices by name
+            name: producerName
+            description: Query to filter producers by name
             schema:
               type: string
           - in: query
@@ -491,12 +491,6 @@ paths:
                   $ref: '#/components/schemas/CompactOrganizations'
           '400':
             description: Bad Request
-            content:
-              application/problem+json:
-                schema:
-                  $ref: '#/components/schemas/Problem'
-          '404':
-            description: Producers not found
             content:
               application/problem+json:
                 schema:
