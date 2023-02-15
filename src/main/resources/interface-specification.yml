@@ -501,6 +501,56 @@ paths:
               application/problem+json:
                 schema:
                   $ref: '#/components/schemas/Problem'
+  '/consumers':
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/IpAddress'
+      get:
+        tags:
+          - agreement
+        summary: Retrieves Tenants that are consumers with existing Agreements
+        description: Retrieves Tenants that are consumers with existing Agreements
+        operationId: getAgreementConsumers
+        parameters:
+          - in: query
+            name: eserviceName
+            description: Query to filter EServices by name
+            schema:
+              type: string
+          - in: query
+            name: offset
+            required: true
+            schema:
+              type: integer
+              format: int32
+              minimum: 0
+          - in: query
+            name: limit
+            required: true
+            schema:
+              type: integer
+              format: int32
+              minimum: 1
+              maximum: 50
+        responses:
+          '200':
+            description: A list of Consumers
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CompactOrganizations'
+          '400':
+            description: Bad Request
+            content:
+              application/problem+json:
+                schema:
+                  $ref: '#/components/schemas/Problem'
+          '404':
+            description: Producers not found
+            content:
+              application/problem+json:
+                schema:
+                  $ref: '#/components/schemas/Problem'
   '/agreements/{agreementId}':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'

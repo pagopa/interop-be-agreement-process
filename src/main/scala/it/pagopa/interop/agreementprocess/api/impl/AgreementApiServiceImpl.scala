@@ -1011,4 +1011,20 @@ final case class AgreementApiServiceImpl(
     onComplete(result) { getAgreementProducersResponse[CompactOrganizations](operationLabel)(getAgreementProducers200) }
   }
 
+  def getAgreementConsumers(eserviceName: Option[String], offset: Int, limit: Int)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
+    val operationLabel =
+      s"Retrieving consumers from agreements with eservices name $eserviceName"
+    logger.info(operationLabel)
+
+    val result: Future[CompactOrganizations] = for {
+      compactTenants <- ReadModelQueries.listConsumers(eserviceName, offset, limit)(readModel)
+    } yield CompactOrganizations(results = compactTenants.results, totalCount = compactTenants.totalCount)
+
+    onComplete(result) { getAgreementConsumersResponse[CompactOrganizations](operationLabel)(getAgreementConsumers200) }
+  }
+
 }

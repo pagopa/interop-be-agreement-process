@@ -201,6 +201,43 @@ object ReadModelQueries {
     } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
   }
 
+  def listConsumers(name: Option[String], offset: Int, limit: Int)(
+    readModel: ReadModelService
+  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
+
+    val query: Bson               = listEServiceFilters(name)
+    val filterPipeline: Seq[Bson] = listTenantsFilterPipeline(query, "consumerId")
+
+    for {
+      // Using aggregate to perform case insensitive sorting
+      //   N.B.: Required because DocumentDB does not support collation
+      agreements <- readModel.aggregate[CompactOrganization](
+        "agreements",
+        filterPipeline ++
+          Seq(
+            project(
+              fields(
+                computed("data", Document("""{ "id": "$tenantId", "name": "$tenantName" }""")),
+                computed("lowerName", Document("""{ "$toLower" : "$tenantName" }"""))
+              )
+            ),
+            sort(ascending("lowerName"))
+          ),
+        offset = offset,
+        limit = limit
+      )
+      // Note: This could be obtained using $facet function (avoiding to execute the query twice),
+      //   but it is not supported by DocumentDB
+      count      <- readModel.aggregate[TotalCountResult](
+        "agreements",
+        filterPipeline ++
+          Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))),
+        offset = 0,
+        limit = Int.MaxValue
+      )
+    } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
+  }
+
   def mapToVarArgs[A, B](l: Seq[A])(f: Seq[A] => B): Option[B] = Option.when(l.nonEmpty)(f(l))
 
 }
