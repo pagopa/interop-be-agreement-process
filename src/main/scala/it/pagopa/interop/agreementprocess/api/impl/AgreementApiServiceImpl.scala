@@ -1001,7 +1001,7 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
   ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
     val operationLabel =
-      s"Retrieving producers from agreements with eservices name $producerName"
+      s"Retrieving producers from agreements with producer name $producerName"
     logger.info(operationLabel)
 
     val result: Future[CompactOrganizations] = for {
