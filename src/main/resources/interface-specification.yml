@@ -664,8 +664,8 @@ paths:
     get:
       tags:
         - agreement
-      summary: Retrieves eservices for producers or consumers in agreements
-      description: Retrieves eservices for producers or consumers in agreements
+      summary: Retrieves agreements eservices
+      description: Retrieves agreements eservices
       operationId: getAgreementEServices
       parameters:
         - in: query
@@ -715,12 +715,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompactEServices'
-        '404':
-          description: EServices not found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
         '400':
           description: Invalid ID supplied
           content:
