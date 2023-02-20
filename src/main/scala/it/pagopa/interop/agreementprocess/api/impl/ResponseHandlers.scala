@@ -120,6 +120,7 @@ object ResponseHandlers extends AkkaResponses {
       case Failure(ex: AgreementNotInExpectedState) => badRequest(ex, logMessage)
       case Failure(ex: MissingCertifiedAttributes)  => badRequest(ex, logMessage)
       case Failure(ex: EServiceNotFound)            => badRequest(ex, logMessage)
+      case Failure(ex: AgreementAlreadyExists)      => conflict(ex, logMessage)
       case Failure(ex)                              => internalServerError(ex, logMessage)
     }
 
