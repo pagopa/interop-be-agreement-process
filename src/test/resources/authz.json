@@ -36,6 +36,16 @@
       "roles": ["admin", "api", "security", "m2m"]
     },
     {
+      "route": "getAgreementProducers",
+      "verb": "GET",
+      "roles": ["admin", "api", "security"]
+    },
+    {
+      "route": "getAgreementConsumers",
+      "verb": "GET",
+      "roles": ["admin", "api", "security"]
+    },
+    {
       "route": "getAgreementEServices",
       "verb": "GET",
       "roles": ["admin", "api", "security"]

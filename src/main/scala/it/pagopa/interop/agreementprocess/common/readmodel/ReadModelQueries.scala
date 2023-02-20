@@ -14,6 +14,7 @@ import org.mongodb.scala.model.Projections.{computed, fields, include}
 import org.mongodb.scala.model.Sorts.ascending
 import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
 import it.pagopa.interop.catalogmanagement.{model => CatalogManagement}
+import it.pagopa.interop.agreementprocess.model.CompactOrganization
 import it.pagopa.interop.agreementprocess.api.impl._
 
 object ReadModelQueries {
@@ -137,6 +138,103 @@ object ReadModelQueries {
         .map(_.toString)
         .map(Filters.eq("data.state", _))
     )(Filters.or)
+
+  private def listTenantFilters(name: Option[String]): Bson = {
+    val nameFilter = name.map(Filters.regex("tenants.data.name", _, "i"))
+
+    mapToVarArgs(nameFilter.toList)(Filters.and).getOrElse(Filters.empty())
+  }
+
+  private def listTenantsFilterPipeline(query: Bson, input: String): Seq[Bson] = {
+
+    val placeHolder: String             = s"data.${input}"
+    val placeHolderDoubleDollar: String = s"$$data.${input}"
+
+    Seq(
+      lookup("tenants", placeHolder, "data.id", "tenants"),
+      unwind("$tenants", UnwindOptions().preserveNullAndEmptyArrays(false)),
+      `match`(query),
+      group(
+        Document("""{ "_id":"""" + placeHolderDoubleDollar + """"} """),
+        first("tenantId", placeHolderDoubleDollar),
+        first("tenantName", "$tenants.data.name")
+      )
+    )
+  }
+
+  def listProducers(name: Option[String], offset: Int, limit: Int)(
+    readModel: ReadModelService
+  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
+
+    val query: Bson               = listTenantFilters(name)
+    val filterPipeline: Seq[Bson] = listTenantsFilterPipeline(query, "producerId")
+
+    for {
+      // Using aggregate to perform case insensitive sorting
+      //   N.B.: Required because DocumentDB does not support collation
+      agreements <- readModel.aggregate[CompactOrganization](
+        "agreements",
+        filterPipeline ++
+          Seq(
+            project(
+              fields(
+                computed("data", Document("""{ "id": "$tenantId", "name": "$tenantName" }""")),
+                computed("lowerName", Document("""{ "$toLower" : "$tenantName" }"""))
+              )
+            ),
+            sort(ascending("lowerName"))
+          ),
+        offset = offset,
+        limit = limit
+      )
+      // Note: This could be obtained using $facet function (avoiding to execute the query twice),
+      //   but it is not supported by DocumentDB
+      count      <- readModel.aggregate[TotalCountResult](
+        "agreements",
+        filterPipeline ++
+          Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))),
+        offset = 0,
+        limit = Int.MaxValue
+      )
+    } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
+  }
+
+  def listConsumers(name: Option[String], offset: Int, limit: Int)(
+    readModel: ReadModelService
+  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
+
+    val query: Bson               = listTenantFilters(name)
+    val filterPipeline: Seq[Bson] = listTenantsFilterPipeline(query, "consumerId")
+
+    for {
+      // Using aggregate to perform case insensitive sorting
+      //   N.B.: Required because DocumentDB does not support collation
+      agreements <- readModel.aggregate[CompactOrganization](
+        "agreements",
+        filterPipeline ++
+          Seq(
+            project(
+              fields(
+                computed("data", Document("""{ "id": "$tenantId", "name": "$tenantName" }""")),
+                computed("lowerName", Document("""{ "$toLower" : "$tenantName" }"""))
+              )
+            ),
+            sort(ascending("lowerName"))
+          ),
+        offset = offset,
+        limit = limit
+      )
+      // Note: This could be obtained using $facet function (avoiding to execute the query twice),
+      //   but it is not supported by DocumentDB
+      count      <- readModel.aggregate[TotalCountResult](
+        "agreements",
+        filterPipeline ++
+          Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))),
+        offset = 0,
+        limit = Int.MaxValue
+      )
+    } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
+  }
 
   private def listEServiceAgreementsFilters(
     name: Option[String],
