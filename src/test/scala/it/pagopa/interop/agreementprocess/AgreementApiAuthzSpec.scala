@@ -132,5 +132,15 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
         { implicit c: Seq[(String, String)] => service.computeAgreementsByAttribute("fake", "fake") }
       )
     }
+
+    "accept authorized roles for getAgreementProducers" in {
+      val endpoint = AuthorizedRoutes.endpoints("getAgreementProducers")
+      validateAuthorization(
+        endpoint,
+        { implicit c: Seq[(String, String)] =>
+          service.getAgreementProducers(Some("query"), 0, 0)
+        }
+      )
+    }
   }
 }
