@@ -745,6 +745,70 @@ paths:
       responses:
         '204':
           description: Bulk operation executed
+  '/agreements/filter/eservices':
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
+    get:
+      tags:
+        - agreement
+      summary: Retrieves agreements eservices
+      description: Retrieves agreements eservices
+      operationId: getAgreementEServices
+      parameters:
+        - in: query
+          name: eServiceName
+          description: Query to filter EServices by name
+          schema:
+            type: string
+        - in: query
+          name: consumersIds
+          description: comma separated sequence of consumers IDs
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+            default: []
+          explode: false
+        - in: query
+          name: producersIds
+          description: comma separated sequence of producers IDs
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+            default: []
+          explode: false
+        - in: query
+          name: offset
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+        - in: query
+          name: limit
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: EServices found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompactEServices'
+        '400':
+          description: Invalid ID supplied
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
 components:
   parameters:
     CorrelationIdHeader:
@@ -972,6 +1036,30 @@ components:
           type: string
           format: date-time
         path:
+          type: string
+    CompactEServices:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompactEService'
+        totalCount:
+          type: integer
+          format: int32
+      required:
+        - results
+        - totalCount
+    CompactEService:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
           type: string
     CompactOrganization:
       type: object

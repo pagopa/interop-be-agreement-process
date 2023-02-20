@@ -46,6 +46,11 @@
       "roles": ["admin", "api", "security"]
     },
     {
+      "route": "getAgreementEServices",
+      "verb": "GET",
+      "roles": ["admin", "api", "security"]
+    },
+    {
       "route": "getAgreementById",
       "verb": "GET",
       "roles": ["admin", "api", "security", "m2m"]
