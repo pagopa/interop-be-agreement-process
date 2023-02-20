@@ -142,5 +142,15 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
         }
       )
     }
+
+    "accept authorized roles for getAgreementConsumers" in {
+      val endpoint = AuthorizedRoutes.endpoints("getAgreementConsumers")
+      validateAuthorization(
+        endpoint,
+        { implicit c: Seq[(String, String)] =>
+          service.getAgreementConsumers(Some("query"), 0, 0)
+        }
+      )
+    }
   }
 }
