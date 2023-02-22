@@ -30,8 +30,14 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val producer   = SpecData.tenant.copy(id = eService.producerId)
       val agreement  =
-        SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+        SpecData.draftAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = producer.id
+        )
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
@@ -50,6 +56,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
+      mockTenantRetrieve(producer.id, producer)
       mockAgreementUpdate(
         agreement.id,
         expectedSeed,
@@ -75,6 +82,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val eService   =
         SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = producerId)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val producer   = SpecData.tenant.copy(id = producerId)
       val agreement  =
         SpecData.draftAgreement.copy(
           producerId = producerId,
@@ -96,7 +104,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAutomaticActivation(agreement, eService, consumer, expectedSeed)
+      mockAutomaticActivation(agreement, eService, consumer, producer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
@@ -124,6 +132,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
           attributes = eServiceAttr
         )
       val consumer            = SpecData.tenant.copy(id = consumerAndProducer, attributes = tenantAttr)
+      val producer            = consumer
       val agreement           =
         SpecData.draftAgreement.copy(
           eserviceId = eService.id,
@@ -145,7 +154,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockSelfActivation(agreement, eService, consumer, expectedSeed)
+      mockSelfActivation(agreement, eService, consumer, producer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
@@ -227,8 +236,14 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val descriptor = SpecData.publishedDescriptor
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val producer   = SpecData.tenant.copy(id = eService.producerId)
       val agreement  =
-        SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+        SpecData.draftAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = producer.id
+        )
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
@@ -247,6 +262,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
+      mockTenantRetrieve(producer.id, producer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
@@ -262,8 +278,14 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val descriptor = SpecData.publishedDescriptor
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val producer   = SpecData.tenant.copy(id = eService.producerId)
       val agreement  =
-        SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+        SpecData.draftAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id,
+          producerId = producer.id
+        )
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
@@ -282,6 +304,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
+      mockTenantRetrieve(producer.id, producer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {

@@ -66,7 +66,6 @@ final case class AgreementApiServiceImpl(
     uuidSupplier,
     agreementManagementService,
     attributeManagementService,
-    tenantManagementService,
     userRegistry,
     offsetDateTimeSupplier
   )
@@ -112,7 +111,8 @@ final case class AgreementApiServiceImpl(
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-      updated        <- submit(agreement, eService, consumer, payload)
+      producer       <- tenantManagementService.getTenant(agreement.producerId)
+      updated        <- submit(agreement, eService, consumer, producer, payload)
     } yield updated.toApi
 
     onComplete(result) {
@@ -139,69 +139,12 @@ final case class AgreementApiServiceImpl(
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       _              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-      producer       <- tenantManagementService.getTenant(agreement.producerId)
-      (updated, isFirstActivation) <- activate(agreement, eService, consumer, requesterOrgId)
-      _ <- sendActivationEnvelope(updated, producer, consumer, eService).whenA(isFirstActivation)
+      updated        <- activate(agreement, eService, consumer, requesterOrgId)
     } yield updated.toApi
 
     onComplete(result) {
       activateAgreementResponse[Agreement](operationLabel)(activateAgreement200)
     }
-  }
-
-  private def sendActivationEnvelope(
-    agreement: AgreementManagement.Agreement,
-    producerTenant: TenantManagement.Tenant,
-    consumerTenant: TenantManagement.Tenant,
-    eservice: CatalogManagement.EService
-  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Unit] = {
-    val envelopId: UUID = UUIDSupplier.get()
-
-    def createBody(
-      activationDate: OffsetDateTime,
-      eserviceName: String,
-      eserviceVersion: String,
-      producer: String,
-      consumer: String
-    ): String = activationMailTemplate.body.interpolate(
-      Map(
-        "activationDate"  -> activationDate.format(mailDateFormat),
-        "agreementId"     -> agreement.id.toString,
-        "eserviceName"    -> eserviceName,
-        "eserviceVersion" -> eserviceVersion,
-        "producerName"    -> producer,
-        "consumerName"    -> consumer
-      )
-    )
-
-    val subject: String = activationMailTemplate.subject.interpolate(Map("agreementId" -> agreement.id.toString))
-
-    val envelope: Future[InteropEnvelope] = for {
-      producerSelfcareId <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(producerTenant.id))
-      consumerSelfcareId <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(consumerTenant.id))
-      activationDate     <- agreement.stamps.activation.map(_.when).toFuture(StampNotFound("activation"))
-      producer           <- partyProcessService.getInstitution(producerSelfcareId)
-      consumer           <- partyProcessService.getInstitution(consumerSelfcareId)
-      version            <- eservice.descriptors
-        .find(_.id == agreement.descriptorId)
-        .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
-    } yield InteropEnvelope(
-      id = envelopId,
-      to = List(producer.digitalAddress, consumer.digitalAddress),
-      cc = List.empty,
-      bcc = List.empty,
-      subject = subject,
-      body = createBody(
-        activationDate = activationDate,
-        producer = producer.description,
-        consumer = consumer.description,
-        eserviceName = eservice.name,
-        eserviceVersion = version.version
-      ),
-      attachments = List.empty
-    )
-
-    envelope.flatMap(queueService.send[InteropEnvelope]).map(_ => ())
   }
 
   override def suspendAgreement(agreementId: String)(implicit
@@ -550,6 +493,7 @@ final case class AgreementApiServiceImpl(
     agreement: AgreementManagement.Agreement,
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant,
+    producer: TenantManagement.Tenant,
     payload: AgreementSubmissionPayload
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
@@ -603,15 +547,23 @@ final case class AgreementApiServiceImpl(
           stamps = stamps
         )
 
-    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed) =
-      agreementContractCreator.create(agreement, eService, consumer, seed) >>
-        authorizationManagementService
-          .updateStateOnClients(
-            eServiceId = agreement.eserviceId,
-            consumerId = agreement.consumerId,
-            agreementId = agreement.id,
-            state = toClientState(newState)
-          )
+    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
+      _ <- agreementContractCreator.create(
+        agreement = agreement,
+        eService = eService,
+        consumer = consumer,
+        producer = producer,
+        seed = seed
+      )
+      _ <- sendActivationEnvelope(agreement, producer, consumer, eService)
+      _ <- authorizationManagementService
+        .updateStateOnClients(
+          eServiceId = agreement.eserviceId,
+          consumerId = agreement.consumerId,
+          agreementId = agreement.id,
+          state = toClientState(newState)
+        )
+    } yield ()
 
     for {
       uid    <- getUidFutureUUID(contexts)
@@ -629,7 +581,7 @@ final case class AgreementApiServiceImpl(
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant,
     requesterOrgId: UUID
-  )(implicit contexts: Seq[(String, String)]): Future[(AgreementManagement.Agreement, Boolean)] = {
+  )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.ACTIVE)
@@ -676,13 +628,23 @@ final case class AgreementApiServiceImpl(
       .failed(AgreementActivationFailed(agreement.id))
       .whenA(failureStates.contains(newState))
 
+    def performActivation(seed: UpdateAgreementSeed, agreement: AgreementManagement.Agreement): Future[Unit] = for {
+      producer <- tenantManagementService.getTenant(agreement.producerId)
+      _        <- agreementContractCreator.create(
+        agreement = agreement,
+        eService = eService,
+        consumer = consumer,
+        producer = producer,
+        seed = seed
+      )
+      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
+    } yield ()
+
     for {
       seed    <- getUpdateSeed()
-      _       <-
-        if (firstActivation) agreementContractCreator.create(agreement, eService, consumer, seed)
-        else Future.unit
       updated <- agreementManagementService.updateAgreement(agreement.id, seed)
       _       <- failOnActivationFailure()
+      _       <- performActivation(seed, updated).whenA(firstActivation)
       _       <- authorizationManagementService
         .updateStateOnClients(
           eServiceId = agreement.eserviceId,
@@ -691,7 +653,62 @@ final case class AgreementApiServiceImpl(
           state = toClientState(newState)
         )
         .unlessA(failureStates.contains(newState))
-    } yield updated -> firstActivation
+    } yield updated
+  }
+
+  private def sendActivationEnvelope(
+    agreement: AgreementManagement.Agreement,
+    producerTenant: TenantManagement.Tenant,
+    consumerTenant: TenantManagement.Tenant,
+    eservice: CatalogManagement.EService
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Unit] = {
+    val envelopId: UUID = UUIDSupplier.get()
+
+    def createBody(
+      activationDate: OffsetDateTime,
+      eserviceName: String,
+      eserviceVersion: String,
+      producer: String,
+      consumer: String
+    ): String = activationMailTemplate.body.interpolate(
+      Map(
+        "activationDate"  -> activationDate.format(mailDateFormat),
+        "agreementId"     -> agreement.id.toString,
+        "eserviceName"    -> eserviceName,
+        "eserviceVersion" -> eserviceVersion,
+        "producerName"    -> producer,
+        "consumerName"    -> consumer
+      )
+    )
+
+    val subject: String = activationMailTemplate.subject.interpolate(Map("agreementId" -> agreement.id.toString))
+
+    val envelope: Future[InteropEnvelope] = for {
+      producerSelfcareId <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(producerTenant.id))
+      consumerSelfcareId <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(consumerTenant.id))
+      activationDate     <- agreement.stamps.activation.map(_.when).toFuture(StampNotFound("activation"))
+      producer           <- partyProcessService.getInstitution(producerSelfcareId)
+      consumer           <- partyProcessService.getInstitution(consumerSelfcareId)
+      version            <- eservice.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
+    } yield InteropEnvelope(
+      id = envelopId,
+      to = List(producer.digitalAddress, consumer.digitalAddress),
+      cc = List.empty,
+      bcc = List.empty,
+      subject = subject,
+      body = createBody(
+        activationDate = activationDate,
+        producer = producer.description,
+        consumer = consumer.description,
+        eserviceName = eservice.name,
+        eserviceVersion = version.version
+      ),
+      attachments = List.empty
+    )
+
+    envelope.flatMap(queueService.send[InteropEnvelope]).map(_ => ())
   }
 
   def suspend(

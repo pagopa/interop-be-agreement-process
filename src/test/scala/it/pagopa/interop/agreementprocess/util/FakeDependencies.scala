@@ -214,6 +214,18 @@ object FakeDependencies {
       Future.successful(new ByteArrayOutputStream())
 
     override def delete(containerPath: String)(filePath: StorageFilePath): Future[Boolean] = Future.successful(true)
+
+    override def storeBytes(containerPath: String, path: String, filename: String)(
+      fileContent: Array[Byte]
+    ): Future[StorageFilePath] = Future.successful("Ok")
+
+    override def listFiles(container: String)(path: String): Future[List[StorageFilePath]] =
+      Future.successful(List.empty)
+
+    override def getFile(container: String)(path: String): Future[Array[Byte]] = Future.successful(Array.empty)
+
+    override def getAllFiles(container: String)(path: String): Future[Map[String, Array[Byte]]] =
+      Future.successful(Map.empty)
   }
 
   class FakeQueueService extends QueueService {

@@ -132,8 +132,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         SpecData.suspendedAgreement.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
-          producerId = eService.producerId,
           consumerId = consumer.id,
+          producerId = eService.producerId,
           suspendedByProducer = Some(true)
         )
 
