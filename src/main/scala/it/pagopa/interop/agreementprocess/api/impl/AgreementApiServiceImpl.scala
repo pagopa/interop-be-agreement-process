@@ -111,8 +111,7 @@ final case class AgreementApiServiceImpl(
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       _              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
-      producer       <- tenantManagementService.getTenant(agreement.producerId)
-      updated        <- submit(agreement, eService, consumer, producer, payload)
+      updated        <- submit(agreement, eService, consumer, payload)
     } yield updated.toApi
 
     onComplete(result) {
@@ -493,7 +492,6 @@ final case class AgreementApiServiceImpl(
     agreement: AgreementManagement.Agreement,
     eService: CatalogManagement.EService,
     consumer: TenantManagement.Tenant,
-    producer: TenantManagement.Tenant,
     payload: AgreementSubmissionPayload
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, eService, consumer)
@@ -548,15 +546,16 @@ final case class AgreementApiServiceImpl(
         )
 
     def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
-      _ <- agreementContractCreator.create(
+      producer <- tenantManagementService.getTenant(agreement.producerId)
+      _        <- agreementContractCreator.create(
         agreement = agreement,
         eService = eService,
         consumer = consumer,
         producer = producer,
         seed = seed
       )
-      _ <- sendActivationEnvelope(agreement, producer, consumer, eService)
-      _ <- authorizationManagementService
+      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
+      _        <- authorizationManagementService
         .updateStateOnClients(
           eServiceId = agreement.eserviceId,
           consumerId = agreement.consumerId,
