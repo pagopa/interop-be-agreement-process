@@ -679,6 +679,7 @@ final case class AgreementApiServiceImpl(
       suspendedByConsumer = None,
       suspendedByProducer = None,
       suspendedByPlatform = None,
+      consumerNotes = agreement.consumerNotes,
       rejectionReason = payload.reason.some,
       stamps = agreement.stamps.copy(rejection = stamp.some)
     )
@@ -839,10 +840,10 @@ final case class AgreementApiServiceImpl(
     Future.traverse(oldAgreement.consumerDocuments) { doc =>
       val newDocumentId: UUID     = uuidSupplier.get()
       val newDocumentPath: String =
-        s"${ApplicationConfiguration.consumerDocumentsPath}/${newAgreement.id.toString}/${newDocumentId.toString}"
+        s"${ApplicationConfiguration.consumerDocumentsPath}/${newAgreement.id.toString}"
 
       fileManager
-        .copy(ApplicationConfiguration.storageContainer, doc.path)(newDocumentPath, newDocumentId.toString, doc.name)
+        .copy(ApplicationConfiguration.storageContainer, newDocumentPath)(doc.path, newDocumentId.toString, doc.name)
         .flatMap(storageFilePath =>
           agreementManagementService
             .addConsumerDocument(newAgreement.id, doc.toSeed(newDocumentId, storageFilePath))
