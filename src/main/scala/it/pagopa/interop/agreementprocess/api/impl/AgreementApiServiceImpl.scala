@@ -545,7 +545,7 @@ final case class AgreementApiServiceImpl(
           stamps = stamps
         )
 
-    def performPostActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
+    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
       producer <- tenantManagementService.getTenant(agreement.producerId)
       _        <- agreementContractCreator.create(
         agreement = agreement,
@@ -554,7 +554,6 @@ final case class AgreementApiServiceImpl(
         producer = producer,
         seed = seed
       )
-      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
       _        <- authorizationManagementService
         .updateStateOnClients(
           eServiceId = agreement.eserviceId,
@@ -562,6 +561,7 @@ final case class AgreementApiServiceImpl(
           agreementId = agreement.id,
           state = toClientState(newState)
         )
+      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
     } yield ()
 
     for {
@@ -571,7 +571,7 @@ final case class AgreementApiServiceImpl(
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- validateResultState(newState)
       _       <-
-        if (updated.state == AgreementManagement.AgreementState.ACTIVE) performPostActivation(updated, updateSeed)
+        if (updated.state == AgreementManagement.AgreementState.ACTIVE) performActivation(updated, updateSeed)
         else Future.unit
     } yield updated
 
@@ -629,7 +629,7 @@ final case class AgreementApiServiceImpl(
       .failed(AgreementActivationFailed(agreement.id))
       .whenA(failureStates.contains(newState))
 
-    def performPostActivation(seed: UpdateAgreementSeed, agreement: AgreementManagement.Agreement): Future[Unit] = for {
+    def performActivation(seed: UpdateAgreementSeed, agreement: AgreementManagement.Agreement): Future[Unit] = for {
       producer <- tenantManagementService.getTenant(agreement.producerId)
       _        <- agreementContractCreator.create(
         agreement = agreement,
@@ -652,7 +652,7 @@ final case class AgreementApiServiceImpl(
           agreementId = agreement.id,
           state = toClientState(newState)
         )
-      _       <- if (firstActivation) performPostActivation(seed, updated) else Future.unit
+      _       <- if (firstActivation) performActivation(seed, updated) else Future.unit
     } yield updated
   }
 
