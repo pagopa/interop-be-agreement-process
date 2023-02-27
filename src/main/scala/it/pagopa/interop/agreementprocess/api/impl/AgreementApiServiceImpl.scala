@@ -545,7 +545,7 @@ final case class AgreementApiServiceImpl(
           stamps = stamps
         )
 
-    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
+    def performPostActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
       producer <- tenantManagementService.getTenant(agreement.producerId)
       _        <- agreementContractCreator.create(
         agreement = agreement,
@@ -570,7 +570,9 @@ final case class AgreementApiServiceImpl(
       updateSeed = getUpdateSeed(newState, agreement, stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- validateResultState(newState)
-      _ <- performActivation(updated, updateSeed).whenA(updated.state == AgreementManagement.AgreementState.ACTIVE)
+      _       <-
+        if (updated.state == AgreementManagement.AgreementState.ACTIVE) performPostActivation(updated, updateSeed)
+        else Future.unit
     } yield updated
 
   }
@@ -627,7 +629,7 @@ final case class AgreementApiServiceImpl(
       .failed(AgreementActivationFailed(agreement.id))
       .whenA(failureStates.contains(newState))
 
-    def performActivation(seed: UpdateAgreementSeed, agreement: AgreementManagement.Agreement): Future[Unit] = for {
+    def performPostActivation(seed: UpdateAgreementSeed, agreement: AgreementManagement.Agreement): Future[Unit] = for {
       producer <- tenantManagementService.getTenant(agreement.producerId)
       _        <- agreementContractCreator.create(
         agreement = agreement,
@@ -643,7 +645,6 @@ final case class AgreementApiServiceImpl(
       seed    <- getUpdateSeed()
       updated <- agreementManagementService.updateAgreement(agreement.id, seed)
       _       <- failOnActivationFailure()
-      _       <- performActivation(seed, updated).whenA(firstActivation)
       _       <- authorizationManagementService
         .updateStateOnClients(
           eServiceId = agreement.eserviceId,
@@ -651,7 +652,7 @@ final case class AgreementApiServiceImpl(
           agreementId = agreement.id,
           state = toClientState(newState)
         )
-        .unlessA(failureStates.contains(newState))
+      _       <- if (firstActivation) performPostActivation(seed, updated) else Future.unit
     } yield updated
   }
 
@@ -661,7 +662,7 @@ final case class AgreementApiServiceImpl(
     consumerTenant: TenantManagement.Tenant,
     eservice: CatalogManagement.EService
   )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Unit] = {
-    val envelopId: UUID = UUIDSupplier.get()
+    val envelopeId: UUID = UUIDSupplier.get()
 
     def createBody(
       activationDate: OffsetDateTime,
@@ -692,7 +693,7 @@ final case class AgreementApiServiceImpl(
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
     } yield InteropEnvelope(
-      id = envelopId,
+      id = envelopeId,
       to = List(producer.digitalAddress, consumer.digitalAddress),
       cc = List.empty,
       bcc = List.empty,
