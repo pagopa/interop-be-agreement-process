@@ -36,7 +36,7 @@ object Dependencies {
     lazy val catalogManagementClient =
       namespace %% "interop-be-catalog-management-client" % catalogManagementVersion
     lazy val catalogManagementModels =
-      namespace %% "interop-be-catalog-management-models" % catalogManagementVersion  
+      namespace %% "interop-be-catalog-management-models" % catalogManagementVersion
     lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client" % tenantManagementVersion
     lazy val userRegistryManagement =
       namespace %% "interop-selfcare-user-registry-client" % userRegistryManagementVersion
@@ -50,8 +50,7 @@ object Dependencies {
     lazy val commonsJWT =
       namespace %% "interop-commons-jwt" % commonsVersion
 
-      
-    lazy val commonsCqrs  = namespace %% "interop-commons-cqrs"  % commonsVersion
+    lazy val commonsCqrs = namespace %% "interop-commons-cqrs" % commonsVersion
 
   }
 
@@ -116,7 +115,7 @@ object Dependencies {
       cats.core                                % Compile,
       logback.classic                          % Compile,
       mustache.mustache                        % Compile,
-      pagopa.agreementManagementClient         % Compile,      
+      pagopa.agreementManagementClient         % Compile,
       pagopa.agreementManagementModels         % Compile,
       pagopa.attributeRegistryManagementClient % Compile,
       pagopa.authorizationManagementClient     % Compile,
