@@ -20,7 +20,7 @@ import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAnd
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
-import it.pagopa.interop.certifiedMailSender.model.InteropEnvelope
+import it.pagopa.interop.certifiedMailSender.InteropEnvelope
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt._
@@ -694,9 +694,7 @@ final case class AgreementApiServiceImpl(
         .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
     } yield InteropEnvelope(
       id = envelopeId,
-      to = List(producer.digitalAddress, consumer.digitalAddress),
-      cc = List.empty,
-      bcc = List.empty,
+      recipients = List(producer.digitalAddress, consumer.digitalAddress),
       subject = subject,
       body = createBody(
         activationDate = activationDate,
@@ -762,6 +760,7 @@ final case class AgreementApiServiceImpl(
       suspendedByConsumer = None,
       suspendedByProducer = None,
       suspendedByPlatform = None,
+      consumerNotes = agreement.consumerNotes,
       rejectionReason = payload.reason.some,
       stamps = agreement.stamps.copy(rejection = stamp.some)
     )
@@ -922,10 +921,10 @@ final case class AgreementApiServiceImpl(
     Future.traverse(oldAgreement.consumerDocuments) { doc =>
       val newDocumentId: UUID     = uuidSupplier.get()
       val newDocumentPath: String =
-        s"${ApplicationConfiguration.consumerDocumentsPath}/${newAgreement.id.toString}/${newDocumentId.toString}"
+        s"${ApplicationConfiguration.consumerDocumentsPath}/${newAgreement.id.toString}"
 
       fileManager
-        .copy(ApplicationConfiguration.storageContainer, doc.path)(newDocumentPath, newDocumentId.toString, doc.name)
+        .copy(ApplicationConfiguration.storageContainer, newDocumentPath)(doc.path, newDocumentId.toString, doc.name)
         .flatMap(storageFilePath =>
           agreementManagementService
             .addConsumerDocument(newAgreement.id, doc.toSeed(newDocumentId, storageFilePath))

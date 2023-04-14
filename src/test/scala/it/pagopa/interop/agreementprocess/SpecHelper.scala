@@ -11,7 +11,7 @@ import it.pagopa.interop.authorizationmanagement.client.model.{
   ClientComponentState
 }
 import it.pagopa.interop.catalogmanagement.client.model.EService
-import it.pagopa.interop.certifiedMailSender.model.InteropEnvelope
+import it.pagopa.interop.certifiedMailSender.InteropEnvelope
 import it.pagopa.interop.commons.cqrs.model.ReadModelConfig
 import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import it.pagopa.interop.commons.files.service.FileManager
