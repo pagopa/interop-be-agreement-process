@@ -207,6 +207,12 @@ object SpecData {
     verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
   )
 
+  def suspendedByPlatformAgreementWithAttributes: Agreement = suspendedByPlatformAgreement.copy(
+    certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),
+    declaredAttributes = Seq(DeclaredAttribute(UUID.randomUUID()), DeclaredAttribute(UUID.randomUUID())),
+    verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
+  )
+
   def clientAttribute(id: UUID): ClientAttribute = AttributeManagement.Attribute(
     id = id,
     code = "code".some,

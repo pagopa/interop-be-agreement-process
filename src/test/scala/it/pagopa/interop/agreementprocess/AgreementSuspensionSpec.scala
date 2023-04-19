@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
-import it.pagopa.interop.agreementprocess.SpecData.activationStamps
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -94,10 +93,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         SpecData.suspendedByConsumerAgreementWithAttributes.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
-          consumerId = consumer.id,
-          suspendedByConsumer = Some(true),
-          suspendedByProducer = None,
-          suspendedByPlatform = None
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -131,8 +127,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByProducer = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -166,8 +161,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByConsumer = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -201,8 +195,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByProducer = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -233,15 +226,11 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute())
       val consumer   = SpecData.tenant.copy(id = requesterOrgId)
       val agreement  =
-        SpecData.suspendedByConsumerAgreementWithAttributes.copy( // TODO
+        SpecData.suspendedByPlatformAgreementWithAttributes.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          stamps = activationStamps,
-          suspendedByPlatform = Some(true),
-          suspendedByProducer = None,
-          suspendedByConsumer = None
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -276,14 +265,11 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         )
       val consumer   = SpecData.tenant
       val agreement  =
-        SpecData.suspendedByConsumerAgreementWithAttributes.copy( // TODO
+        SpecData.suspendedByPlatformAgreementWithAttributes.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          stamps = activationStamps,
-          suspendedByConsumer = None,
-          suspendedByPlatform = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(

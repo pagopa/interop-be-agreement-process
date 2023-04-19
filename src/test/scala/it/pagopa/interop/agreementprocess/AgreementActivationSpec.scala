@@ -95,10 +95,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         SpecData.suspendedByConsumerAgreement.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
-          consumerId = consumer.id,
-          suspendedByConsumer = Some(true),
-          suspendedByProducer = None,
-          suspendedByPlatform = None
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -133,8 +130,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByProducer = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -169,8 +165,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByConsumer = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -205,8 +200,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByProducer = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -242,10 +236,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByPlatform = Some(true),
-          suspendedByConsumer = None,
-          suspendedByProducer = None
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
@@ -285,8 +276,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           producerId = eService.producerId,
-          consumerId = consumer.id,
-          suspendedByPlatform = Some(true)
+          consumerId = consumer.id
         )
 
       val expectedSeed = UpdateAgreementSeed(
