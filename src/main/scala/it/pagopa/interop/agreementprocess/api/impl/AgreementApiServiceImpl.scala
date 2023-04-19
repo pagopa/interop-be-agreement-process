@@ -649,8 +649,6 @@ final case class AgreementApiServiceImpl(
       uid <- getUidFutureUUID(contexts)
       suspensionByConsumerStamp = suspendedByConsumerStamp(agreement, requesterOrgId, AgreementState.SUSPENDED, uid)
       suspensionByProducerStamp = suspendedByProducerStamp(agreement, requesterOrgId, AgreementState.SUSPENDED, uid)
-      _                         = println(s"suspensionByConsumerStamp $suspensionByConsumerStamp")
-      _                         = println(s"suspensionByProducerStamp $suspensionByProducerStamp")
       updateSeed                = AgreementManagement.UpdateAgreementSeed(
         state = newState,
         certifiedAttributes = agreement.certifiedAttributes,
