@@ -29,7 +29,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val tenant      = SpecData.tenant.copy(attributes = Seq(tenantAttr))
 
       val suspendedAgreement1      =
-        SpecData.suspendedAgreement.copy(
+        SpecData.suspendedByPlatformAgreement.copy(
           eserviceId = eServiceId1,
           suspendedByProducer = None,
           suspendedByConsumer = None,
@@ -38,9 +38,9 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val missingCertAttrAgreement =
         SpecData.missingCertifiedAttributesAgreement.copy(eserviceId = eServiceId1, suspendedByPlatform = Some(true))
       val suspendedAgreement2      =
-        SpecData.suspendedAgreement.copy(eserviceId = eServiceId2, suspendedByProducer = Some(true))
+        SpecData.suspendedByProducerAgreement.copy(eserviceId = eServiceId2, suspendedByProducer = Some(true))
       val suspendedAgreement3      =
-        SpecData.suspendedAgreement.copy(
+        SpecData.suspendedByProducerAgreement.copy(
           eserviceId = eServiceId3,
           suspendedByProducer = Some(true),
           suspendedByConsumer = None,
@@ -165,7 +165,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val agreementWithoutChanges1  = SpecData.draftAgreement.copy(eserviceId = eServiceId1)
       val agreementWithoutChanges2  = SpecData.pendingAgreement.copy(eserviceId = eServiceId1)
       val agreementAlreadySuspended =
-        SpecData.suspendedAgreement.copy(eserviceId = eServiceId2, suspendedByPlatform = Some(true))
+        SpecData.suspendedByPlatformAgreement.copy(eserviceId = eServiceId2, suspendedByPlatform = Some(true))
 
       val agreements = Seq(agreementWithoutChanges1, agreementWithoutChanges2, agreementAlreadySuspended)
 
