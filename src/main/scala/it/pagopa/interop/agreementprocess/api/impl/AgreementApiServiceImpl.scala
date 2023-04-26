@@ -574,8 +574,6 @@ final case class AgreementApiServiceImpl(
       agreement.state == AgreementManagement.AgreementState.PENDING && newState == AgreementManagement.AgreementState.ACTIVE
 
     def getUpdateSeed(): Future[UpdateAgreementSeed] = getUidFutureUUID(contexts).map { uid =>
-      val stamp = Stamp(uid, offsetDateTimeSupplier.get()).some
-
       if (firstActivation)
         AgreementManagement.UpdateAgreementSeed(
           state = newState,
@@ -585,9 +583,12 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer = suspendedByConsumer,
           suspendedByProducer = suspendedByProducer,
           suspendedByPlatform = suspendedByPlatform,
-          stamps = agreement.stamps.copy(activation = stamp)
+          stamps = agreement.stamps.copy(activation = Stamp(uid, offsetDateTimeSupplier.get()).some)
         )
-      else
+      else {
+        val suspensionByConsumerStamp = suspendedByConsumerStamp(agreement, requesterOrgId, AgreementState.ACTIVE, uid)
+        val suspensionByProducerStamp = suspendedByProducerStamp(agreement, requesterOrgId, AgreementState.ACTIVE, uid)
+
         AgreementManagement.UpdateAgreementSeed(
           state = newState,
           certifiedAttributes = agreement.certifiedAttributes,
@@ -596,8 +597,10 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer = suspendedByConsumer,
           suspendedByProducer = suspendedByProducer,
           suspendedByPlatform = suspendedByPlatform,
-          stamps = agreement.stamps.copy(suspension = None)
+          stamps = agreement.stamps
+            .copy(suspensionByConsumer = suspensionByConsumerStamp, suspensionByProducer = suspensionByProducerStamp)
         )
+      }
     }
 
     val failureStates = List(
@@ -638,13 +641,15 @@ final case class AgreementApiServiceImpl(
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, AgreementState.SUSPENDED)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
-    val newState              =
+
+    val newState =
       agreementStateByFlags(nextStateByAttributes, suspendedByProducer, suspendedByConsumer, suspendedByPlatform)
 
     for {
       uid <- getUidFutureUUID(contexts)
-      stamp      = Stamp(uid, offsetDateTimeSupplier.get()).some
-      updateSeed = AgreementManagement.UpdateAgreementSeed(
+      suspensionByConsumerStamp = suspendedByConsumerStamp(agreement, requesterOrgId, AgreementState.SUSPENDED, uid)
+      suspensionByProducerStamp = suspendedByProducerStamp(agreement, requesterOrgId, AgreementState.SUSPENDED, uid)
+      updateSeed                = AgreementManagement.UpdateAgreementSeed(
         state = newState,
         certifiedAttributes = agreement.certifiedAttributes,
         declaredAttributes = agreement.declaredAttributes,
@@ -652,7 +657,8 @@ final case class AgreementApiServiceImpl(
         suspendedByConsumer = suspendedByConsumer,
         suspendedByProducer = suspendedByProducer,
         suspendedByPlatform = suspendedByPlatform,
-        stamps = agreement.stamps.copy(suspension = stamp)
+        stamps = agreement.stamps
+          .copy(suspensionByConsumer = suspensionByConsumerStamp, suspensionByProducer = suspensionByProducerStamp)
       )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- authorizationManagementService.updateStateOnClients(
@@ -686,7 +692,7 @@ final case class AgreementApiServiceImpl(
     agreementManagementService.updateAgreement(agreement.id, updateSeed)
   }
 
-  def suspendedByConsumerFlag(
+  private def suspendedByConsumerFlag(
     agreement: AgreementManagement.Agreement,
     requesterOrgId: UUID,
     destinationState: AgreementState
@@ -694,7 +700,7 @@ final case class AgreementApiServiceImpl(
     if (requesterOrgId == agreement.consumerId) Some(destinationState == AgreementState.SUSPENDED)
     else agreement.suspendedByConsumer
 
-  def suspendedByProducerFlag(
+  private def suspendedByProducerFlag(
     agreement: AgreementManagement.Agreement,
     requesterOrgId: UUID,
     destinationState: AgreementState
@@ -702,11 +708,35 @@ final case class AgreementApiServiceImpl(
     if (requesterOrgId == agreement.producerId) Some(destinationState == AgreementState.SUSPENDED)
     else agreement.suspendedByProducer
 
-  def suspendedByPlatformFlag(fsmState: AgreementManagement.AgreementState): Option[Boolean] =
+  private def suspendedByPlatformFlag(fsmState: AgreementManagement.AgreementState): Option[Boolean] =
     // TODO Which states enable the suspendedByPlatform?
     List(AgreementManagement.AgreementState.SUSPENDED, AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
       .contains(fsmState)
       .some
+
+  private def suspendedByConsumerStamp(
+    agreement: AgreementManagement.Agreement,
+    requesterOrgId: UUID,
+    destinationState: AgreementState,
+    userId: UUID
+  ): Option[AgreementManagement.Stamp] = (requesterOrgId, destinationState) match {
+    case (agreement.consumerId, AgreementState.SUSPENDED) =>
+      AgreementManagement.Stamp(who = userId, when = offsetDateTimeSupplier.get()).some
+    case (agreement.consumerId, _)                        => None
+    case _                                                => agreement.stamps.suspensionByConsumer
+  }
+
+  private def suspendedByProducerStamp(
+    agreement: AgreementManagement.Agreement,
+    requesterOrgId: UUID,
+    destinationState: AgreementState,
+    userId: UUID
+  ): Option[AgreementManagement.Stamp] = (requesterOrgId, destinationState) match {
+    case (agreement.producerId, AgreementState.SUSPENDED) =>
+      AgreementManagement.Stamp(who = userId, when = offsetDateTimeSupplier.get()).some
+    case (agreement.producerId, _)                        => None
+    case _                                                => agreement.stamps.suspensionByProducer
+  }
 
   def agreementStateByFlags(
     stateByAttribute: AgreementManagement.AgreementState,
