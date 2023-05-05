@@ -22,11 +22,14 @@ object SpecData {
   val when: OffsetDateTime              = OffsetDateTime.now()
   final val defaultStamp: Option[Stamp] = Stamp(who, when).some
 
-  final val submissionStamps = emptyStamps.copy(submission = defaultStamp)
-  final val rejectionStamps  = submissionStamps.copy(rejection = defaultStamp)
-  final val activationStamps = submissionStamps.copy(activation = defaultStamp)
-  final val suspensionStamps = activationStamps.copy(suspensionByProducer = defaultStamp)
-  final val archivingStamps  = suspensionStamps.copy(archiving = defaultStamp)
+  final val submissionStamps           = emptyStamps.copy(submission = defaultStamp)
+  final val rejectionStamps            = submissionStamps.copy(rejection = defaultStamp)
+  final val activationStamps           = submissionStamps.copy(activation = defaultStamp)
+  final val suspensionByConsumerStamps = activationStamps.copy(suspensionByConsumer = defaultStamp)
+  final val suspensionByProducerStamps = activationStamps.copy(suspensionByProducer = defaultStamp)
+  final val suspensionByBothStamps     =
+    activationStamps.copy(suspensionByConsumer = defaultStamp, suspensionByProducer = defaultStamp)
+  final val archivingStamps            = activationStamps.copy(archiving = defaultStamp)
 
   def descriptor: EServiceDescriptor = EServiceDescriptor(
     id = UUID.randomUUID(),
@@ -165,12 +168,24 @@ object SpecData {
       rejectionReason = Some("Document not valid")
     )
 
-  def draftAgreement: Agreement     = agreement.copy(state = AgreementState.DRAFT)
-  def pendingAgreement: Agreement   = agreement.copy(state = AgreementState.PENDING, stamps = submissionStamps)
-  def suspendedAgreement: Agreement =
-    agreement.copy(state = AgreementState.SUSPENDED, stamps = suspensionStamps, suspendedByProducer = Some(true))
-  def activeAgreement: Agreement    = agreement.copy(state = AgreementState.ACTIVE, stamps = activationStamps)
-  def archivedAgreement: Agreement  = agreement.copy(state = AgreementState.ARCHIVED, stamps = archivingStamps)
+  def draftAgreement: Agreement   = agreement.copy(state = AgreementState.DRAFT)
+  def pendingAgreement: Agreement = agreement.copy(state = AgreementState.PENDING, stamps = submissionStamps)
+  def suspendedByConsumerAgreement: Agreement =
+    agreement.copy(
+      state = AgreementState.SUSPENDED,
+      stamps = suspensionByConsumerStamps,
+      suspendedByConsumer = Some(true)
+    )
+  def suspendedByProducerAgreement: Agreement =
+    agreement.copy(
+      state = AgreementState.SUSPENDED,
+      stamps = suspensionByProducerStamps,
+      suspendedByProducer = Some(true)
+    )
+  def suspendedByPlatformAgreement: Agreement =
+    agreement.copy(state = AgreementState.SUSPENDED, stamps = activationStamps, suspendedByPlatform = Some(true))
+  def activeAgreement: Agreement              = agreement.copy(state = AgreementState.ACTIVE, stamps = activationStamps)
+  def archivedAgreement: Agreement = agreement.copy(state = AgreementState.ARCHIVED, stamps = archivingStamps)
   def missingCertifiedAttributesAgreement: Agreement =
     agreement.copy(state = AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
 
@@ -180,7 +195,19 @@ object SpecData {
     verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
   )
 
-  def suspendedAgreementWithAttributes: Agreement = suspendedAgreement.copy(
+  def suspendedByConsumerAgreementWithAttributes: Agreement = suspendedByConsumerAgreement.copy(
+    certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),
+    declaredAttributes = Seq(DeclaredAttribute(UUID.randomUUID()), DeclaredAttribute(UUID.randomUUID())),
+    verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
+  )
+
+  def suspendedByProducerAgreementWithAttributes: Agreement = suspendedByProducerAgreement.copy(
+    certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),
+    declaredAttributes = Seq(DeclaredAttribute(UUID.randomUUID()), DeclaredAttribute(UUID.randomUUID())),
+    verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
+  )
+
+  def suspendedByPlatformAgreementWithAttributes: Agreement = suspendedByPlatformAgreement.copy(
     certifiedAttributes = Seq(CertifiedAttribute(UUID.randomUUID()), CertifiedAttribute(UUID.randomUUID())),
     declaredAttributes = Seq(DeclaredAttribute(UUID.randomUUID()), DeclaredAttribute(UUID.randomUUID())),
     verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
