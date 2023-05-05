@@ -596,7 +596,8 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer = suspendedByConsumer,
           suspendedByProducer = suspendedByProducer,
           suspendedByPlatform = suspendedByPlatform,
-          stamps = agreement.stamps.copy(suspension = None)
+          stamps = agreement.stamps.copy(suspensionByProducer = None, suspensionByConsumer = None),
+          suspendedAt = None
         )
     }
 
@@ -652,7 +653,11 @@ final case class AgreementApiServiceImpl(
         suspendedByConsumer = suspendedByConsumer,
         suspendedByProducer = suspendedByProducer,
         suspendedByPlatform = suspendedByPlatform,
-        stamps = agreement.stamps.copy(suspension = stamp)
+        stamps = agreement.stamps.copy(
+          suspensionByProducer = if (!suspendedByProducer.getOrElse(false)) None else stamp,
+          suspensionByConsumer = if (!suspendedByConsumer.getOrElse(false)) None else stamp
+        ),
+        suspendedAt = offsetDateTimeSupplier.get().some
       )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- authorizationManagementService.updateStateOnClients(

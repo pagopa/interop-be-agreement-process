@@ -36,7 +36,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = SpecData.defaultStamp, suspensionByProducer = None),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -71,7 +73,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = None, suspensionByProducer = SpecData.defaultStamp),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -107,7 +111,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = None,
         suspendedByPlatform = Some(false),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = SpecData.defaultStamp, suspensionByProducer = None),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -142,7 +148,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = None, suspensionByProducer = SpecData.defaultStamp),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -178,6 +186,8 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
         stamps = SpecData.suspensionStamps
+          .copy(suspensionByConsumer = SpecData.defaultStamp, suspensionByProducer = SpecData.defaultStamp),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -213,6 +223,8 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(false),
         stamps = SpecData.suspensionStamps
+          .copy(suspensionByProducer = SpecData.defaultStamp, suspensionByConsumer = SpecData.defaultStamp),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -250,7 +262,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = Some(true),
         suspendedByProducer = None,
         suspendedByPlatform = Some(true),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = SpecData.defaultStamp, suspensionByProducer = None),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -290,7 +304,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(true),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = None, suspensionByProducer = SpecData.defaultStamp),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -333,7 +349,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(true),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = None, suspensionByProducer = SpecData.defaultStamp),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)
@@ -376,7 +394,9 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
         suspendedByPlatform = Some(true),
-        stamps = SpecData.suspensionStamps
+        stamps =
+          SpecData.suspensionStamps.copy(suspensionByConsumer = None, suspensionByProducer = SpecData.defaultStamp),
+        suspendedAt = Some(SpecData.when)
       )
 
       mockAgreementRetrieve(agreement)

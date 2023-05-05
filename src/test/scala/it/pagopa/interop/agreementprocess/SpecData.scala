@@ -25,7 +25,7 @@ object SpecData {
   final val submissionStamps = emptyStamps.copy(submission = defaultStamp)
   final val rejectionStamps  = submissionStamps.copy(rejection = defaultStamp)
   final val activationStamps = submissionStamps.copy(activation = defaultStamp)
-  final val suspensionStamps = activationStamps.copy(suspension = defaultStamp)
+  final val suspensionStamps = activationStamps.copy(suspensionByProducer = defaultStamp)
   final val archivingStamps  = suspensionStamps.copy(archiving = defaultStamp)
 
   def descriptor: EServiceDescriptor = EServiceDescriptor(
