@@ -598,7 +598,8 @@ final case class AgreementApiServiceImpl(
           suspendedByProducer = suspendedByProducer,
           suspendedByPlatform = suspendedByPlatform,
           stamps = agreement.stamps
-            .copy(suspensionByConsumer = suspensionByConsumerStamp, suspensionByProducer = suspensionByProducerStamp)
+            .copy(suspensionByConsumer = suspensionByConsumerStamp, suspensionByProducer = suspensionByProducerStamp),
+          suspendedAt = if (newState == AgreementManagement.AgreementState.ACTIVE) None else agreement.suspendedAt
         )
       }
     }
@@ -658,7 +659,8 @@ final case class AgreementApiServiceImpl(
         suspendedByProducer = suspendedByProducer,
         suspendedByPlatform = suspendedByPlatform,
         stamps = agreement.stamps
-          .copy(suspensionByConsumer = suspensionByConsumerStamp, suspensionByProducer = suspensionByProducerStamp)
+          .copy(suspensionByConsumer = suspensionByConsumerStamp, suspensionByProducer = suspensionByProducerStamp),
+        suspendedAt = agreement.suspendedAt.orElse(offsetDateTimeSupplier.get().some)
       )
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- authorizationManagementService.updateStateOnClients(
