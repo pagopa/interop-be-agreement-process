@@ -3,6 +3,8 @@ package it.pagopa.interop.agreementprocess.lifecycle
 import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.catalogmanagement.client.model.{Attribute, Attributes, EService}
+import it.pagopa.interop.commons.utils.service.OffsetDateTimeSupplier
+import it.pagopa.interop.tenantmanagement.client.model.VerificationRenewal.{AUTOMATIC_RENEWAL, REVOKE_ON_EXPIRATION}
 import it.pagopa.interop.tenantmanagement.client.model.{
   CertifiedTenantAttribute,
   DeclaredTenantAttribute,
@@ -40,7 +42,14 @@ object AttributesRules {
     consumerAttributes: Seq[VerifiedTenantAttribute]
   ): Boolean = attributesSatisfied(
     eServiceAttributes.verified,
-    consumerAttributes.filter(_.verifiedBy.exists(_.id == producerId)).map(_.id)
+    consumerAttributes
+      .filter(
+        _.verifiedBy.exists(v =>
+          v.id == producerId && ((v.renewal == REVOKE_ON_EXPIRATION && v.extensionDate
+            .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))) || v.renewal == AUTOMATIC_RENEWAL)
+        )
+      )
+      .map(_.id)
   )
 
   def verifiedAttributesSatisfied(agreement: Agreement, eService: EService, consumer: Tenant): Boolean =
