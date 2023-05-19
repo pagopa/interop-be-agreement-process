@@ -4,6 +4,7 @@ import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
+import it.pagopa.interop.tenantmanagement.client.model.VerificationRenewal.REVOKE_ON_EXPIRATION
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -468,6 +469,53 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = Seq(
         SpecData.tenantVerifiedAttribute(attributeId, UUID.randomUUID()),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
+      )
+
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
+    }
+
+    "return false if at least one single attribute with REVOKE_ON_EXPIRATION is expired" in {
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
+
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(id = attr2, verifierId = producerId, renewal = REVOKE_ON_EXPIRATION)
+      )
+
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
+    }
+
+    "return false if at least one group attribute with REVOKE_ON_EXPIRATION is expired" in {
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified =
+          Seq(
+            SpecData.catalogGroupAttributes(attr1, UUID.randomUUID()),
+            SpecData.catalogGroupAttributes(attr2, UUID.randomUUID())
+          )
+        )
+
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(id = attr2, verifierId = producerId, renewal = REVOKE_ON_EXPIRATION)
       )
 
       val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)

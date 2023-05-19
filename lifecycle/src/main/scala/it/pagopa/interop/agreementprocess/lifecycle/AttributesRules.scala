@@ -9,6 +9,7 @@ import it.pagopa.interop.tenantmanagement.client.model.{
   CertifiedTenantAttribute,
   DeclaredTenantAttribute,
   Tenant,
+  TenantVerifier,
   VerifiedTenantAttribute
 }
 
@@ -43,14 +44,14 @@ object AttributesRules {
   ): Boolean = attributesSatisfied(
     eServiceAttributes.verified,
     consumerAttributes
-      .filter(
-        _.verifiedBy.exists(v =>
-          v.id == producerId && ((v.renewal == REVOKE_ON_EXPIRATION && v.extensionDate
-            .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))) || v.renewal == AUTOMATIC_RENEWAL)
-        )
-      )
+      .filter(_.verifiedBy.exists(v => v.id == producerId && isNotExpired(v)))
       .map(_.id)
   )
+
+  private def isNotExpired(verifier: TenantVerifier): Boolean = {
+    (verifier.renewal == REVOKE_ON_EXPIRATION && verifier.extensionDate
+      .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))) || verifier.renewal == AUTOMATIC_RENEWAL
+  }
 
   def verifiedAttributesSatisfied(agreement: Agreement, eService: EService, consumer: Tenant): Boolean =
     verifiedAttributesSatisfied(agreement.producerId, eService.attributes, consumer.attributes.mapFilter(_.verified))
