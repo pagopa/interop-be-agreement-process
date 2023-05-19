@@ -1,5 +1,6 @@
 package it.pagopa.interop.agreementprocess.lifecycle
 
+import cats.implicits.catsSyntaxOptionId
 import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
 import it.pagopa.interop.catalogmanagement.client.model.EService
@@ -8,6 +9,7 @@ import it.pagopa.interop.tenantmanagement.client.model.VerificationRenewal.REVOK
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class AttributesRulesSpec extends AnyWordSpecLike {
@@ -489,7 +491,12 @@ class AttributesRulesSpec extends AnyWordSpecLike {
 
       val tenantAttr = Seq(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
-        SpecData.tenantVerifiedAttribute(id = attr2, verifierId = producerId, renewal = REVOKE_ON_EXPIRATION)
+        SpecData.tenantVerifiedAttribute(
+          id = attr2,
+          verifierId = producerId,
+          renewal = REVOKE_ON_EXPIRATION,
+          extensionDate = OffsetDateTime.now().minusDays(3).some
+        )
       )
 
       val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
@@ -515,7 +522,12 @@ class AttributesRulesSpec extends AnyWordSpecLike {
 
       val tenantAttr = Seq(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
-        SpecData.tenantVerifiedAttribute(id = attr2, verifierId = producerId, renewal = REVOKE_ON_EXPIRATION)
+        SpecData.tenantVerifiedAttribute(
+          id = attr2,
+          verifierId = producerId,
+          renewal = REVOKE_ON_EXPIRATION,
+          extensionDate = OffsetDateTime.now().minusDays(3).some
+        )
       )
 
       val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
