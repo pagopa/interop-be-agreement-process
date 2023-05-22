@@ -62,7 +62,12 @@ object SpecData {
   def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
     TenantAttribute(declared = Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp)))
 
-  def tenantVerifiedAttribute(id: UUID = UUID.randomUUID(), verifierId: UUID = UUID.randomUUID()): TenantAttribute =
+  def tenantVerifiedAttribute(
+    id: UUID = UUID.randomUUID(),
+    verifierId: UUID = UUID.randomUUID(),
+    extensionDate: Option[OffsetDateTime] = Some(timestamp),
+    renewal: VerificationRenewal = VerificationRenewal.AUTOMATIC_RENEWAL
+  ): TenantAttribute =
     TenantAttribute(verified =
       Some(
         VerifiedTenantAttribute(
@@ -72,7 +77,8 @@ object SpecData {
             TenantVerifier(
               id = verifierId,
               verificationDate = timestamp,
-              renewal = VerificationRenewal.AUTOMATIC_RENEWAL
+              renewal = renewal,
+              extensionDate = extensionDate
             )
           ),
           revokedBy = Nil
