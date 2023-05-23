@@ -461,6 +461,40 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       }
     }
 
+    "fail if Descriptor is not in suspended or published state" in {
+      val descriptor = SpecData.draftDescriptor
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId)
+      val agreement  =
+        SpecData.suspendedByConsumerAgreement.copy(
+          eserviceId = eService.id,
+          descriptorId = descriptor.id,
+          consumerId = consumer.id
+        )
+
+      val expectedSeed = UpdateAgreementSeed(
+        state = AgreementManagement.AgreementState.ACTIVE,
+        certifiedAttributes = Nil,
+        declaredAttributes = Nil,
+        verifiedAttributes = Nil,
+        suspendedByConsumer = Some(false),
+        suspendedByProducer = None,
+        suspendedByPlatform = Some(false),
+        stamps = SpecData.activationStamps
+      )
+
+      mockAgreementRetrieve(agreement)
+      mockAgreementsRetrieve(Nil)
+      mockEServiceRetrieve(eService.id, eService)
+      mockTenantRetrieve(consumer.id, consumer)
+      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.activationStamps))
+      mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
     "fail if requester is not the Consumer or the Producer" in {
       val eService  = SpecData.eService.copy(producerId = UUID.randomUUID())
       val agreement =

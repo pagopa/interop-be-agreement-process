@@ -17,7 +17,7 @@ object ResponseHandlers extends AkkaResponses {
   )(result: Try[T])(implicit contexts: Seq[(String, String)], logger: LoggerTakingImplicit[ContextFieldsToLog]): Route =
     result match {
       case Success(s)                                => success(s)
-      case Failure(ex: NotValidEServiceDescriptorId) => badRequest(ex, logMessage)
+      case Failure(ex: NotLatestEServiceDescriptor)  => badRequest(ex, logMessage)
       case Failure(ex: DescriptorNotInExpectedState) => badRequest(ex, logMessage)
       case Failure(ex: MissingCertifiedAttributes)   => badRequest(ex, logMessage)
       case Failure(ex: EServiceNotFound)             => badRequest(ex, logMessage)
@@ -30,7 +30,7 @@ object ResponseHandlers extends AkkaResponses {
   )(result: Try[T])(implicit contexts: Seq[(String, String)], logger: LoggerTakingImplicit[ContextFieldsToLog]): Route =
     result match {
       case Success(s)                                => success(s)
-      case Failure(ex: NotValidEServiceDescriptorId) => badRequest(ex, logMessage)
+      case Failure(ex: NotLatestEServiceDescriptor)  => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotFound)            => notFound(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState)  => badRequest(ex, logMessage)
       case Failure(ex: AgreementSubmissionFailed)    => badRequest(ex, logMessage)
@@ -46,7 +46,7 @@ object ResponseHandlers extends AkkaResponses {
   )(result: Try[T])(implicit contexts: Seq[(String, String)], logger: LoggerTakingImplicit[ContextFieldsToLog]): Route =
     result match {
       case Success(s)                                => success(s)
-      case Failure(ex: NotValidEServiceDescriptorId) => badRequest(ex, logMessage)
+      case Failure(ex: NotLatestEServiceDescriptor)  => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState)  => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotFound)            => notFound(ex, logMessage)
       case Failure(ex: AgreementActivationFailed)    => badRequest(ex, logMessage)

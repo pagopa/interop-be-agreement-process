@@ -208,6 +208,46 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       }
     }
 
+    "fail if Descriptor is not in suspended or published state" in {
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
+      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
+
+      val descriptor = SpecData.draftDescriptor.copy(agreementApprovalPolicy = MANUAL)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val agreement  =
+        SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
+
+      val expectedSeed = UpdateAgreementSeed(
+        state = AgreementManagement.AgreementState.ACTIVE,
+        certifiedAttributes = Nil,
+        declaredAttributes = Nil,
+        verifiedAttributes = Nil,
+        suspendedByConsumer = None,
+        suspendedByProducer = None,
+        suspendedByPlatform = Some(false),
+        consumerNotes = payload.consumerNotes,
+        stamps = SpecData.submissionStamps
+      )
+
+      mockAgreementRetrieve(agreement)
+      mockAgreementsRetrieve(Nil)
+      mockEServiceRetrieve(eService.id, eService)
+      mockTenantRetrieve(consumer.id, consumer)
+      mockAgreementUpdate(
+        agreement.id,
+        expectedSeed,
+        agreement.copy(state = expectedSeed.state, stamps = SpecData.submissionStamps)
+      )
+
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
     "fail if Agreement is not in expected state" in {
       val agreement = SpecData.pendingAgreement.copy(consumerId = requesterOrgId)
       val payload   = AgreementSubmissionPayload(Some("consumer-notes"))

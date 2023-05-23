@@ -2,9 +2,12 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import it.pagopa.interop.agreementprocess.SpecData.catalogCertifiedAttribute
 import it.pagopa.interop.agreementprocess.model._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.UUID
 
 class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
 
@@ -71,6 +74,20 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val descriptor = SpecData.archivedDescriptor
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+
+      mockEServiceRetrieve(eService.id, eService)
+
+      Get() ~> service.createAgreement(payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if Descriptor is not in suspended or published state" in {
+      val descriptor         = SpecData.draftDescriptor
+      val attributeId        = UUID.randomUUID()
+      val eServiceAttributes = catalogCertifiedAttribute(attributeId)
+      val eService           = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttributes)
+      val payload            = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
       mockEServiceRetrieve(eService.id, eService)
 

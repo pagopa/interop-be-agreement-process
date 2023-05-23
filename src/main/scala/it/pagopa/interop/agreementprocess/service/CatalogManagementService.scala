@@ -37,20 +37,22 @@ object CatalogManagementService {
     descriptorId: UUID,
     allowedStates: List[EServiceDescriptorState]
   ): Future[Unit] = {
-    val validDescriptorState = List(EServiceDescriptorState.SUSPENDED, EServiceDescriptorState.PUBLISHED)
-    val latestDescriptor     =
+    val latestDescriptor =
       eService.descriptors
         .filterNot(_.state == EServiceDescriptorState.DRAFT)
         .maxByOption(_.version.toLong)
 
-    latestDescriptor.find(_.id == descriptorId).toRight(NotValidEServiceDescriptorId(descriptorId)).flatMap(descriptor =>
-      Either
-        .left[DescriptorNotInExpectedState, Unit](
-          DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates)
-        )
-        .unlessA(descriptor.exists(d => allowedStates.contains(d.state)))
-  )
-  .toFuture
+    latestDescriptor
+      .find(_.id == descriptorId)
+      .toRight(NotLatestEServiceDescriptor(descriptorId))
+      .flatMap(descriptor =>
+        Either
+          .left[DescriptorNotInExpectedState, Unit](
+            DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates)
+          )
+          .unlessA(allowedStates.contains(descriptor.state))
+      )
+      .toFuture
   }
 
   def getEServiceNewerPublishedDescriptor(eService: EService, currentDescriptorId: UUID)(implicit

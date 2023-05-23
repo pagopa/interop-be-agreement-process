@@ -49,6 +49,8 @@ object SpecData {
   def publishedDescriptor: EServiceDescriptor  = descriptor.copy(state = EServiceDescriptorState.PUBLISHED)
   def deprecatedDescriptor: EServiceDescriptor = descriptor.copy(state = EServiceDescriptorState.DEPRECATED)
   def archivedDescriptor: EServiceDescriptor   = descriptor.copy(state = EServiceDescriptorState.ARCHIVED)
+  def draftDescriptor: EServiceDescriptor      = descriptor.copy(state = EServiceDescriptorState.DRAFT)
+  def suspendedDescriptor: EServiceDescriptor  = descriptor.copy(state = EServiceDescriptorState.SUSPENDED)
 
   def eService: EService = EService(
     id = UUID.randomUUID(),
