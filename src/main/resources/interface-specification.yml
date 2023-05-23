@@ -906,6 +906,9 @@ components:
           format: date-time
         contract:
           $ref: '#/components/schemas/Document'
+        suspendedAt:
+          type: string
+          format: date-time
       required:
         - id
         - eserviceId
