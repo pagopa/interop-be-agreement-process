@@ -38,13 +38,10 @@ object CatalogManagementService {
     allowedStates: List[EServiceDescriptorState]
   ): Future[Unit] = {
     val validDescriptorState = List(EServiceDescriptorState.SUSPENDED, EServiceDescriptorState.PUBLISHED)
-    val descriptorStatus     =
+    val latestDescriptor     =
       eService.descriptors
         .filterNot(_.state == EServiceDescriptorState.DRAFT)
-        .sortBy(_.version.toLong)
-        .lastOption
-        .filter(_.id == descriptorId)
-        .map(_.state)
+        .maxByOption(_.version.toLong)
 
     if (descriptorStatus.exists(validDescriptorState.contains)) {
       // Not using whenA on Future.failed because it requires an ExecutionContext, which is not actually needed here
