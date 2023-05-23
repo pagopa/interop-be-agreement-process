@@ -37,13 +37,24 @@ object CatalogManagementService {
     descriptorId: UUID,
     allowedStates: List[EServiceDescriptorState]
   ): Future[Unit] = {
-    val descriptorStatus = eService.descriptors.find(_.id == descriptorId).map(_.state)
+    val validDescriptorState = List(EServiceDescriptorState.SUSPENDED, EServiceDescriptorState.PUBLISHED)
+    val descriptorStatus     =
+      eService.descriptors
+        .filterNot(_.state == EServiceDescriptorState.DRAFT)
+        .sortBy(_.version.toLong)
+        .lastOption
+        .filter(_.id == descriptorId)
+        .map(_.state)
 
-    // Not using whenA on Future.failed because it requires an ExecutionContext, which is not actually needed here
-    Either
-      .left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates))
-      .unlessA(descriptorStatus.exists(status => allowedStates.contains(status)))
-      .toFuture
+    if (descriptorStatus.exists(validDescriptorState.contains)) {
+      // Not using whenA on Future.failed because it requires an ExecutionContext, which is not actually needed here
+      Either
+        .left[DescriptorNotInExpectedState, Unit](
+          DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates)
+        )
+        .unlessA(descriptorStatus.exists(status => allowedStates.contains(status)))
+        .toFuture
+    } else Future.failed(NotValidEServiceDescriptorId(descriptorId))
   }
 
   def getEServiceNewerPublishedDescriptor(eService: EService, currentDescriptorId: UUID)(implicit
