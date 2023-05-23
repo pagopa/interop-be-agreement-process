@@ -43,15 +43,14 @@ object CatalogManagementService {
         .filterNot(_.state == EServiceDescriptorState.DRAFT)
         .maxByOption(_.version.toLong)
 
-    if (descriptorStatus.exists(validDescriptorState.contains)) {
-      // Not using whenA on Future.failed because it requires an ExecutionContext, which is not actually needed here
+    latestDescriptor.find(_.id == descriptorId).toRight(NotValidEServiceDescriptorId(descriptorId)).flatMap(descriptor =>
       Either
         .left[DescriptorNotInExpectedState, Unit](
           DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates)
         )
-        .unlessA(descriptorStatus.exists(status => allowedStates.contains(status)))
-        .toFuture
-    } else Future.failed(NotValidEServiceDescriptorId(descriptorId))
+        .unlessA(descriptor.exists(d => allowedStates.contains(d.state)))
+  )
+  .toFuture
   }
 
   def getEServiceNewerPublishedDescriptor(eService: EService, currentDescriptorId: UUID)(implicit
