@@ -94,7 +94,7 @@ object AgreementProcessErrors {
   final case class NotLatestEServiceDescriptor(descriptorId: UUID)
       extends ComponentError(
         "0021",
-        s"Descriptor with descriptorId: ${descriptorId.toString} is not the last descriptor"
+        s"Descriptor with descriptorId: ${descriptorId.toString} is not the latest descriptor"
       )
 
 }
