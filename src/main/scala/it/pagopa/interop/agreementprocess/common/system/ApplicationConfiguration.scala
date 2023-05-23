@@ -32,6 +32,7 @@ object ApplicationConfiguration {
 
     ReadModelConfig(connectionString, dbName)
   }
-  val envelopeQueueUrl: String         = config.getString("agreement-process.envelope-queue-url")
+
+  val envelopeQueueName: String = config.getString("agreement-process.envelope-queue-name")
 
 }
