@@ -472,23 +472,9 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           consumerId = consumer.id
         )
 
-      val expectedSeed = UpdateAgreementSeed(
-        state = AgreementManagement.AgreementState.ACTIVE,
-        certifiedAttributes = Nil,
-        declaredAttributes = Nil,
-        verifiedAttributes = Nil,
-        suspendedByConsumer = Some(false),
-        suspendedByProducer = None,
-        suspendedByPlatform = Some(false),
-        stamps = SpecData.activationStamps
-      )
-
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
-      mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.activationStamps))
-      mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
