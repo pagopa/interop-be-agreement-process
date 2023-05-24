@@ -33,6 +33,6 @@ object ApplicationConfiguration {
     ReadModelConfig(connectionString, dbName)
   }
 
-  val envelopeQueueName: String = config.getString("agreement-process.envelope-queue-name")
+  val certifiedMailQueueName: String = config.getString("agreement-process.certified-mail-queue-name")
 
 }

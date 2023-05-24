@@ -115,7 +115,7 @@ trait Dependencies {
     })(blockingEc)
 
   def queueService(blockingEc: ExecutionContextExecutor): QueueService =
-    new QueueServiceImpl(ApplicationConfiguration.envelopeQueueName)(blockingEc)
+    new QueueServiceImpl(ApplicationConfiguration.certifiedMailQueueName)(blockingEc)
 
   def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
     actorSystem: ActorSystem[_],
