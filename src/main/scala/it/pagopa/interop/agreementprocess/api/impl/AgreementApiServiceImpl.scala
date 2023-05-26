@@ -334,7 +334,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Agreements],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE, SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving agreements by EServices $eservicesIds, Consumers $consumersIds, Producers $producersIds, states = $states, showOnlyUpgradeable = $showOnlyUpgradeable"
     logger.info(operationLabel)
@@ -362,7 +362,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE, SUPPORT_ROLE) {
     val operationLabel = s"Retrieving agreement by id $agreementId"
     logger.info(operationLabel)
 
@@ -984,7 +984,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerDocument: ToEntityMarshaller[Document],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, SUPPORT_ROLE) {
     val operationLabel = s"Retrieving consumer document $documentId from agreement $agreementId"
     logger.info(operationLabel)
 
@@ -1032,7 +1032,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving producers from agreements with producer name $producerName"
     logger.info(operationLabel)
@@ -1048,7 +1048,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving consumers from agreements with consumer name $consumerName"
     logger.info(operationLabel)
@@ -1070,7 +1070,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerCompactEServices: ToEntityMarshaller[CompactEServices],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving EServices with consumers $consumersIds, producers $producersIds"
     logger.info(operationLabel)

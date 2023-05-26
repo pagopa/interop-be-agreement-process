@@ -33,27 +33,27 @@
     {
       "route": "getAgreements",
       "verb": "GET",
-      "roles": ["admin", "api", "security", "m2m"]
+      "roles": ["admin", "api", "security", "m2m", "support"]
     },
     {
       "route": "getAgreementProducers",
       "verb": "GET",
-      "roles": ["admin", "api", "security"]
+      "roles": ["admin", "api", "security", "support"]
     },
     {
       "route": "getAgreementConsumers",
       "verb": "GET",
-      "roles": ["admin", "api", "security"]
+      "roles": ["admin", "api", "security", "support"]
     },
     {
       "route": "getAgreementEServices",
       "verb": "GET",
-      "roles": ["admin", "api", "security"]
+      "roles": ["admin", "api", "security", "support"]
     },
     {
       "route": "getAgreementById",
       "verb": "GET",
-      "roles": ["admin", "api", "security", "m2m"]
+      "roles": ["admin", "api", "security", "m2m", "support"]
     },
     {
       "route": "updateAgreementById",
