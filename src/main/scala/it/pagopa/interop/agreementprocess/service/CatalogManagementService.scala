@@ -24,19 +24,30 @@ object CatalogManagementService {
   def validateCreationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]   = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus, true)
   }
   def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]     = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus, true)
   }
 
   def validateEServiceDescriptorStatus(
     eService: EService,
     descriptorId: UUID,
+    allowedStates: List[EServiceDescriptorState],
+    needLatestDescription: Boolean = false
+  ): Future[Unit] = {
+    if (needLatestDescription) validateLatestDescriptor(eService, descriptorId, allowedStates)
+    else validateDescriptor(eService, descriptorId, allowedStates)
+  }
+
+  def validateLatestDescriptor(
+    eService: EService,
+    descriptorId: UUID,
     allowedStates: List[EServiceDescriptorState]
   ): Future[Unit] = {
+
     val latestDescriptor =
       eService.descriptors
         .filterNot(_.state == EServiceDescriptorState.DRAFT)
@@ -52,6 +63,16 @@ object CatalogManagementService {
           )
           .unlessA(allowedStates.contains(descriptor.state))
       )
+      .toFuture
+  }
+
+  def validateDescriptor(eService: EService, descriptorId: UUID, allowedStates: List[EServiceDescriptorState]) = {
+    val descriptorStatus = eService.descriptors
+                           .filterNot(_.state == EServiceDescriptorState.DRAFT)
+                           .find(_.id == descriptorId).map(_.state)
+    Either
+      .left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates))
+      .unlessA(descriptorStatus.exists(status => allowedStates.contains(status)))
       .toFuture
   }
 
