@@ -13,6 +13,7 @@ package object service {
   type TenantManagementInvoker            = tenantmanagement.client.invoker.ApiInvoker
   type AttributeRegistryManagementInvoker = attributeregistrymanagement.client.invoker.ApiInvoker
   type AuthorizationManagementInvoker     = authorizationmanagement.client.invoker.ApiInvoker
+  type PartyProcessInvoker                = partyprocess.client.invoker.ApiInvoker
   type UserRegistryManagementInvoker      = userregistry.client.invoker.ApiInvoker
 
   type AgreementManagementApi = agreementmanagement.client.api.AgreementApi
@@ -33,6 +34,11 @@ package object service {
     def apply(blockingEc: ExecutionContextExecutor)(implicit actorSystem: ActorSystem): AuthorizationManagementInvoker =
       authorizationmanagement.client.invoker
         .ApiInvoker(authorizationmanagement.client.api.EnumsSerializers.all, blockingEc)
+  }
+
+  object PartyProcessServiceInvoker {
+    def apply()(implicit actorSystem: ActorSystem): PartyProcessInvoker =
+      partyprocess.client.invoker.ApiInvoker(partyprocess.client.api.EnumsSerializers.all)
   }
 
   object CatalogManagementInvoker {
