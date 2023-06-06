@@ -32,6 +32,7 @@ import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
+import it.pagopa.interop.selfcare.partyprocess.client.api.ProcessApi
 
 trait Dependencies {
 
@@ -82,6 +83,12 @@ trait Dependencies {
       new PurposeApi(ApplicationConfiguration.authorizationManagementURL)
     )
 
+  def partyProcess(implicit actorSystem: ActorSystem[_]): PartyProcessService =
+    new PartyProcessServiceImpl(
+      PartyProcessServiceInvoker()(actorSystem.classicSystem),
+      new ProcessApi(ApplicationConfiguration.partyProcessURL)
+    )
+
   def userRegistry(implicit actorSystem: ActorSystem[_]): UserRegistryService =
     new UserRegistryServiceImpl(
       UserRegistryManagementInvoker()(actorSystem.classicSystem),
@@ -107,6 +114,9 @@ trait Dependencies {
       case _      => throw new Exception("Incorrect File Manager")
     })(blockingEc)
 
+  def queueService(blockingEc: ExecutionContextExecutor): QueueService =
+    new QueueServiceImpl(ApplicationConfiguration.certifiedMailQueueName)(blockingEc)
+
   def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
     actorSystem: ActorSystem[_],
     ec: ExecutionContext
@@ -118,12 +128,14 @@ trait Dependencies {
         tenantManagement(blockingEc),
         attributeRegistryManagement(blockingEc),
         authorizationManagement(blockingEc),
+        partyProcess,
         userRegistry,
         readModelService,
         PDFCreator,
         fileManager(blockingEc),
         OffsetDateTimeSupplier,
-        UUIDSupplier
+        UUIDSupplier,
+        queueService(blockingEc)
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts
