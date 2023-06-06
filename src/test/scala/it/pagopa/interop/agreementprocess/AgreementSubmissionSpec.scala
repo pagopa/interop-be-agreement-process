@@ -75,6 +75,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val eService   =
         SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = producerId)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val producer   = SpecData.tenant.copy(id = producerId)
       val agreement  =
         SpecData.draftAgreement.copy(
           producerId = producerId,
@@ -96,7 +97,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAutomaticActivation(agreement, eService, consumer, expectedSeed)
+      mockAutomaticActivation(agreement, eService, consumer, producer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
@@ -124,6 +125,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
           attributes = eServiceAttr
         )
       val consumer            = SpecData.tenant.copy(id = consumerAndProducer, attributes = tenantAttr)
+      val producer            = consumer
       val agreement           =
         SpecData.draftAgreement.copy(
           eserviceId = eService.id,
@@ -145,7 +147,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockSelfActivation(agreement, eService, consumer, expectedSeed)
+      mockSelfActivation(agreement, eService, consumer, producer, expectedSeed)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK

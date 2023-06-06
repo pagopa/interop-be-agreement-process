@@ -9,13 +9,15 @@ import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
 import it.pagopa.interop.catalogmanagement.client.model.{Attributes, EService, EServiceTechnology}
 import it.pagopa.interop.commons.files.service.FileManager
+import it.pagopa.interop.selfcare.partyprocess.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.tenantmanagement.client.model.{ExternalId, Tenant}
+import spray.json.JsonWriter
 
 import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
 import java.util.UUID
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Holds fake implementation of dependencies for tests not requiring neither mocks or stubs
@@ -150,6 +152,26 @@ object FakeDependencies {
       )
   }
 
+  class FakePartyProcessService extends PartyProcessService {
+    override def getInstitution(
+      selfcareId: String
+    )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution] = Future.successful(
+      Institution(
+        id = UUID.randomUUID(),
+        externalId = "",
+        originId = "",
+        description = "",
+        digitalAddress = "",
+        address = "",
+        zipCode = "",
+        taxCode = "",
+        origin = "",
+        institutionType = None,
+        attributes = Seq.empty
+      )
+    )
+  }
+
   class FakeUserRegistryService extends UserRegistryService {
     override def getUserById(id: UUID)(implicit contexts: Seq[(String, String)]): Future[UserResource] =
       Future.successful(
@@ -203,6 +225,10 @@ object FakeDependencies {
 
     override def getAllFiles(container: String)(path: String): Future[Map[String, Array[Byte]]] =
       Future.successful(Map.empty)
+  }
+
+  class FakeQueueService extends QueueService {
+    override def send[T: JsonWriter](message: T): Future[String] = Future.successful("Sent")
   }
 
 }

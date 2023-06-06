@@ -1,5 +1,5 @@
-import Versions._
 import PagopaVersion._
+import Versions._
 import sbt._
 
 object Dependencies {
@@ -36,22 +36,20 @@ object Dependencies {
     lazy val catalogManagementClient =
       namespace %% "interop-be-catalog-management-client" % catalogManagementVersion
     lazy val catalogManagementModels =
-      namespace %% "interop-be-catalog-management-models" % catalogManagementVersion  
-    lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client" % tenantManagementVersion
+      namespace %% "interop-be-catalog-management-models" % catalogManagementVersion
+    lazy val partyProcessClient     = namespace %% "interop-selfcare-party-process-client" % partyProcessVersion
+    lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client"   % tenantManagementVersion
     lazy val userRegistryManagement =
       namespace %% "interop-selfcare-user-registry-client" % userRegistryManagementVersion
 
-    lazy val commons =
-      namespace %% "interop-commons-utils" % commonsVersion
+    lazy val commons             = namespace %% "interop-commons-utils"         % commonsVersion
+    lazy val commonsFileManager  = namespace %% "interop-commons-file-manager"  % commonsVersion
+    lazy val commonsJWT          = namespace %% "interop-commons-jwt"           % commonsVersion
+    lazy val commonsCqrs         = namespace %% "interop-commons-cqrs"          % commonsVersion
+    lazy val commonsQueueManager = namespace %% "interop-commons-queue-manager" % commonsVersion
 
-    lazy val commonsFileManager =
-      namespace %% "interop-commons-file-manager" % commonsVersion
-
-    lazy val commonsJWT =
-      namespace %% "interop-commons-jwt" % commonsVersion
-
-      
-    lazy val commonsCqrs  = namespace %% "interop-commons-cqrs"  % commonsVersion
+    lazy val certifiedMailSenderModels =
+      namespace %% "interop-be-certified-mail-sender-models" % certifiedMailSenderModelsVersion
 
   }
 
@@ -116,16 +114,19 @@ object Dependencies {
       cats.core                                % Compile,
       logback.classic                          % Compile,
       mustache.mustache                        % Compile,
-      pagopa.agreementManagementClient         % Compile,      
+      pagopa.agreementManagementClient         % Compile,
       pagopa.agreementManagementModels         % Compile,
       pagopa.attributeRegistryManagementClient % Compile,
       pagopa.authorizationManagementClient     % Compile,
       pagopa.catalogManagementClient           % Compile,
       pagopa.catalogManagementModels           % Compile,
+      pagopa.certifiedMailSenderModels         % Compile,
       pagopa.commons                           % Compile,
       pagopa.commonsFileManager                % Compile,
       pagopa.commonsJWT                        % Compile,
       pagopa.commonsCqrs                       % Compile,
+      pagopa.commonsQueueManager               % Compile,
+      pagopa.partyProcessClient                % Compile,
       pagopa.tenantManagementClient            % Compile,
       pagopa.userRegistryManagement            % Compile,
       akka.httpTestkit                         % Test,

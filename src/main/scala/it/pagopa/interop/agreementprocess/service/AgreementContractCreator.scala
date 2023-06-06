@@ -29,7 +29,6 @@ final class AgreementContractCreator(
   uuidSupplier: UUIDSupplier,
   agreementManagementService: AgreementManagementService,
   attributeManagementService: AttributeManagementService,
-  tenantManagementService: TenantManagementService,
   userRegistry: UserRegistryService,
   offsetDateTimeSupplier: OffsetDateTimeSupplier
 ) {
@@ -42,18 +41,19 @@ final class AgreementContractCreator(
   private val agreementDocumentSuffix: String = "agreement_contract.pdf"
   private val contractPrettyName: String      = "Richiesta di fruizione"
 
-  def create(agreement: Agreement, eService: EService, consumer: Tenant, seed: UpdateAgreementSeed)(implicit
+  def create(agreement: Agreement, eService: EService, consumer: Tenant, producer: Tenant, seed: UpdateAgreementSeed)(
+    implicit
     contexts: Seq[(String, String)],
     ec: ExecutionContext
   ): Future[Unit] = for {
-    pdfPayload <- getPdfPayload(agreement, eService, consumer, seed)
+    pdfPayload <- getPdfPayload(agreement, eService, consumer, producer, seed)
     document   <- pdfCreator.create(agreementTemplate, pdfPayload)
     documentName = createAgreementDocumentName(agreement.consumerId, agreement.producerId)
     documentId   = uuidSupplier.get()
     path <- fileManager.storeBytes(
       ApplicationConfiguration.storageContainer,
-      s"${ApplicationConfiguration.agreementContractPath}/${agreement.id.toString()}"
-    )(documentId.toString(), documentName, document)
+      s"${ApplicationConfiguration.agreementContractPath}/${agreement.id.toString}"
+    )(documentId.toString, documentName, document)
     _    <- agreementManagementService.addAgreementContract(
       agreement.id,
       DocumentSeed(documentId, documentName, contractPrettyName, MediaTypes.`application/pdf`.value, path)
@@ -74,7 +74,7 @@ final class AgreementContractCreator(
       val attributes =
         consumer.attributes.flatMap(_.certified).filter(c => seed.certifiedAttributes.map(_.id).contains(c.id))
       Future.traverse(attributes)(attr =>
-        attributeManagementService.getAttribute(attr.id.toString()).map(ca => ca -> attr)
+        attributeManagementService.getAttribute(attr.id.toString).map(ca => ca -> attr)
       )
     }
 
@@ -82,7 +82,7 @@ final class AgreementContractCreator(
       val attributes =
         consumer.attributes.flatMap(_.declared).filter(c => seed.declaredAttributes.map(_.id).contains(c.id))
       Future.traverse(attributes)(attr =>
-        attributeManagementService.getAttribute(attr.id.toString()).map(ca => ca -> attr)
+        attributeManagementService.getAttribute(attr.id.toString).map(ca => ca -> attr)
       )
     }
 
@@ -90,7 +90,7 @@ final class AgreementContractCreator(
       val attributes =
         consumer.attributes.flatMap(_.verified).filter(c => seed.verifiedAttributes.map(_.id).contains(c.id))
       Future.traverse(attributes)(attr =>
-        attributeManagementService.getAttribute(attr.id.toString()).map(ca => ca -> attr)
+        attributeManagementService.getAttribute(attr.id.toString).map(ca => ca -> attr)
       )
     }
 
@@ -126,22 +126,23 @@ final class AgreementContractCreator(
     fiscalCode <- user.fiscalCode
   } yield s"${name.value} ${familyName.value} ($fiscalCode)"
 
-  def getPdfPayload(agreement: Agreement, eService: EService, consumer: Tenant, seed: UpdateAgreementSeed)(implicit
-    contexts: Seq[(String, String)],
-    ec: ExecutionContext
-  ): Future[PDFPayload] = {
+  def getPdfPayload(
+    agreement: Agreement,
+    eService: EService,
+    consumer: Tenant,
+    producer: Tenant,
+    seed: UpdateAgreementSeed
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[PDFPayload] = {
     for {
       (certified, declared, verified)  <- getAttributeInvolved(consumer, seed)
-      producerTenant                   <- tenantManagementService.getTenant(agreement.producerId)
-      consumerTenant                   <- tenantManagementService.getTenant(agreement.consumerId)
       (submitter, submissionTimestamp) <- getSubmissionInfo(seed)
       (activator, activationTimestamp) <- getActivationInfo(seed)
     } yield PDFPayload(
       today = offsetDateTimeSupplier.get(),
       agreementId = agreement.id,
       eService = eService.name,
-      producerName = producerTenant.name,
-      consumerName = consumerTenant.name,
+      producerName = producer.name,
+      consumerName = consumer.name,
       certified = certified,
       declared = declared,
       verified = verified,
@@ -155,7 +156,7 @@ final class AgreementContractCreator(
   def createAgreementDocumentName(consumerId: UUID, producerId: UUID): String = {
     val timestamp: String = offsetDateTimeSupplier.get().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
 
-    s"${consumerId.toString()}_${producerId.toString()}_${timestamp}_$agreementDocumentSuffix"
+    s"${consumerId.toString}_${producerId.toString}_${timestamp}_$agreementDocumentSuffix"
   }
 
 }

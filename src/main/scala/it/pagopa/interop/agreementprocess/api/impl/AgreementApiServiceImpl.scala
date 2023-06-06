@@ -10,6 +10,7 @@ import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagemen
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers._
 import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelQueries
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules.certifiedAttributesSatisfied
@@ -19,6 +20,8 @@ import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAnd
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor, EServiceDescriptorState}
 import it.pagopa.interop.catalogmanagement.client.{model => CatalogManagement}
+import it.pagopa.interop.certifiedMailSender.InteropEnvelope
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt._
 import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
@@ -27,9 +30,9 @@ import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.tenantmanagement.client.{model => TenantManagement}
-import it.pagopa.interop.commons.cqrs.service.ReadModelService
-import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelQueries
 
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,17 +42,23 @@ final case class AgreementApiServiceImpl(
   tenantManagementService: TenantManagementService,
   attributeManagementService: AttributeManagementService,
   authorizationManagementService: AuthorizationManagementService,
+  partyProcessService: PartyProcessService,
   userRegistry: UserRegistryService,
   readModel: ReadModelService,
   pdfCreator: PDFCreator,
   fileManager: FileManager,
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
-  uuidSupplier: UUIDSupplier
+  uuidSupplier: UUIDSupplier,
+  queueService: QueueService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
   implicit val logger: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog](this.getClass)
+
+  private val activationMailTemplate: MailTemplate = MailTemplate.activation()
+
+  private val mailDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
   val agreementContractCreator: AgreementContractCreator = new AgreementContractCreator(
     pdfCreator,
@@ -57,7 +66,6 @@ final case class AgreementApiServiceImpl(
     uuidSupplier,
     agreementManagementService,
     attributeManagementService,
-    tenantManagementService,
     userRegistry,
     offsetDateTimeSupplier
   )
@@ -334,7 +342,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerAgreementarray: ToEntityMarshaller[Agreements],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE,SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving agreements by EServices $eservicesIds, Consumers $consumersIds, Producers $producersIds, states = $states, showOnlyUpgradeable = $showOnlyUpgradeable"
     logger.info(operationLabel)
@@ -362,7 +370,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, M2M_ROLE,SUPPORT_ROLE) {
     val operationLabel = s"Retrieving agreement by id $agreementId"
     logger.info(operationLabel)
 
@@ -537,15 +545,24 @@ final case class AgreementApiServiceImpl(
           stamps = stamps
         )
 
-    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed) =
-      agreementContractCreator.create(agreement, eService, consumer, seed) >>
-        authorizationManagementService
-          .updateStateOnClients(
-            eServiceId = agreement.eserviceId,
-            consumerId = agreement.consumerId,
-            agreementId = agreement.id,
-            state = toClientState(newState)
-          )
+    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
+      producer <- tenantManagementService.getTenant(agreement.producerId)
+      _        <- agreementContractCreator.create(
+        agreement = agreement,
+        eService = eService,
+        consumer = consumer,
+        producer = producer,
+        seed = seed
+      )
+      _        <- authorizationManagementService
+        .updateStateOnClients(
+          eServiceId = agreement.eserviceId,
+          consumerId = agreement.consumerId,
+          agreementId = agreement.id,
+          state = toClientState(newState)
+        )
+      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
+    } yield ()
 
     for {
       uid    <- getUidFutureUUID(contexts)
@@ -553,7 +570,9 @@ final case class AgreementApiServiceImpl(
       updateSeed = getUpdateSeed(newState, agreement, stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
       _       <- validateResultState(newState)
-      _ <- performActivation(updated, updateSeed).whenA(updated.state == AgreementManagement.AgreementState.ACTIVE)
+      _       <-
+        if (updated.state == AgreementManagement.AgreementState.ACTIVE) performActivation(updated, updateSeed)
+        else Future.unit
     } yield updated
 
   }
@@ -614,11 +633,20 @@ final case class AgreementApiServiceImpl(
       .failed(AgreementActivationFailed(agreement.id))
       .whenA(failureStates.contains(newState))
 
+    def performActivation(seed: UpdateAgreementSeed, agreement: AgreementManagement.Agreement): Future[Unit] = for {
+      producer <- tenantManagementService.getTenant(agreement.producerId)
+      _        <- agreementContractCreator.create(
+        agreement = agreement,
+        eService = eService,
+        consumer = consumer,
+        producer = producer,
+        seed = seed
+      )
+      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
+    } yield ()
+
     for {
       seed    <- getUpdateSeed()
-      _       <-
-        if (firstActivation) agreementContractCreator.create(agreement, eService, consumer, seed)
-        else Future.unit
       updated <- agreementManagementService.updateAgreement(agreement.id, seed)
       _       <- failOnActivationFailure()
       _       <- authorizationManagementService
@@ -628,8 +656,61 @@ final case class AgreementApiServiceImpl(
           agreementId = agreement.id,
           state = toClientState(newState)
         )
-        .unlessA(failureStates.contains(newState))
+      _       <- if (firstActivation) performActivation(seed, updated) else Future.unit
     } yield updated
+  }
+
+  private def sendActivationEnvelope(
+    agreement: AgreementManagement.Agreement,
+    producerTenant: TenantManagement.Tenant,
+    consumerTenant: TenantManagement.Tenant,
+    eservice: CatalogManagement.EService
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Unit] = {
+    val envelopeId: UUID = UUIDSupplier.get()
+
+    def createBody(
+      activationDate: OffsetDateTime,
+      eserviceName: String,
+      eserviceVersion: String,
+      producer: String,
+      consumer: String
+    ): String = activationMailTemplate.body.interpolate(
+      Map(
+        "activationDate"  -> activationDate.format(mailDateFormat),
+        "agreementId"     -> agreement.id.toString,
+        "eserviceName"    -> eserviceName,
+        "eserviceVersion" -> eserviceVersion,
+        "producerName"    -> producer,
+        "consumerName"    -> consumer
+      )
+    )
+
+    val subject: String = activationMailTemplate.subject.interpolate(Map("agreementId" -> agreement.id.toString))
+
+    val envelope: Future[InteropEnvelope] = for {
+      producerSelfcareId <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(producerTenant.id))
+      consumerSelfcareId <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(consumerTenant.id))
+      activationDate     <- agreement.stamps.activation.map(_.when).toFuture(StampNotFound("activation"))
+      producer           <- partyProcessService.getInstitution(producerSelfcareId)
+      consumer           <- partyProcessService.getInstitution(consumerSelfcareId)
+      version            <- eservice.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
+    } yield InteropEnvelope(
+      id = envelopeId,
+      recipients = List(producer.digitalAddress, consumer.digitalAddress),
+      subject = subject,
+      body = createBody(
+        activationDate = activationDate,
+        producer = producer.description,
+        consumer = consumer.description,
+        eserviceName = eservice.name,
+        eserviceVersion = version.version
+      ),
+      attachments = List.empty
+    )
+
+    envelope.flatMap(queueService.send[InteropEnvelope]).map(_ => ())
   }
 
   def suspend(
@@ -984,7 +1065,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerDocument: ToEntityMarshaller[Document],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE) {
+  ): Route = authorize(ADMIN_ROLE,SUPPORT_ROLE) {
     val operationLabel = s"Retrieving consumer document $documentId from agreement $agreementId"
     logger.info(operationLabel)
 
@@ -1032,7 +1113,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE,SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving producers from agreements with producer name $producerName"
     logger.info(operationLabel)
@@ -1048,7 +1129,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE,SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving consumers from agreements with consumer name $consumerName"
     logger.info(operationLabel)
@@ -1070,7 +1151,7 @@ final case class AgreementApiServiceImpl(
     contexts: Seq[(String, String)],
     toEntityMarshallerCompactEServices: ToEntityMarshaller[CompactEServices],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
-  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE) {
+  ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE,SUPPORT_ROLE) {
     val operationLabel =
       s"Retrieving EServices with consumers $consumersIds, producers $producersIds"
     logger.info(operationLabel)
