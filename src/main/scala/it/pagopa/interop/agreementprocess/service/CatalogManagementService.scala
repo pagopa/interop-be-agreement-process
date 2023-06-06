@@ -19,35 +19,25 @@ object CatalogManagementService {
   def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit] = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.DEPRECATED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+    validateDescriptor(eservice, descriptorId, allowedStatus)
   }
   def validateCreationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]   = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+    validateLatestDescriptor(eservice, descriptorId, allowedStatus)
   }
   def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]     = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
-  }
-
-  def validateEServiceDescriptorStatus(
-    eService: EService,
-    descriptorId: UUID,
-    allowedStates: List[EServiceDescriptorState],
-  ): Future[Unit] = {
-    if (!allowedStates.contains(EServiceDescriptorState.DEPRECATED)) validateLatestDescriptor(eService, descriptorId, allowedStates)
-    else validateDescriptor(eService, descriptorId, allowedStates)
+    validateLatestDescriptor(eservice, descriptorId, allowedStatus)
   }
 
   def validateLatestDescriptor(
-                                eService: EService,
-                                descriptorId: UUID,
-                                allowedStates: List[EServiceDescriptorState]
-                              ): Future[Unit] = {
-
-      eService.descriptors
+    eService: EService,
+    descriptorId: UUID,
+    allowedStates: List[EServiceDescriptorState]
+  ): Future[Unit] = {
+    eService.descriptors
       .filterNot(_.state == EServiceDescriptorState.DRAFT)
       .maxByOption(_.version.toLong)
       .find(_.id == descriptorId)
@@ -63,12 +53,15 @@ object CatalogManagementService {
       .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates))
       .toFuture
 
-  def validateDescriptorState(eServiceId: UUID, descriptorId: UUID, descriptorState: EServiceDescriptorState, allowedStates: List[EServiceDescriptorState]) =
+  def validateDescriptorState(
+    eServiceId: UUID,
+    descriptorId: UUID,
+    descriptorState: EServiceDescriptorState,
+    allowedStates: List[EServiceDescriptorState]
+  ) =
     Either
       .left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eServiceId, descriptorId, allowedStates))
       .unlessA(allowedStates.contains(descriptorState))
-
-
 
   def getEServiceNewerPublishedDescriptor(eService: EService, currentDescriptorId: UUID)(implicit
     ec: ExecutionContext
