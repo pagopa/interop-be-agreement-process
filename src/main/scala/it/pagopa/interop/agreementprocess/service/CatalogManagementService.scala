@@ -19,32 +19,50 @@ object CatalogManagementService {
   def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit] = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.DEPRECATED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+    validateDescriptor(eservice, descriptorId, allowedStatus)
   }
   def validateCreationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]   = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+    validateLatestDescriptor(eservice, descriptorId, allowedStatus)
   }
   def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]     = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
-    validateEServiceDescriptorStatus(eservice, descriptorId, allowedStatus)
+    validateLatestDescriptor(eservice, descriptorId, allowedStatus)
   }
 
-  def validateEServiceDescriptorStatus(
+  def validateLatestDescriptor(
     eService: EService,
     descriptorId: UUID,
     allowedStates: List[EServiceDescriptorState]
   ): Future[Unit] = {
-    val descriptorStatus = eService.descriptors.find(_.id == descriptorId).map(_.state)
 
-    // Not using whenA on Future.failed because it requires an ExecutionContext, which is not actually needed here
-    Either
-      .left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eService.id, descriptorId, allowedStates))
-      .unlessA(descriptorStatus.exists(status => allowedStates.contains(status)))
+    eService.descriptors
+      .filterNot(_.state == EServiceDescriptorState.DRAFT)
+      .maxByOption(_.version.toLong)
+      .find(_.id == descriptorId)
+      .toRight(NotLatestEServiceDescriptor(descriptorId))
+      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates))
       .toFuture
   }
+
+  def validateDescriptor(eService: EService, descriptorId: UUID, allowedStates: List[EServiceDescriptorState]) =
+    eService.descriptors
+      .find(_.id == descriptorId)
+      .toRight(DescriptorNotFound(eService.id, descriptorId))
+      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates))
+      .toFuture
+
+  def validateDescriptorState(
+    eServiceId: UUID,
+    descriptorId: UUID,
+    descriptorState: EServiceDescriptorState,
+    allowedStates: List[EServiceDescriptorState]
+  ) =
+    Either
+      .left[DescriptorNotInExpectedState, Unit](DescriptorNotInExpectedState(eServiceId, descriptorId, allowedStates))
+      .unlessA(allowedStates.contains(descriptorState))
 
   def getEServiceNewerPublishedDescriptor(eService: EService, currentDescriptorId: UUID)(implicit
     ec: ExecutionContext

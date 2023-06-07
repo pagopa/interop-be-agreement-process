@@ -91,4 +91,10 @@ object AgreementProcessErrors {
   final case class TenantIdNotFound(tenantId: UUID)
       extends ComponentError("0020", s"Tenant ${tenantId.toString} not found")
 
+  final case class NotLatestEServiceDescriptor(descriptorId: UUID)
+      extends ComponentError(
+        "0021",
+        s"Descriptor with descriptorId: ${descriptorId.toString} is not the latest descriptor"
+      )
+
 }
