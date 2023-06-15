@@ -24,11 +24,11 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
     "succeed if all requirements are met" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
+      val descriptorAttr                     = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
 
-      val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL)
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
+      val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL, attributes = descriptorAttr)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
@@ -67,13 +67,13 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
       val (eServiceVeriAttr, tenantVeriAttr) = SpecData.matchingVerifiedAttributes(producerId)
-      val eServiceAttr                       =
+      val descriptorAttr                     =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVeriAttr.verified)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVeriAttr)
 
-      val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = AUTOMATIC)
-      val eService   =
-        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = producerId)
+      val descriptor =
+        SpecData.publishedDescriptor.copy(agreementApprovalPolicy = AUTOMATIC, attributes = descriptorAttr)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), producerId = producerId)
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val producer   = SpecData.tenant.copy(id = producerId)
       val agreement  =
@@ -112,28 +112,24 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
       val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
 
-      val eServiceAttr =
+      val descriptorAttr =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr   = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val tenantAttr     = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
       val consumerAndProducer = requesterOrgId
-      val descriptor          = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL)
-      val eService            =
-        SpecData.eService.copy(
-          producerId = consumerAndProducer,
-          descriptors = Seq(descriptor),
-          attributes = eServiceAttr
-        )
-      val consumer            = SpecData.tenant.copy(id = consumerAndProducer, attributes = tenantAttr)
-      val producer            = consumer
-      val agreement           =
+      val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL, attributes = descriptorAttr)
+      val eService   =
+        SpecData.eService.copy(producerId = consumerAndProducer, descriptors = Seq(descriptor))
+      val consumer   = SpecData.tenant.copy(id = consumerAndProducer, attributes = tenantAttr)
+      val producer   = consumer
+      val agreement  =
         SpecData.draftAgreement.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           consumerId = consumer.id,
           producerId = eService.producerId
         )
-      val payload             = AgreementSubmissionPayload(Some("consumer-notes"))
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
       val expectedSeed = UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ACTIVE,
@@ -213,11 +209,11 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Descriptor is not in suspended or published state" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
+      val descriptorAttr                     = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
       val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
 
-      val descriptor = SpecData.draftDescriptor.copy(agreementApprovalPolicy = MANUAL)
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
+      val descriptor = SpecData.draftDescriptor.copy(agreementApprovalPolicy = MANUAL, attributes = descriptorAttr)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
@@ -245,11 +241,11 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
     "fail and invalidate agreement if tenant lost a certified attribute" in {
       val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr = SpecData.catalogCertifiedAttribute().copy(declared = eServiceDeclAttr.declared)
-      val tenantAttr   = Seq(SpecData.tenantCertifiedAttribute(), tenantDeclAttr)
+      val descriptorAttr = SpecData.catalogCertifiedAttribute().copy(declared = eServiceDeclAttr.declared)
+      val tenantAttr     = Seq(SpecData.tenantCertifiedAttribute(), tenantDeclAttr)
 
-      val descriptor = SpecData.publishedDescriptor
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
+      val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
@@ -280,11 +276,11 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
     "fail on missing declared attributes" in {
       val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val eServiceAttr = SpecData.catalogDeclaredAttribute().copy(certified = eServiceCertAttr.certified)
-      val tenantAttr   = Seq(SpecData.tenantDeclaredAttribute(), tenantCertAttr)
+      val descriptorAttr = SpecData.catalogDeclaredAttribute().copy(certified = eServiceCertAttr.certified)
+      val tenantAttr     = Seq(SpecData.tenantDeclaredAttribute(), tenantCertAttr)
 
-      val descriptor = SpecData.publishedDescriptor
-      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr)
+      val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)

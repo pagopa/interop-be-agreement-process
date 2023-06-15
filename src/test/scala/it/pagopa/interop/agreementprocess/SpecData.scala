@@ -43,7 +43,8 @@ object SpecData {
     docs = Nil,
     state = EServiceDescriptorState.PUBLISHED,
     agreementApprovalPolicy = AUTOMATIC,
-    serverUrls = Nil
+    serverUrls = Nil,
+    attributes = Attributes(Nil, Nil, Nil)
   )
 
   def publishedDescriptor: EServiceDescriptor  = descriptor.copy(state = EServiceDescriptorState.PUBLISHED)
@@ -57,7 +58,6 @@ object SpecData {
     name = "EService1",
     description = "EService 1",
     technology = REST,
-    attributes = Attributes(Nil, Nil, Nil),
     descriptors = Nil
   )
 

@@ -7,7 +7,14 @@ import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.attributeregistrymanagement
 import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
-import it.pagopa.interop.catalogmanagement.client.model.{Attributes, EService, EServiceTechnology}
+import it.pagopa.interop.catalogmanagement.client.model.{
+  Attributes,
+  EService,
+  EServiceTechnology,
+  EServiceDescriptor,
+  EServiceDescriptorState,
+  AgreementApprovalPolicy
+}
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.selfcare.partyprocess.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
@@ -115,8 +122,19 @@ object FakeDependencies {
           name = "fake",
           description = "fake",
           technology = EServiceTechnology.REST,
-          attributes = Attributes(Seq.empty, Seq.empty, Seq.empty),
-          descriptors = Seq.empty
+          descriptors = EServiceDescriptor(
+            id = UUID.randomUUID(),
+            version = "1",
+            audience = Nil,
+            voucherLifespan = 0,
+            dailyCallsPerConsumer = 0,
+            dailyCallsTotal = 0,
+            docs = Nil,
+            state = EServiceDescriptorState.PUBLISHED,
+            agreementApprovalPolicy = AgreementApprovalPolicy.AUTOMATIC,
+            serverUrls = Nil,
+            attributes = Attributes(Nil, Nil, Nil)
+          ) :: Nil
         )
       )
   }
