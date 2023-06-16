@@ -5,7 +5,6 @@ import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
 import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
-import it.pagopa.interop.tenantmanagement.client.model.VerificationRenewal.REVOKE_ON_EXPIRATION
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -480,7 +479,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
-    "return false if at least one single attribute with REVOKE_ON_EXPIRATION is expired" in {
+    "return false if at least one single attribute is expired" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
       val attr2      = UUID.randomUUID()
@@ -494,7 +493,6 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         SpecData.tenantVerifiedAttribute(
           id = attr2,
           verifierId = producerId,
-          renewal = REVOKE_ON_EXPIRATION,
           extensionDate = OffsetDateTime.now().minusDays(3).some
         )
       )
@@ -506,7 +504,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
-    "return false if at least one group attribute with REVOKE_ON_EXPIRATION is expired" in {
+    "return false if at least one group attribute is expired" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
       val attr2      = UUID.randomUUID()
@@ -525,7 +523,6 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         SpecData.tenantVerifiedAttribute(
           id = attr2,
           verifierId = producerId,
-          renewal = REVOKE_ON_EXPIRATION,
           extensionDate = OffsetDateTime.now().minusDays(3).some
         )
       )

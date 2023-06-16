@@ -4,7 +4,6 @@ import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.catalogmanagement.client.model.{Attribute, Attributes, EService}
 import it.pagopa.interop.commons.utils.service.OffsetDateTimeSupplier
-import it.pagopa.interop.tenantmanagement.client.model.VerificationRenewal.{AUTOMATIC_RENEWAL, REVOKE_ON_EXPIRATION}
 import it.pagopa.interop.tenantmanagement.client.model.{
   CertifiedTenantAttribute,
   DeclaredTenantAttribute,
@@ -49,8 +48,8 @@ object AttributesRules {
   )
 
   private def isNotExpired(verifier: TenantVerifier): Boolean = {
-    (verifier.renewal == REVOKE_ON_EXPIRATION && verifier.extensionDate
-      .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))) || verifier.renewal == AUTOMATIC_RENEWAL
+    verifier.extensionDate
+      .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
   }
 
   def verifiedAttributesSatisfied(agreement: Agreement, eService: EService, consumer: Tenant): Boolean =

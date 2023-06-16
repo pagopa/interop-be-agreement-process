@@ -108,11 +108,7 @@ object SpecData {
           id = id,
           assignmentTimestamp = timestamp,
           verifiedBy = Seq(
-            TenantVerifier(
-              id = verifierId,
-              verificationDate = timestamp,
-              renewal = VerificationRenewal.AUTOMATIC_RENEWAL
-            )
+            TenantVerifier(id = verifierId, verificationDate = timestamp, extensionDate = timestamp.plusYears(9).some)
           ),
           revokedBy = Nil
         )
