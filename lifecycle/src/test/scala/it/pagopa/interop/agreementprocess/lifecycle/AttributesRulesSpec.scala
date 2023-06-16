@@ -1,5 +1,6 @@
 package it.pagopa.interop.agreementprocess.lifecycle
 
+import cats.implicits.catsSyntaxOptionId
 import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
 import it.pagopa.interop.catalogmanagement.client.model.EService
@@ -7,6 +8,7 @@ import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class AttributesRulesSpec extends AnyWordSpecLike {
@@ -468,6 +470,61 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = Seq(
         SpecData.tenantVerifiedAttribute(attributeId, UUID.randomUUID()),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
+      )
+
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
+    }
+
+    "return false if at least one single attribute is expired" in {
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
+
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(
+          id = attr2,
+          verifierId = producerId,
+          extensionDate = OffsetDateTime.now().minusDays(3).some
+        )
+      )
+
+      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+
+      verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
+    }
+
+    "return false if at least one group attribute is expired" in {
+      val producerId = UUID.randomUUID()
+      val attr1      = UUID.randomUUID()
+      val attr2      = UUID.randomUUID()
+
+      val eServiceAttr = SpecData
+        .catalogVerifiedAttribute()
+        .copy(verified =
+          Seq(
+            SpecData.catalogGroupAttributes(attr1, UUID.randomUUID()),
+            SpecData.catalogGroupAttributes(attr2, UUID.randomUUID())
+          )
+        )
+
+      val tenantAttr = Seq(
+        SpecData.tenantVerifiedAttribute(attr1, producerId),
+        SpecData.tenantVerifiedAttribute(
+          id = attr2,
+          verifierId = producerId,
+          extensionDate = OffsetDateTime.now().minusDays(3).some
+        )
       )
 
       val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
