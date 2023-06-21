@@ -195,18 +195,21 @@ final case class AgreementApiServiceImpl(
     } yield newAgreement
 
     def createNewDraftAgreement(agreement: AgreementManagement.Agreement, newDescriptorId: UUID) =
-      agreementManagementService.createAgreement(
-        AgreementManagement.AgreementSeed(
-          eserviceId = agreement.eserviceId,
-          descriptorId = newDescriptorId,
-          producerId = agreement.producerId,
-          consumerId = agreement.consumerId,
-          verifiedAttributes = agreement.verifiedAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
-          certifiedAttributes = agreement.certifiedAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
-          declaredAttributes = agreement.declaredAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
-          consumerNotes = agreement.consumerNotes
+      for {
+        _         <- verifyConflictingAgreements(agreement, AgreementManagement.AgreementState.DRAFT :: Nil)
+        agreement <- agreementManagementService.createAgreement(
+          AgreementManagement.AgreementSeed(
+            eserviceId = agreement.eserviceId,
+            descriptorId = newDescriptorId,
+            producerId = agreement.producerId,
+            consumerId = agreement.consumerId,
+            verifiedAttributes = agreement.verifiedAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
+            certifiedAttributes = agreement.certifiedAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
+            declaredAttributes = agreement.declaredAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
+            consumerNotes = agreement.consumerNotes
+          )
         )
-      )
+      } yield agreement
 
     val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
@@ -549,11 +552,7 @@ final case class AgreementApiServiceImpl(
           .contains(state)
       )
 
-    def getUpdateSeed(
-      newState: AgreementManagement.AgreementState,
-      agreement: AgreementManagement.Agreement,
-      stamps: Stamps
-    ): UpdateAgreementSeed =
+    def getUpdateSeed(stamps: Stamps): UpdateAgreementSeed =
       if (newState == AgreementManagement.AgreementState.ACTIVE)
         AgreementManagement.UpdateAgreementSeed(
           state = newState,
@@ -579,33 +578,65 @@ final case class AgreementApiServiceImpl(
           stamps = stamps
         )
 
-    def performActivation(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] = for {
-      producer <- tenantManagementService.getTenant(agreement.producerId)
-      _        <- agreementContractCreator.create(
-        agreement = agreement,
-        eService = eService,
-        consumer = consumer,
-        producer = producer,
-        seed = seed
-      )
-      _        <- authorizationManagementService
-        .updateStateOnClients(
-          eServiceId = agreement.eserviceId,
-          consumerId = agreement.consumerId,
-          agreementId = agreement.id,
-          state = toClientState(newState)
+    def createContractAndSendMail(agreement: AgreementManagement.Agreement, seed: UpdateAgreementSeed): Future[Unit] =
+      for {
+        producer <- tenantManagementService.getTenant(agreement.producerId)
+        _        <- agreementContractCreator.create(
+          agreement = agreement,
+          eService = eService,
+          consumer = consumer,
+          producer = producer,
+          seed = seed
         )
-      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
-    } yield ()
+        _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
+      } yield ()
 
     for {
       uid    <- getUidFutureUUID(contexts)
       stamps <- calculateStamps(newState, Stamp(uid, offsetDateTimeSupplier.get()))
-      updateSeed = getUpdateSeed(newState, agreement, stamps)
+      updateSeed = getUpdateSeed(stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
-      _       <- validateResultState(newState)
-      _       <-
-        if (updated.state == AgreementManagement.AgreementState.ACTIVE) performActivation(updated, updateSeed)
+
+      agreements <- agreementManagementService
+        .getAgreements(
+          consumerId = agreement.consumerId.toString.some,
+          eserviceId = agreement.eserviceId.toString.some,
+          states = List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+        )
+        .map(_.filterNot(_.id == agreement.id))
+
+      _ <-
+        if (
+          newState == AgreementManagement.AgreementState.ACTIVE || newState == AgreementManagement.AgreementState.SUSPENDED
+        )
+          Future
+            .traverse(agreements)(a =>
+              agreementManagementService.updateAgreement(
+                a.id,
+                UpdateAgreementSeed(
+                  state = AgreementManagement.AgreementState.ARCHIVED,
+                  certifiedAttributes = a.certifiedAttributes,
+                  declaredAttributes = a.declaredAttributes,
+                  verifiedAttributes = a.verifiedAttributes,
+                  stamps = a.stamps.copy(archiving = Stamp(uid, offsetDateTimeSupplier.get()).some)
+                )
+              )
+            )
+            .map(_ => ())
+        else Future.unit
+
+      // * Se lo stato non è attivo a causa dei flags ritorna un errore applicativo
+      // * Per questo viene fatto il controllo a valle
+      _ <- validateResultState(newState)
+      _ <- authorizationManagementService.updateStateOnClients(
+        eServiceId = agreement.eserviceId,
+        consumerId = agreement.consumerId,
+        agreementId = agreement.id,
+        state = toClientState(newState)
+      )
+      _ <-
+        if (updated.state == AgreementManagement.AgreementState.ACTIVE && agreements.isEmpty)
+          createContractAndSendMail(updated, updateSeed)
         else Future.unit
     } yield updated
 
@@ -951,8 +982,7 @@ final case class AgreementApiServiceImpl(
     agreement: AgreementManagement.Agreement
   )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
     val conflictingStates: List[AgreementManagement.AgreementState] = List(
-      AgreementManagement.AgreementState.ACTIVE,
-      AgreementManagement.AgreementState.SUSPENDED,
+      AgreementManagement.AgreementState.DRAFT,
       AgreementManagement.AgreementState.PENDING,
       AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
     )
