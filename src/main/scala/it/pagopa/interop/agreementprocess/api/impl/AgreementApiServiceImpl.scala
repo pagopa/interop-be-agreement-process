@@ -13,7 +13,7 @@ import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelQueries
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
-import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules.certifiedAttributesSatisfied
+import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAndEServiceDetailsUpdate
@@ -179,24 +179,47 @@ final case class AgreementApiServiceImpl(
     val operationLabel = s"Upgrading agreement $agreementId"
     logger.info(operationLabel)
 
-    val result: Future[Agreement] = for {
-      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      agreementUUID  <- agreementId.toFutureUUID
-      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
-      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
-      _              <- agreement.assertUpgradableState.toFuture
-      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-      newDescriptor  <- CatalogManagementService.getEServiceNewerPublishedDescriptor(eService, agreement.descriptorId)
-      uid            <- getUidFutureUUID(contexts)
-      stamp       = Stamp(uid, offsetDateTimeSupplier.get())
+    def upgradeAgreement(
+      oldAgreementId: UUID,
+      newDescriptor: EServiceDescriptor
+    ): Future[AgreementManagement.Agreement] = for {
+      stamp <- getUidFutureUUID(contexts).map(Stamp(_, offsetDateTimeSupplier.get()))
       upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = newDescriptor.id, stamp)
-      newAgreement <- agreementManagementService.upgradeById(agreement.id, upgradeSeed)
+      newAgreement <- agreementManagementService.upgradeById(oldAgreementId, upgradeSeed)
       payload = getClientUpgradePayload(newAgreement, newDescriptor)
       _ <- authorizationManagementService.updateAgreementAndEServiceStates(
         newAgreement.eserviceId,
         newAgreement.consumerId,
         payload
       )
+    } yield newAgreement
+
+    def createNewDraftAgreement(agreement: AgreementManagement.Agreement, newDescriptorId: UUID) =
+      agreementManagementService.createAgreement(
+        AgreementManagement.AgreementSeed(
+          eserviceId = agreement.eserviceId,
+          descriptorId = newDescriptorId,
+          producerId = agreement.producerId,
+          consumerId = agreement.consumerId,
+          verifiedAttributes = agreement.verifiedAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
+          certifiedAttributes = agreement.certifiedAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
+          declaredAttributes = agreement.declaredAttributes.map(a => AgreementManagement.AttributeSeed(a.id)),
+          consumerNotes = agreement.consumerNotes
+        )
+      )
+
+    val result: Future[Agreement] = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      tenant         <- tenantManagementService.getTenant(requesterOrgId)
+      agreement      <- agreementId.toFutureUUID.flatMap(agreementManagementService.getAgreementById)
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+      _              <- agreement.assertUpgradableState.toFuture
+      eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
+      newDescriptor  <- CatalogManagementService.getEServiceNewerPublishedDescriptor(eService, agreement.descriptorId)
+      _              <- validateCertifiedAttributes(newDescriptor, tenant).whenA(eService.producerId != requesterOrgId)
+      newAgreement   <-
+        if (verifiedAndDeclareSatisfied(agreement, newDescriptor, tenant)) upgradeAgreement(agreement.id, newDescriptor)
+        else createNewDraftAgreement(agreement, newDescriptor.id)
     } yield newAgreement.toApi
 
     onComplete(result) {
@@ -985,6 +1008,13 @@ final case class AgreementApiServiceImpl(
     Future
       .failed(MissingCertifiedAttributes(descriptor.id, consumer.id))
       .unlessA(certifiedAttributesSatisfied(descriptor, consumer))
+
+  def verifiedAndDeclareSatisfied(
+    agreement: AgreementManagement.Agreement,
+    newDescriptor: EServiceDescriptor,
+    tenant: TenantManagement.Tenant
+  ): Boolean =
+    verifiedAttributesSatisfied(agreement, newDescriptor, tenant) && declaredAttributesSatisfied(newDescriptor, tenant)
 
   def verifyConsumerDoesNotActivatePending(
     agreement: AgreementManagement.Agreement,
