@@ -37,6 +37,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
 
       val seed = UpgradeAgreementSeed(descriptorId = newerDescriptor.id, SpecData.defaultStamp.get)
 
+      mockTenantRetrieve(consumer.id, consumer)
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
       mockAgreementUpgrade(agreement.id, seed, newAgreement)
@@ -60,7 +61,9 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
 
     "fail on missing agreement" in {
       val agreementId = UUID.randomUUID()
+      val consumer    = SpecData.tenant.copy(id = requesterOrgId)
 
+      mockTenantRetrieve(consumer.id, consumer)
       mockAgreementRetrieveNotFound(agreementId)
 
       Get() ~> service.upgradeAgreementById(agreementId.toString) ~> check {
@@ -79,6 +82,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
           consumerId = consumer.id
         )
 
+      mockTenantRetrieve(consumer.id, consumer)
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
 
@@ -99,6 +103,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
           consumerId = consumer.id
         )
 
+      mockTenantRetrieve(consumer.id, consumer)
       mockAgreementRetrieve(agreement)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
@@ -117,6 +122,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
           consumerId = consumer.id
         )
 
+      mockTenantRetrieve(consumer.id, consumer)
       mockAgreementRetrieve(agreement)
       mockEServiceRetrieve(eService.id, eService)
 
@@ -137,6 +143,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
           consumerId = consumer.id
         )
 
+      mockTenantRetrieve(requesterOrgId, SpecData.tenant.copy(id = requesterOrgId))
       mockAgreementRetrieve(agreement)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {

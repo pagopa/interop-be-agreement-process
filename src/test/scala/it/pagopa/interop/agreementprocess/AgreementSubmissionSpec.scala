@@ -15,6 +15,7 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 
 class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
 
@@ -48,6 +49,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
+      mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(
@@ -55,6 +57,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         expectedSeed,
         agreement.copy(state = expectedSeed.state, stamps = SpecData.submissionStamps)
       )
+      mockClientStateUpdate(eService.id, consumer.id, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK
@@ -265,6 +268,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
+      mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
@@ -299,6 +303,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       )
 
       mockAgreementRetrieve(agreement)
+      mockAgreementsRetrieve(Nil)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
