@@ -15,7 +15,6 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
-import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 
 class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
 
@@ -57,7 +56,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         expectedSeed,
         agreement.copy(state = expectedSeed.state, stamps = SpecData.submissionStamps)
       )
-      mockClientStateUpdate(eService.id, consumer.id, agreement.id, ClientComponentState.INACTIVE)
+      // if we decide to update the client even if the agreement is not active or suspended, uncomment this mock
+      // mockClientStateUpdate(eService.id, consumer.id, agreement.id, ClientComponentState.INACTIVE)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.OK

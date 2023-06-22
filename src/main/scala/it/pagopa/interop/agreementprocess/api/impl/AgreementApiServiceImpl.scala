@@ -161,7 +161,9 @@ final case class AgreementApiServiceImpl(
       _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
       _              <- agreement.assertSuspendableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-      descriptor     <- eService.descriptors.find(_.id == agreement.descriptorId).toFuture(new Exception)
+      descriptor     <- eService.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(eService.id, agreement.descriptorId))
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
       updated        <- suspend(agreement, descriptor, consumer, requesterOrgId)
     } yield updated.toApi
@@ -249,7 +251,9 @@ final case class AgreementApiServiceImpl(
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       _              <- verifyCloningConflictingAgreements(requesterOrgId, agreement.eserviceId)
       consumer       <- tenantManagementService.getTenant(requesterOrgId)
-      descriptor     <- eService.descriptors.find(_.id == agreement.descriptorId).toFuture(new Exception)
+      descriptor     <- eService.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(eService.id, agreement.descriptorId))
       _              <- validateCertifiedAttributes(descriptor, consumer).whenA(eService.producerId != consumer.id)
       newAgreement   <- agreementManagementService.createAgreement(agreement.toSeed)
       documents      <- createAndCopyDocumentsForClonedAgreement(agreement, newAgreement)
@@ -347,7 +351,9 @@ final case class AgreementApiServiceImpl(
       _              <- assertRequesterIsProducer(requesterOrgId, agreement)
       _              <- agreement.assertRejectableState.toFuture
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
-      descriptor     <- eService.descriptors.find(_.id == agreement.descriptorId).toFuture(new Exception)
+      descriptor     <- eService.descriptors
+        .find(_.id == agreement.descriptorId)
+        .toFuture(DescriptorNotFound(eService.id, agreement.descriptorId))
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
       uid            <- getUidFutureUUID(contexts)
       updated <- reject(agreement, eService, descriptor, consumer, payload, Stamp(uid, offsetDateTimeSupplier.get()))
@@ -606,9 +612,7 @@ final case class AgreementApiServiceImpl(
         .map(_.filterNot(_.id == agreement.id))
 
       _ <-
-        if (
-          newState == AgreementManagement.AgreementState.ACTIVE || newState == AgreementManagement.AgreementState.SUSPENDED
-        )
+        if (activeOrSuspended(newState))
           Future
             .traverse(agreements)(a =>
               agreementManagementService.updateAgreement(
@@ -625,21 +629,28 @@ final case class AgreementApiServiceImpl(
             .map(_ => ())
         else Future.unit
 
-      // * Se lo stato non è attivo a causa dei flags ritorna un errore applicativo
-      // * Per questo viene fatto il controllo a valle
+      // * If the state is not active due to flags this will return an applicative error
+      // * That's why this check is performed downstream
       _ <- validateResultState(newState)
-      _ <- authorizationManagementService.updateStateOnClients(
-        eServiceId = agreement.eserviceId,
-        consumerId = agreement.consumerId,
-        agreementId = agreement.id,
-        state = toClientState(newState)
-      )
+      _ <-
+        if (activeOrSuspended(newState))
+          authorizationManagementService.updateStateOnClients(
+            eServiceId = agreement.eserviceId,
+            consumerId = agreement.consumerId,
+            agreementId = agreement.id,
+            state = toClientState(newState)
+          )
+        else Future.unit
       _ <-
         if (updated.state == AgreementManagement.AgreementState.ACTIVE && agreements.isEmpty)
           createContractAndSendMail(updated, updateSeed)
         else Future.unit
     } yield updated
+  }
 
+  def activeOrSuspended(newState: AgreementManagement.AgreementState): Boolean = newState match {
+    case AgreementManagement.AgreementState.ACTIVE | AgreementManagement.AgreementState.SUSPENDED => true
+    case _                                                                                        => false
   }
 
   def activate(
