@@ -198,8 +198,8 @@ final case class AgreementApiServiceImpl(
 
     def createNewDraftAgreement(agreement: AgreementManagement.Agreement, newDescriptorId: UUID) =
       for {
-        _         <- verifyConflictingAgreements(agreement, AgreementManagement.AgreementState.DRAFT :: Nil)
-        agreement <- agreementManagementService.createAgreement(
+        _            <- verifyConflictingAgreements(agreement, AgreementManagement.AgreementState.DRAFT :: Nil)
+        newAgreement <- agreementManagementService.createAgreement(
           AgreementManagement.AgreementSeed(
             eserviceId = agreement.eserviceId,
             descriptorId = newDescriptorId,
@@ -211,7 +211,8 @@ final case class AgreementApiServiceImpl(
             consumerNotes = agreement.consumerNotes
           )
         )
-      } yield agreement
+        _            <- createAndCopyDocumentsForClonedAgreement(agreement, newAgreement)
+      } yield newAgreement
 
     val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
