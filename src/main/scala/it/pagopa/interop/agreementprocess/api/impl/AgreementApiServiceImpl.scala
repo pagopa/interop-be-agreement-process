@@ -649,10 +649,8 @@ final case class AgreementApiServiceImpl(
     } yield updated
   }
 
-  def activeOrSuspended(newState: AgreementManagement.AgreementState): Boolean = newState match {
-    case AgreementManagement.AgreementState.ACTIVE | AgreementManagement.AgreementState.SUSPENDED => true
-    case _                                                                                        => false
-  }
+  def activeOrSuspended(newState: AgreementManagement.AgreementState): Boolean =
+    newState == AgreementManagement.AgreementState.ACTIVE || newState == AgreementManagement.AgreementState.SUSPENDED
 
   def activate(
     agreement: AgreementManagement.Agreement,

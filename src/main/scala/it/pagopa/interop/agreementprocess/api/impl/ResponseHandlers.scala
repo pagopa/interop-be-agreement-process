@@ -62,7 +62,6 @@ object ResponseHandlers extends AkkaResponses {
     result match {
       case Success(s)                               => success(s)
       case Failure(ex: AgreementNotFound)           => notFound(ex, logMessage)
-      case Failure(ex: DescriptorNotFound)          => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState) => badRequest(ex, logMessage)
       case Failure(ex: OperationNotAllowed)         => forbidden(ex, logMessage)
       case Failure(ex)                              => internalServerError(ex, logMessage)
@@ -74,7 +73,6 @@ object ResponseHandlers extends AkkaResponses {
     result match {
       case Success(s)                               => success(s)
       case Failure(ex: AgreementNotFound)           => notFound(ex, logMessage)
-      case Failure(ex: DescriptorNotFound)          => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState) => badRequest(ex, logMessage)
       case Failure(ex: OperationNotAllowed)         => forbidden(ex, logMessage)
       case Failure(ex)                              => internalServerError(ex, logMessage)
@@ -123,7 +121,6 @@ object ResponseHandlers extends AkkaResponses {
       case Failure(ex: AgreementNotFound)           => notFound(ex, logMessage)
       case Failure(ex: OperationNotAllowed)         => forbidden(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState) => badRequest(ex, logMessage)
-      case Failure(ex: DescriptorNotFound)          => badRequest(ex, logMessage)
       case Failure(ex: MissingCertifiedAttributes)  => badRequest(ex, logMessage)
       case Failure(ex: EServiceNotFound)            => badRequest(ex, logMessage)
       case Failure(ex: AgreementAlreadyExists)      => conflict(ex, logMessage)
