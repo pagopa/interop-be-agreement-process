@@ -11,10 +11,10 @@ object AgreementProcessErrors {
 
   final case class UnexpectedError(message: String) extends ComponentError("0000", s"Unexpected error: $message")
 
-  final case class MissingCertifiedAttributes(eServiceId: UUID, consumerId: UUID)
+  final case class MissingCertifiedAttributes(descriptorId: UUID, consumerId: UUID)
       extends ComponentError(
         "0001",
-        s"Required certified attribute is missing. EService $eServiceId, Consumer: $consumerId"
+        s"Required certified attribute is missing. Descriptor $descriptorId, Consumer: $consumerId"
       )
 
   final case class AgreementSubmissionFailed(agreementId: UUID)

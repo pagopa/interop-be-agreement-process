@@ -16,17 +16,17 @@ trait CatalogManagementService {
 
 object CatalogManagementService {
 
-  def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit] = {
+  def validateActivationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EServiceDescriptor] = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.DEPRECATED, EServiceDescriptorState.SUSPENDED)
     validateDescriptor(eservice, descriptorId, allowedStatus)
   }
-  def validateCreationOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]   = {
+  def validateCreationOnDescriptor(eservice: EService, descriptorId: UUID): Future[EServiceDescriptor]   = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
     validateLatestDescriptor(eservice, descriptorId, allowedStatus)
   }
-  def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[Unit]     = {
+  def validateSubmitOnDescriptor(eservice: EService, descriptorId: UUID): Future[EServiceDescriptor]     = {
     val allowedStatus: List[EServiceDescriptorState] =
       List(EServiceDescriptorState.PUBLISHED, EServiceDescriptorState.SUSPENDED)
     validateLatestDescriptor(eservice, descriptorId, allowedStatus)
@@ -36,14 +36,14 @@ object CatalogManagementService {
     eService: EService,
     descriptorId: UUID,
     allowedStates: List[EServiceDescriptorState]
-  ): Future[Unit] = {
+  ): Future[EServiceDescriptor] = {
 
     eService.descriptors
       .filterNot(_.state == EServiceDescriptorState.DRAFT)
       .maxByOption(_.version.toLong)
       .find(_.id == descriptorId)
       .toRight(NotLatestEServiceDescriptor(descriptorId))
-      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates))
+      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates).as(d))
       .toFuture
   }
 
@@ -51,7 +51,7 @@ object CatalogManagementService {
     eService.descriptors
       .find(_.id == descriptorId)
       .toRight(DescriptorNotFound(eService.id, descriptorId))
-      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates))
+      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates).as(d))
       .toFuture
 
   def validateDescriptorState(

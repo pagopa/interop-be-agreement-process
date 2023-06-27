@@ -17,31 +17,41 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       implicit val contexts: Seq[(String, String)] = contextWithRole(INTERNAL_ROLE)
       val consumerId                               = UUID.randomUUID()
 
-      val (eServiceAttr, tenantAttr) = SpecData.matchingCertifiedAttributes
-      val attributeId                = tenantAttr.certified.get.id
+      val (descriptorAttr, tenantAttr) = SpecData.matchingCertifiedAttributes
+      val attributeId                  = tenantAttr.certified.get.id
 
-      val eServiceId1 = UUID.randomUUID()
-      val eServiceId2 = UUID.randomUUID()
-      val eServiceId3 = UUID.randomUUID()
-      val eService1   = SpecData.eService.copy(id = eServiceId1, attributes = eServiceAttr)
-      val eService2   = SpecData.eService.copy(id = eServiceId2)
-      val eService3   = SpecData.eService.copy(id = eServiceId3, attributes = eServiceAttr)
+      val descriptor1 = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val descriptor2 = SpecData.descriptor
+      val descriptor3 = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val eService1   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor1 :: Nil)
+      val eService2   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor2 :: Nil)
+      val eService3   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor3 :: Nil)
       val tenant      = SpecData.tenant.copy(attributes = Seq(tenantAttr))
 
       val suspendedAgreement1      =
         SpecData.suspendedByPlatformAgreement.copy(
-          eserviceId = eServiceId1,
+          eserviceId = eService1.id,
+          descriptorId = descriptor1.id,
           suspendedByProducer = None,
           suspendedByConsumer = None,
           suspendedByPlatform = Some(true)
         )
       val missingCertAttrAgreement =
-        SpecData.missingCertifiedAttributesAgreement.copy(eserviceId = eServiceId1, suspendedByPlatform = Some(true))
+        SpecData.missingCertifiedAttributesAgreement.copy(
+          eserviceId = eService1.id,
+          descriptorId = descriptor1.id,
+          suspendedByPlatform = Some(true)
+        )
       val suspendedAgreement2      =
-        SpecData.suspendedByProducerAgreement.copy(eserviceId = eServiceId2, suspendedByProducer = Some(true))
+        SpecData.suspendedByProducerAgreement.copy(
+          eserviceId = eService2.id,
+          descriptorId = descriptor2.id,
+          suspendedByProducer = Some(true)
+        )
       val suspendedAgreement3      =
         SpecData.suspendedByProducerAgreement.copy(
-          eserviceId = eServiceId3,
+          eserviceId = eService3.id,
+          descriptorId = descriptor3.id,
           suspendedByProducer = Some(true),
           suspendedByConsumer = None,
           suspendedByPlatform = Some(true)
@@ -89,9 +99,9 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       )
 
       mockAgreementsRetrieve(agreements)
-      mockEServiceRetrieve(eServiceId1, eService1)
-      mockEServiceRetrieve(eServiceId2, eService2)
-      mockEServiceRetrieve(eServiceId3, eService3)
+      mockEServiceRetrieve(eService1.id, eService1)
+      mockEServiceRetrieve(eService2.id, eService2)
+      mockEServiceRetrieve(eService3.id, eService3)
       mockTenantRetrieve(consumerId, tenant)
 
       mockAgreementUpdate(suspendedAgreement1.id, expectedSeed1, suspendedAgreement1)
@@ -115,24 +125,24 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val consumerId                               = UUID.randomUUID()
       val attributeId                              = UUID.randomUUID()
 
-      val eServiceAttr = SpecData.catalogCertifiedAttribute(attributeId)
-      val eServiceId1  = UUID.randomUUID()
-      val eServiceId2  = UUID.randomUUID()
-      val eService1    = SpecData.eService.copy(id = eServiceId1, attributes = eServiceAttr)
-      val eService2    = SpecData.eService.copy(id = eServiceId2)
-      val tenant       = SpecData.tenant
+      val descriptorAttr = SpecData.catalogCertifiedAttribute(attributeId)
+      val descriptor1    = SpecData.descriptor.copy(id = UUID.randomUUID(), attributes = descriptorAttr)
+      val descriptor2    = SpecData.descriptor.copy(id = UUID.randomUUID())
+      val eService1      = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor1 :: Nil)
+      val eService2      = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor2 :: Nil)
+      val tenant         = SpecData.tenant
 
-      val draftAgreement   = SpecData.draftAgreement.copy(eserviceId = eServiceId1)
-      val pendingAgreement = SpecData.pendingAgreement.copy(eserviceId = eServiceId1)
-      val activeAgreement  = SpecData.activeAgreement.copy(eserviceId = eServiceId1)
-      val activeAgreement2 = SpecData.activeAgreement.copy(eserviceId = eServiceId2)
+      val draftAgreement   = SpecData.draftAgreement.copy(eserviceId = eService1.id, descriptorId = descriptor1.id)
+      val pendingAgreement = SpecData.pendingAgreement.copy(eserviceId = eService1.id, descriptorId = descriptor1.id)
+      val activeAgreement  = SpecData.activeAgreement.copy(eserviceId = eService1.id, descriptorId = descriptor1.id)
+      val activeAgreement2 = SpecData.activeAgreement.copy(eserviceId = eService2.id, descriptorId = descriptor2.id)
 
       val agreements =
         Seq(draftAgreement, pendingAgreement, activeAgreement, activeAgreement2)
 
       mockAgreementsRetrieve(agreements)
-      mockEServiceRetrieve(eServiceId1, eService1)
-      mockEServiceRetrieve(eServiceId2, eService2)
+      mockEServiceRetrieve(eService1.id, eService1)
+      mockEServiceRetrieve(eService2.id, eService2)
       mockTenantRetrieve(consumerId, tenant)
 
       mockAgreementUpdateIgnoreSeed(draftAgreement.id)
@@ -156,11 +166,12 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val consumerId                               = UUID.randomUUID()
       val attributeId                              = UUID.randomUUID()
 
-      val eServiceAttr = SpecData.catalogCertifiedAttribute()
-      val eServiceId1  = UUID.randomUUID()
-      val eServiceId2  = UUID.randomUUID()
-      val eService1    = SpecData.eService.copy(id = eServiceId1)
-      val eService2    = SpecData.eService.copy(id = eServiceId2, attributes = eServiceAttr)
+      val descriptorAttr = SpecData.catalogCertifiedAttribute()
+      val eServiceId1    = UUID.randomUUID()
+      val eServiceId2    = UUID.randomUUID()
+      val descriptor2    = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val eService1      = SpecData.eService.copy(id = eServiceId1)
+      val eService2      = SpecData.eService.copy(id = eServiceId2, descriptors = descriptor2 :: Nil)
 
       val agreementWithoutChanges1  = SpecData.draftAgreement.copy(eserviceId = eServiceId1)
       val agreementWithoutChanges2  = SpecData.pendingAgreement.copy(eserviceId = eServiceId1)

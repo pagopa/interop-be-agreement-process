@@ -2,7 +2,7 @@ package it.pagopa.interop.agreementprocess.lifecycle
 
 import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.model.Agreement
-import it.pagopa.interop.catalogmanagement.client.model.{Attribute, Attributes, EService}
+import it.pagopa.interop.catalogmanagement.client.model.{Attribute, Attributes, EServiceDescriptor}
 import it.pagopa.interop.commons.utils.service.OffsetDateTimeSupplier
 import it.pagopa.interop.tenantmanagement.client.model.{
   CertifiedTenantAttribute,
@@ -24,8 +24,8 @@ object AttributesRules {
     consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id)
   )
 
-  def certifiedAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
-    certifiedAttributesSatisfied(eService.attributes, consumer.attributes.mapFilter(_.certified))
+  def certifiedAttributesSatisfied(descriptor: EServiceDescriptor, consumer: Tenant): Boolean =
+    certifiedAttributesSatisfied(descriptor.attributes, consumer.attributes.mapFilter(_.certified))
 
   def declaredAttributesSatisfied(
     eServiceAttributes: Attributes,
@@ -33,8 +33,8 @@ object AttributesRules {
   ): Boolean =
     attributesSatisfied(eServiceAttributes.declared, consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id))
 
-  def declaredAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
-    declaredAttributesSatisfied(eService.attributes, consumer.attributes.mapFilter(_.declared))
+  def declaredAttributesSatisfied(descriptor: EServiceDescriptor, consumer: Tenant): Boolean =
+    declaredAttributesSatisfied(descriptor.attributes, consumer.attributes.mapFilter(_.declared))
 
   def verifiedAttributesSatisfied(
     producerId: UUID,
@@ -52,8 +52,8 @@ object AttributesRules {
       .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
   }
 
-  def verifiedAttributesSatisfied(agreement: Agreement, eService: EService, consumer: Tenant): Boolean =
-    verifiedAttributesSatisfied(agreement.producerId, eService.attributes, consumer.attributes.mapFilter(_.verified))
+  def verifiedAttributesSatisfied(agreement: Agreement, descriptor: EServiceDescriptor, consumer: Tenant): Boolean =
+    verifiedAttributesSatisfied(agreement.producerId, descriptor.attributes, consumer.attributes.mapFilter(_.verified))
 
   private def attributesSatisfied(requested: Seq[Attribute], assigned: Seq[UUID]): Boolean =
     requested.forall {

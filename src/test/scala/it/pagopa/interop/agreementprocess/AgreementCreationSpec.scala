@@ -15,11 +15,11 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
 
   "Agreement Creation" should {
     "succeed if all requirements are met" in {
-      val descriptor                             = SpecData.publishedDescriptor
-      val (eServiceAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
-      val eService = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttributes)
-      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(tenantAttributes))
-      val payload  = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+      val (descriptorAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
+      val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttributes)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(tenantAttributes))
+      val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
       mockEServiceRetrieve(eService.id, eService)
       mockAgreementsRetrieve(Nil)
@@ -38,13 +38,13 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
       val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
       val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr     =
+      val descriptorAttr   =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
       val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val descriptor = SpecData.publishedDescriptor
+      val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
       val eService   =
-        SpecData.eService.copy(producerId = requesterOrgId, descriptors = Seq(descriptor), attributes = eServiceAttr)
+        SpecData.eService.copy(producerId = requesterOrgId, descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
       val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
@@ -83,11 +83,11 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
     }
 
     "fail if Descriptor is not in suspended or published state" in {
-      val descriptor         = SpecData.draftDescriptor
-      val attributeId        = UUID.randomUUID()
-      val eServiceAttributes = catalogCertifiedAttribute(attributeId)
-      val eService           = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttributes)
-      val payload            = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
+      val attributeId          = UUID.randomUUID()
+      val descriptorAttributes = catalogCertifiedAttribute(attributeId)
+      val descriptor           = SpecData.draftDescriptor.copy(attributes = descriptorAttributes)
+      val eService             = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val payload              = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
       mockEServiceRetrieve(eService.id, eService)
 
@@ -110,9 +110,8 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
     }
 
     "fail on missing certified attributes" in {
-      val descriptor = SpecData.publishedDescriptor
-      val eService   =
-        SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute())
+      val descriptor = SpecData.publishedDescriptor.copy(attributes = SpecData.catalogCertifiedAttribute())
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute()))
       val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 

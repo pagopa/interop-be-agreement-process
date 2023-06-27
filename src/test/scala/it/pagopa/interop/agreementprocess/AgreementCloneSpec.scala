@@ -14,9 +14,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
   "Agreement Clone" should {
     "succeed on Rejected agreement when requested by Consumer" in {
 
-      val descriptor                             = SpecData.publishedDescriptor
-      val (eServiceAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
-      val eService = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttributes)
+      val (descriptorAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
       val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(tenantAttributes))
 
       val consumerDoc1 = SpecData.document()
@@ -30,6 +28,9 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
           producerId = UUID.randomUUID(),
           consumerDocuments = Seq(consumerDoc1, consumerDoc2)
         )
+
+      val descriptor = SpecData.publishedDescriptor.copy(id = agreement.descriptorId, attributes = descriptorAttributes)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
 
       mockAgreementRetrieve(agreement)
       mockAgreementsRetrieve(Nil)
@@ -95,9 +96,9 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
         producerId = UUID.randomUUID()
       )
 
-    val descriptor = SpecData.publishedDescriptor
-    val eService   =
-      SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute())
+    val descriptor =
+      SpecData.publishedDescriptor.copy(id = agreement.descriptorId, attributes = SpecData.catalogCertifiedAttribute())
+    val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
     val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute()))
 
     mockEServiceRetrieve(agreement.eserviceId, eService)
