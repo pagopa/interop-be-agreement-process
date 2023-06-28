@@ -1,12 +1,13 @@
 package it.pagopa.interop.agreementprocess.lifecycle
 
 import cats.implicits.catsSyntaxOptionId
-import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
-import it.pagopa.interop.catalogmanagement.client.model.EService
-import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import it.pagopa.interop.catalogmanagement.model.CatalogItem
+import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
+import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreement
 
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -14,7 +15,7 @@ import java.util.UUID
 class AttributesRulesSpec extends AnyWordSpecLike {
 
   "Certified attributes check" should {
-    "return true if all EService single attributes are satisfied" in {
+    "return true if all CatalogItem single attributes are satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -22,19 +23,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogCertifiedAttribute()
         .copy(certified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantCertifiedAttribute(attr1),
         SpecData.tenantCertifiedAttribute(attr2),
         SpecData.tenantCertifiedAttribute()
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe true
     }
 
-    "return true if at least one attribute in every EService group attribute is satisfied" in {
+    "return true if at least one attribute in every CatalogItem group attribute is satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -47,19 +48,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantCertifiedAttribute(attr1),
         SpecData.tenantCertifiedAttribute(attr2),
         SpecData.tenantCertifiedAttribute()
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe true
     }
 
-    "return true if EService single and group attributes are satisfied" in {
+    "return true if CatalogItem single and group attributes are satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -69,19 +70,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogGroupAttributes(attr2, UUID.randomUUID()))
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantCertifiedAttribute(attr1),
         SpecData.tenantCertifiedAttribute(attr2),
         SpecData.tenantCertifiedAttribute()
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe true
     }
 
-    "return false if at least one EService single attribute is not satisfied" in {
+    "return false if at least one CatalogItem single attribute is not satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -89,15 +90,15 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogCertifiedAttribute()
         .copy(certified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(SpecData.tenantCertifiedAttribute(attr1), SpecData.tenantCertifiedAttribute())
+      val tenantAttr = List(SpecData.tenantCertifiedAttribute(attr1), SpecData.tenantCertifiedAttribute())
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe false
     }
 
-    "return false if at least one EService group attribute is not satisfied" in {
+    "return false if at least one CatalogItem group attribute is not satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -110,47 +111,47 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(SpecData.tenantCertifiedAttribute(attr1), SpecData.tenantCertifiedAttribute())
+      val tenantAttr = List(SpecData.tenantCertifiedAttribute(attr1), SpecData.tenantCertifiedAttribute())
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe false
     }
 
-    "return false if an EService single attribute is assigned but revoked" in {
+    "return false if an CatalogItem single attribute is assigned but revoked" in {
       val attr1 = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogCertifiedAttribute()
         .copy(certified = Seq(SpecData.catalogSingleAttribute(attr1)))
 
-      val tenantAttr = Seq(SpecData.tenantRevokedCertifiedAttribute(attr1))
+      val tenantAttr = List(SpecData.tenantRevokedCertifiedAttribute(attr1))
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe false
     }
 
-    "return false if the EService group attribute is assigned but revoked" in {
+    "return false if the CatalogItem group attribute is assigned but revoked" in {
       val attr1 = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogCertifiedAttribute()
         .copy(certified = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
 
-      val tenantAttr = Seq(SpecData.tenantRevokedCertifiedAttribute(attr1))
+      val tenantAttr = List(SpecData.tenantRevokedCertifiedAttribute(attr1))
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(eService, consumer) shouldBe false
     }
   }
 
   "Declared attributes check" should {
-    "return true if all EService single attributes are satisfied" in {
+    "return true if all CatalogItem single attributes are satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -158,19 +159,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogDeclaredAttribute()
         .copy(declared = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantDeclaredAttribute(attr1),
         SpecData.tenantDeclaredAttribute(attr2),
         SpecData.tenantDeclaredAttribute()
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(eService, consumer) shouldBe true
     }
 
-    "return true if at least one attribute in every EService group attribute is satisfied" in {
+    "return true if at least one attribute in every CatalogItem group attribute is satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -183,19 +184,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantDeclaredAttribute(attr1),
         SpecData.tenantDeclaredAttribute(attr2),
         SpecData.tenantDeclaredAttribute()
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(eService, consumer) shouldBe true
     }
 
-    "return true if EService single and group attributes are satisfied" in {
+    "return true if CatalogItem single and group attributes are satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -205,19 +206,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogGroupAttributes(attr2, UUID.randomUUID()))
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantDeclaredAttribute(attr1),
         SpecData.tenantDeclaredAttribute(attr2),
         SpecData.tenantDeclaredAttribute()
       )
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(eService, consumer) shouldBe true
     }
 
-    "return false if at least one EService single attribute is not satisfied" in {
+    "return false if at least one CatalogItem single attribute is not satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -225,15 +226,15 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogDeclaredAttribute()
         .copy(declared = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(SpecData.tenantDeclaredAttribute(attr1), SpecData.tenantDeclaredAttribute())
+      val tenantAttr = List(SpecData.tenantDeclaredAttribute(attr1), SpecData.tenantDeclaredAttribute())
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(eService, consumer) shouldBe false
     }
 
-    "return false if at least one EService group attribute is not satisfied" in {
+    "return false if at least one CatalogItem group attribute is not satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 
@@ -246,46 +247,46 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(SpecData.tenantDeclaredAttribute(attr1), SpecData.tenantDeclaredAttribute())
+      val tenantAttr = List(SpecData.tenantDeclaredAttribute(attr1), SpecData.tenantDeclaredAttribute())
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(eService, consumer) shouldBe false
     }
 
-    "return false if an EService single attribute is assigned but revoked" in {
+    "return false if an CatalogItem single attribute is assigned but revoked" in {
       val attr1 = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogDeclaredAttribute()
         .copy(declared = Seq(SpecData.catalogSingleAttribute(attr1)))
 
-      val tenantAttr = Seq(SpecData.tenantRevokedDeclaredAttribute(attr1))
+      val tenantAttr = List(SpecData.tenantRevokedDeclaredAttribute(attr1))
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(eService, consumer) shouldBe false
     }
 
-    "return false if the EService group attribute is assigned but revoked" in {
+    "return false if the CatalogItem group attribute is assigned but revoked" in {
       val attr1 = UUID.randomUUID()
 
       val eServiceAttr = SpecData
         .catalogDeclaredAttribute()
         .copy(declared = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
-      val tenantAttr   = Seq(SpecData.tenantRevokedDeclaredAttribute(attr1))
+      val tenantAttr   = List(SpecData.tenantRevokedDeclaredAttribute(attr1))
 
-      val eService: EService = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant   = SpecData.tenant.copy(attributes = tenantAttr)
+      val eService: CatalogItem      = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(eService, consumer) shouldBe false
     }
   }
 
   "Verified attributes check" should {
-    "return true if all EService single attributes are satisfied" in {
+    "return true if all CatalogItem single attributes are satisfied" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
       val attr2      = UUID.randomUUID()
@@ -294,20 +295,20 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
         SpecData.tenantVerifiedAttribute(attr2, producerId),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe true
     }
 
-    "return true if at least one attribute in every EService group attribute is satisfied" in {
+    "return true if at least one attribute in every CatalogItem group attribute is satisfied" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
       val attr2      = UUID.randomUUID()
@@ -321,20 +322,20 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
         SpecData.tenantVerifiedAttribute(attr2, producerId),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe true
     }
 
-    "return true if EService single and group attributes are satisfied" in {
+    "return true if CatalogItem single and group attributes are satisfied" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
       val attr2      = UUID.randomUUID()
@@ -345,20 +346,20 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogGroupAttributes(attr2, UUID.randomUUID()))
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
         SpecData.tenantVerifiedAttribute(attr2, producerId),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe true
     }
 
-    "return false if at least one EService single attribute is not satisfied" in {
+    "return false if at least one CatalogItem single attribute is not satisfied" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
       val attr2      = UUID.randomUUID()
@@ -367,19 +368,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
-    "return false if at least one EService group attribute is not satisfied" in {
+    "return false if at least one CatalogItem group attribute is not satisfied" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
       val attr2      = UUID.randomUUID()
@@ -393,19 +394,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
-    "return false if an EService single attribute is assigned but not verified" in {
+    "return false if an CatalogItem single attribute is assigned but not verified" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
 
@@ -413,16 +414,16 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1)))
 
-      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
+      val tenantAttr = List(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
-    "return false if the EService group attribute is assigned but not verified" in {
+    "return false if the CatalogItem group attribute is assigned but not verified" in {
       val producerId = UUID.randomUUID()
       val attr1      = UUID.randomUUID()
 
@@ -430,16 +431,16 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
 
-      val tenantAttr = Seq(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
+      val tenantAttr = List(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
-    "return false if a single attribute is verified but not by the Agreement producer" in {
+    "return false if a single attribute is verified but not by the PersistentAgreement producer" in {
       val producerId  = UUID.randomUUID()
       val attributeId = UUID.randomUUID()
 
@@ -447,19 +448,19 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attributeId)))
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attributeId, UUID.randomUUID()),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
 
-    "return false if a group attribute is verified but not by the Agreement producer" in {
+    "return false if a group attribute is verified but not by the PersistentAgreement producer" in {
       val producerId  = UUID.randomUUID()
       val attributeId = UUID.randomUUID()
 
@@ -467,14 +468,14 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogGroupAttributes(attributeId, UUID.randomUUID())))
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attributeId, UUID.randomUUID()),
         SpecData.tenantVerifiedAttribute(verifierId = producerId)
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
@@ -488,7 +489,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         .catalogVerifiedAttribute()
         .copy(verified = Seq(SpecData.catalogSingleAttribute(attr1), SpecData.catalogSingleAttribute(attr2)))
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
         SpecData.tenantVerifiedAttribute(
           id = attr2,
@@ -497,9 +498,9 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         )
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }
@@ -518,7 +519,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
           )
         )
 
-      val tenantAttr = Seq(
+      val tenantAttr = List(
         SpecData.tenantVerifiedAttribute(attr1, producerId),
         SpecData.tenantVerifiedAttribute(
           id = attr2,
@@ -527,9 +528,9 @@ class AttributesRulesSpec extends AnyWordSpecLike {
         )
       )
 
-      val agreement: Agreement = SpecData.agreement.copy(producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
+      val eService: CatalogItem          = SpecData.eService.copy(attributes = eServiceAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, eService, consumer) shouldBe false
     }

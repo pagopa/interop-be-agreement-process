@@ -1,15 +1,20 @@
 package it.pagopa.interop.agreementprocess.lifecycle
 
-import cats.implicits._
-import it.pagopa.interop.agreementmanagement.client.model.Agreement
-import it.pagopa.interop.catalogmanagement.client.model.{Attribute, Attributes, EService}
+import it.pagopa.interop.agreementmanagement.model.agreement._
+import it.pagopa.interop.catalogmanagement.model.{
+  CatalogItem,
+  CatalogAttribute,
+  SingleAttribute,
+  GroupAttribute,
+  CatalogAttributes
+}
 import it.pagopa.interop.commons.utils.service.OffsetDateTimeSupplier
-import it.pagopa.interop.tenantmanagement.client.model.{
-  CertifiedTenantAttribute,
-  DeclaredTenantAttribute,
-  Tenant,
-  TenantVerifier,
-  VerifiedTenantAttribute
+import it.pagopa.interop.tenantmanagement.model.tenant.{
+  PersistentCertifiedAttribute,
+  PersistentDeclaredAttribute,
+  PersistentVerifiedAttribute,
+  PersistentTenant,
+  PersistentTenantVerifier
 }
 
 import java.util.UUID
@@ -17,29 +22,35 @@ import java.util.UUID
 object AttributesRules {
 
   def certifiedAttributesSatisfied(
-    eServiceAttributes: Attributes,
-    consumerAttributes: Seq[CertifiedTenantAttribute]
+    eServiceAttributes: CatalogAttributes,
+    consumerAttributes: Seq[PersistentCertifiedAttribute]
   ): Boolean = attributesSatisfied(
     eServiceAttributes.certified,
     consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id)
   )
 
-  def certifiedAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
-    certifiedAttributesSatisfied(eService.attributes, consumer.attributes.mapFilter(_.certified))
+  def certifiedAttributesSatisfied(eService: CatalogItem, consumer: PersistentTenant): Boolean =
+    certifiedAttributesSatisfied(
+      eService.attributes,
+      consumer.attributes.collect { case a: PersistentCertifiedAttribute => a }
+    )
 
   def declaredAttributesSatisfied(
-    eServiceAttributes: Attributes,
-    consumerAttributes: Seq[DeclaredTenantAttribute]
+    eServiceAttributes: CatalogAttributes,
+    consumerAttributes: Seq[PersistentDeclaredAttribute]
   ): Boolean =
     attributesSatisfied(eServiceAttributes.declared, consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id))
 
-  def declaredAttributesSatisfied(eService: EService, consumer: Tenant): Boolean =
-    declaredAttributesSatisfied(eService.attributes, consumer.attributes.mapFilter(_.declared))
+  def declaredAttributesSatisfied(eService: CatalogItem, consumer: PersistentTenant): Boolean =
+    declaredAttributesSatisfied(
+      eService.attributes,
+      consumer.attributes.collect { case a: PersistentDeclaredAttribute => a }
+    )
 
   def verifiedAttributesSatisfied(
     producerId: UUID,
-    eServiceAttributes: Attributes,
-    consumerAttributes: Seq[VerifiedTenantAttribute]
+    eServiceAttributes: CatalogAttributes,
+    consumerAttributes: Seq[PersistentVerifiedAttribute]
   ): Boolean = attributesSatisfied(
     eServiceAttributes.verified,
     consumerAttributes
@@ -47,18 +58,27 @@ object AttributesRules {
       .map(_.id)
   )
 
-  private def isNotExpired(verifier: TenantVerifier): Boolean = {
+  private def isNotExpired(verifier: PersistentTenantVerifier): Boolean = {
     verifier.extensionDate
       .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
   }
 
-  def verifiedAttributesSatisfied(agreement: Agreement, eService: EService, consumer: Tenant): Boolean =
-    verifiedAttributesSatisfied(agreement.producerId, eService.attributes, consumer.attributes.mapFilter(_.verified))
+  def verifiedAttributesSatisfied(
+    agreement: PersistentAgreement,
+    eService: CatalogItem,
+    consumer: PersistentTenant
+  ): Boolean =
+    verifiedAttributesSatisfied(
+      agreement.producerId,
+      eService.attributes,
+      consumer.attributes.collect { case a: PersistentVerifiedAttribute => a }
+    )
 
-  private def attributesSatisfied(requested: Seq[Attribute], assigned: Seq[UUID]): Boolean =
+  private def attributesSatisfied(requested: Seq[CatalogAttribute], assigned: Seq[UUID]): Boolean = {
     requested.forall {
-      case Attribute(Some(single), _) => assigned.contains(single.id)
-      case Attribute(_, Some(group))  => group.map(_.id).intersect(assigned).nonEmpty
-      case _                          => true
+      case SingleAttribute(value) => assigned.contains(value.id)
+      case GroupAttribute(values) => values.map(_.id).intersect(assigned).nonEmpty
+      case _                      => true
     }
+  }
 }

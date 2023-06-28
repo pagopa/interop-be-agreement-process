@@ -1,18 +1,20 @@
 package it.pagopa.interop.agreementprocess.util
 
+import cats.syntax.all._
 import akka.http.scaladsl.server.directives.FileInfo
 import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
-import it.pagopa.interop.attributeregistrymanagement
-import it.pagopa.interop.attributeregistrymanagement.client.model.AttributeKind
 import it.pagopa.interop.authorizationmanagement.client.model._
-import it.pagopa.interop.catalogmanagement.client.model.{Attributes, EService, EServiceTechnology}
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.selfcare.partyprocess.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
-import it.pagopa.interop.tenantmanagement.client.model.{ExternalId, Tenant}
 import spray.json.JsonWriter
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
+import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, PersistentAgreementState}
+import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{PersistentAttribute, Declared}
+import it.pagopa.interop.catalogmanagement.model.{CatalogItem, Rest, CatalogAttributes}
+import it.pagopa.interop.tenantmanagement.model.tenant.{PersistentTenant, PersistentExternalId, PersistentTenantKind}
 
 import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
@@ -25,16 +27,20 @@ import scala.concurrent.{ExecutionContext, Future}
 object FakeDependencies {
 
   class FakeAttributeManagementService extends AttributeManagementService {
-    val attribute: ClientAttribute = attributeregistrymanagement.client.model.Attribute(
+    val attribute: PersistentAttribute = PersistentAttribute(
       id = UUID.randomUUID(),
-      kind = AttributeKind.DECLARED,
+      code = "code".some,
+      origin = "origin".some,
+      kind = Declared,
       description = "fake",
       name = "fake",
       creationTime = OffsetDateTime.now()
     )
 
-    override def getAttribute(attributeId: String)(implicit contexts: Seq[(String, String)]): Future[ClientAttribute] =
-      Future.successful(attribute)
+    override def getAttributeById(
+      attributeId: UUID
+    )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PersistentAttribute] =
+      Future.successful(attribute.copy(id = attributeId))
 
   }
 
@@ -66,17 +72,20 @@ object FakeDependencies {
     override def createAgreement(seed: AgreementSeed)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
       Future.successful(agreement)
 
-    override def getAgreementById(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
+    override def getAgreementById(
+      agreementId: UUID
+    )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[Agreement] =
       Future.successful(agreement)
 
     override def getAgreements(
-      producerId: Option[String],
-      consumerId: Option[String],
-      eserviceId: Option[String],
-      descriptorId: Option[String],
-      states: List[AgreementState],
-      attributeId: Option[String] = None
-    )(implicit contexts: Seq[(String, String)]): Future[Seq[Agreement]] = Future.successful(Seq.empty)
+      producerId: Option[UUID],
+      consumerId: Option[UUID],
+      eserviceId: Option[UUID],
+      descriptorId: Option[UUID],
+      states: Seq[PersistentAgreementState],
+      attributeId: Option[UUID]
+    )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[Seq[PersistentAgreement]] =
+      Future.successful(Seq.empty)
 
     override def upgradeById(agreementId: UUID, agreementSeed: UpgradeAgreementSeed)(implicit
       contexts: Seq[(String, String)]
@@ -98,7 +107,8 @@ object FakeDependencies {
     ): Future[Document] = Future.successful(document)
 
     override def getConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
-      contexts: Seq[(String, String)]
+      ec: ExecutionContext,
+      readModel: ReadModelService
     ): Future[Document] = Future.successful(document)
 
     override def removeConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
@@ -107,16 +117,19 @@ object FakeDependencies {
   }
 
   class FakeCatalogManagementService       extends CatalogManagementService       {
-    override def getEServiceById(eServiceId: UUID)(implicit contexts: Seq[(String, String)]): Future[EService] =
+    override def getEServiceById(
+      eServiceId: UUID
+    )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[CatalogItem] =
       Future.successful(
-        EService(
-          id = UUID.randomUUID(),
+        CatalogItem(
+          id = eServiceId,
           producerId = UUID.randomUUID(),
           name = "fake",
           description = "fake",
-          technology = EServiceTechnology.REST,
-          attributes = Attributes(Seq.empty, Seq.empty, Seq.empty),
-          descriptors = Seq.empty
+          technology = Rest,
+          attributes = CatalogAttributes(Seq.empty, Seq.empty, Seq.empty),
+          descriptors = Seq.empty,
+          createdAt = OffsetDateTime.now()
         )
       )
   }
@@ -136,18 +149,21 @@ object FakeDependencies {
   }
 
   class FakeTenantManagementService extends TenantManagementService {
-    override def getTenant(tenantId: UUID)(implicit contexts: Seq[(String, String)]): Future[Tenant] =
+    override def getTenantById(
+      tenantId: UUID
+    )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PersistentTenant] =
       Future.successful(
-        Tenant(
+        PersistentTenant(
           id = UUID.randomUUID(),
           selfcareId = Some(UUID.randomUUID().toString),
-          externalId = ExternalId("origin", "value"),
+          externalId = PersistentExternalId("origin", "value"),
           features = Nil,
           attributes = Nil,
           createdAt = OffsetDateTime.now(),
           updatedAt = None,
           mails = Nil,
-          name = "test_name"
+          name = "test_name",
+          kind = PersistentTenantKind.PA.some
         )
       )
   }

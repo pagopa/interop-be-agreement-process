@@ -15,9 +15,7 @@ import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadMode
 import ResponseHandlers.serviceCode
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
-import it.pagopa.interop.attributeregistrymanagement.client.api.AttributeApi
 import it.pagopa.interop.authorizationmanagement.client.api.PurposeApi
-import it.pagopa.interop.catalogmanagement.client.api.EServiceApi
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
@@ -27,7 +25,6 @@ import it.pagopa.interop.commons.utils.errors.{Problem => CommonProblem}
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
 import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
-import it.pagopa.interop.tenantmanagement.client.api.TenantApi
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
@@ -41,7 +38,9 @@ trait Dependencies {
 
   implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue = UserRegistryApiKeyValue()
 
-  val readModelService: ReadModelService = new MongoDbReadModelService(ApplicationConfiguration.readModelConfig)
+  implicit val readModelService: ReadModelService = new MongoDbReadModelService(
+    ApplicationConfiguration.readModelConfig
+  )
 
   def agreementManagement(
     blockingEc: ExecutionContextExecutor
@@ -49,30 +48,6 @@ trait Dependencies {
     new AgreementManagementServiceImpl(
       AgreementManagementInvoker(blockingEc)(actorSystem.classicSystem),
       AgreementManagementApi(ApplicationConfiguration.agreementManagementURL)
-    )
-
-  def catalogManagement(
-    blockingEc: ExecutionContextExecutor
-  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): CatalogManagementService =
-    new CatalogManagementServiceImpl(
-      CatalogManagementInvoker(blockingEc)(actorSystem.classicSystem),
-      EServiceApi(ApplicationConfiguration.catalogManagementURL)
-    )
-
-  def tenantManagement(
-    blockingEc: ExecutionContextExecutor
-  )(implicit actorSystem: ActorSystem[_]): TenantManagementService =
-    new TenantManagementServiceImpl(
-      TenantManagementInvoker(blockingEc)(actorSystem.classicSystem),
-      TenantApi(ApplicationConfiguration.tenantManagementURL)
-    )(blockingEc)
-
-  def attributeRegistryManagement(
-    blockingEc: ExecutionContextExecutor
-  )(implicit actorSystem: ActorSystem[_], ec: ExecutionContext): AttributeManagementService =
-    new AttributeManagementServiceImpl(
-      AttributeRegistryManagementInvoker(blockingEc)(actorSystem.classicSystem),
-      AttributeApi(ApplicationConfiguration.attributeRegistryManagementURL)
     )
 
   def authorizationManagement(
@@ -124,13 +99,12 @@ trait Dependencies {
     new AgreementApi(
       AgreementApiServiceImpl(
         agreementManagement(blockingEc),
-        catalogManagement(blockingEc),
-        tenantManagement(blockingEc),
-        attributeRegistryManagement(blockingEc),
+        CatalogManagementServiceImpl,
+        TenantManagementServiceImpl,
+        AttributeManagementServiceImpl,
         authorizationManagement(blockingEc),
         partyProcess,
         userRegistry,
-        readModelService,
         PDFCreator,
         fileManager(blockingEc),
         OffsetDateTimeSupplier,

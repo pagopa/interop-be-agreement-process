@@ -4,12 +4,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
+import it.pagopa.interop.agreementprocess.api.impl.AgreementApiMarshallerImpl._
 
 import java.util.UUID
 
 class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
-
-  import agreementApiMarshaller._
 
   "Agreement Clone" should {
     "succeed on Rejected agreement when requested by Consumer" in {
@@ -17,10 +16,10 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
       val descriptor                             = SpecData.publishedDescriptor
       val (eServiceAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
       val eService = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttributes)
-      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(tenantAttributes))
+      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = List(tenantAttributes))
 
-      val consumerDoc1 = SpecData.document()
-      val consumerDoc2 = SpecData.document()
+      val consumerDoc1 = SpecData.persistentDocument()
+      val consumerDoc2 = SpecData.persistentDocument()
 
       val agreement =
         SpecData.rejectedAgreement.copy(
@@ -98,7 +97,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
     val descriptor = SpecData.publishedDescriptor
     val eService   =
       SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute())
-    val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute()))
+    val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = List(SpecData.tenantCertifiedAttribute()))
 
     mockEServiceRetrieve(agreement.eserviceId, eService)
     mockAgreementsRetrieve(Nil)

@@ -1,18 +1,47 @@
 package it.pagopa.interop.agreementprocess
 
-import cats.implicits._
+import cats.syntax.all._
 import it.pagopa.interop.agreementmanagement.client.model._
-import it.pagopa.interop.agreementprocess.service.ClientAttribute
-import it.pagopa.interop.attributeregistrymanagement.client.{model => AttributeManagement}
-import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
-import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
-import it.pagopa.interop.catalogmanagement.client.model._
 import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
 import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
-import it.pagopa.interop.tenantmanagement.client.model._
 
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
+import it.pagopa.interop.catalogmanagement.model.{
+  CatalogDescriptor,
+  Published => CatalogPublished,
+  Deprecated => CatalogDeprecated,
+  Archived => CatalogArchived,
+  Draft => CatalogDraft,
+  Automatic,
+  CatalogItem,
+  Rest,
+  CatalogAttributes,
+  GroupAttribute,
+  SingleAttribute,
+  CatalogAttributeValue
+}
+import it.pagopa.interop.tenantmanagement.model.tenant.{
+  PersistentTenant,
+  PersistentExternalId,
+  PersistentTenantKind,
+  PersistentDeclaredAttribute,
+  PersistentCertifiedAttribute,
+  PersistentVerifiedAttribute,
+  PersistentTenantVerifier
+}
+import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{Certified, PersistentAttribute}
+import it.pagopa.interop.agreementmanagement.model.agreement.{
+  PersistentAgreement,
+  PersistentStamps,
+  PersistentAgreementDocument,
+  Rejected,
+  Active,
+  Draft
+}
+import it.pagopa.interop.agreementmanagement.model.agreement.Pending
+import it.pagopa.interop.agreementmanagement.model.agreement.PersistentStamp
+import it.pagopa.interop.agreementmanagement.model.agreement.Suspended
 
 object SpecData {
 
@@ -21,17 +50,16 @@ object SpecData {
   val who: UUID                         = UUID.randomUUID()
   val when: OffsetDateTime              = OffsetDateTime.now()
   final val defaultStamp: Option[Stamp] = Stamp(who, when).some
-
-  final val submissionStamps           = emptyStamps.copy(submission = defaultStamp)
-  final val rejectionStamps            = submissionStamps.copy(rejection = defaultStamp)
-  final val activationStamps           = submissionStamps.copy(activation = defaultStamp)
-  final val suspensionByConsumerStamps = activationStamps.copy(suspensionByConsumer = defaultStamp)
-  final val suspensionByProducerStamps = activationStamps.copy(suspensionByProducer = defaultStamp)
-  final val suspensionByBothStamps     =
+  final val submissionStamps            = emptyStamps.copy(submission = defaultStamp)
+  final val rejectionStamps             = submissionStamps.copy(rejection = defaultStamp)
+  final val activationStamps            = submissionStamps.copy(activation = defaultStamp)
+  final val suspensionByConsumerStamps  = activationStamps.copy(suspensionByConsumer = defaultStamp)
+  final val suspensionByProducerStamps  = activationStamps.copy(suspensionByProducer = defaultStamp)
+  final val suspensionByBothStamps      =
     activationStamps.copy(suspensionByConsumer = defaultStamp, suspensionByProducer = defaultStamp)
-  final val archivingStamps            = activationStamps.copy(archiving = defaultStamp)
+  final val archivingStamps             = activationStamps.copy(archiving = defaultStamp)
 
-  def descriptor: EServiceDescriptor = EServiceDescriptor(
+  def descriptor: CatalogDescriptor = CatalogDescriptor(
     id = UUID.randomUUID(),
     version = "1",
     description = None,
@@ -41,81 +69,90 @@ object SpecData {
     dailyCallsTotal = 1000,
     interface = None,
     docs = Nil,
-    state = EServiceDescriptorState.PUBLISHED,
-    agreementApprovalPolicy = AUTOMATIC,
-    serverUrls = Nil
+    state = CatalogPublished,
+    agreementApprovalPolicy = Automatic.some,
+    serverUrls = Nil,
+    createdAt = timestamp,
+    publishedAt = timestamp.some,
+    suspendedAt = None,
+    deprecatedAt = None,
+    archivedAt = None
   )
 
-  def publishedDescriptor: EServiceDescriptor  = descriptor.copy(state = EServiceDescriptorState.PUBLISHED)
-  def deprecatedDescriptor: EServiceDescriptor = descriptor.copy(state = EServiceDescriptorState.DEPRECATED)
-  def archivedDescriptor: EServiceDescriptor   = descriptor.copy(state = EServiceDescriptorState.ARCHIVED)
-  def draftDescriptor: EServiceDescriptor      = descriptor.copy(state = EServiceDescriptorState.DRAFT)
+  def publishedDescriptor: CatalogDescriptor  = descriptor.copy(state = CatalogPublished)
+  def deprecatedDescriptor: CatalogDescriptor = descriptor.copy(state = CatalogDeprecated)
+  def archivedDescriptor: CatalogDescriptor   = descriptor.copy(state = CatalogArchived)
+  def draftDescriptor: CatalogDescriptor      = descriptor.copy(state = CatalogDraft)
 
-  def eService: EService = EService(
+  def eService: CatalogItem = CatalogItem(
     id = UUID.randomUUID(),
     producerId = UUID.randomUUID(),
     name = "EService1",
     description = "EService 1",
-    technology = REST,
-    attributes = Attributes(Nil, Nil, Nil),
-    descriptors = Nil
+    technology = Rest,
+    attributes = CatalogAttributes(Nil, Nil, Nil),
+    descriptors = Nil,
+    createdAt = timestamp
   )
 
-  def tenant: Tenant = Tenant(
+  def tenant: PersistentTenant = PersistentTenant(
     id = UUID.randomUUID(),
     selfcareId = Some(UUID.randomUUID().toString),
-    externalId = ExternalId("origin", "value"),
+    externalId = PersistentExternalId("origin", "value"),
     features = Nil,
     attributes = Nil,
     createdAt = OffsetDateTime.now(),
     updatedAt = None,
     mails = Nil,
-    name = "test_name"
+    name = "test_name",
+    kind = PersistentTenantKind.PA.some
   )
 
-  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Attribute =
-    Attribute(single = Some(AttributeValue(id, explicitAttributeVerification = false)))
+  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): SingleAttribute =
+    SingleAttribute(CatalogAttributeValue(id, explicitAttributeVerification = false))
 
-  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): Attribute =
-    Attribute(group =
-      Some(
-        Seq(
-          AttributeValue(id1, explicitAttributeVerification = false),
-          AttributeValue(id2, explicitAttributeVerification = false)
-        )
+  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): GroupAttribute =
+    GroupAttribute(
+      Seq(
+        CatalogAttributeValue(id1, explicitAttributeVerification = false),
+        CatalogAttributeValue(id2, explicitAttributeVerification = false)
       )
     )
 
-  def catalogCertifiedAttribute(id: UUID = UUID.randomUUID()): Attributes =
-    Attributes(certified = Seq(catalogSingleAttribute(id)), declared = Nil, verified = Nil)
+  def catalogCertifiedAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
+    CatalogAttributes(certified = Seq(catalogSingleAttribute(id)), declared = Nil, verified = Nil)
 
-  def catalogDeclaredAttribute(id: UUID = UUID.randomUUID()): Attributes =
-    Attributes(declared = Seq(catalogSingleAttribute(id)), certified = Nil, verified = Nil)
+  def catalogDeclaredAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
+    CatalogAttributes(declared = Seq(catalogSingleAttribute(id)), certified = Nil, verified = Nil)
 
-  def catalogVerifiedAttribute(id: UUID = UUID.randomUUID()): Attributes =
-    Attributes(declared = Nil, certified = Nil, verified = Seq(catalogSingleAttribute(id)))
+  def catalogVerifiedAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
+    CatalogAttributes(declared = Nil, certified = Nil, verified = Seq(catalogSingleAttribute(id)))
 
-  def tenantCertifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(certified = Some(CertifiedTenantAttribute(id = id, assignmentTimestamp = timestamp)))
+  def tenantCertifiedAttribute(id: UUID = UUID.randomUUID()): PersistentCertifiedAttribute =
+    PersistentCertifiedAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None)
 
-  def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(declared = Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp)))
+  def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): PersistentDeclaredAttribute =
+    PersistentDeclaredAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None)
 
-  def tenantVerifiedAttribute(id: UUID = UUID.randomUUID(), verifierId: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(verified =
-      Some(
-        VerifiedTenantAttribute(
-          id = id,
-          assignmentTimestamp = timestamp,
-          verifiedBy = Seq(
-            TenantVerifier(id = verifierId, verificationDate = timestamp, extensionDate = timestamp.plusYears(9).some)
-          ),
-          revokedBy = Nil
+  def tenantVerifiedAttribute(
+    id: UUID = UUID.randomUUID(),
+    verifierId: UUID = UUID.randomUUID()
+  ): PersistentVerifiedAttribute =
+    PersistentVerifiedAttribute(
+      id = id,
+      assignmentTimestamp = timestamp,
+      verifiedBy = List(
+        PersistentTenantVerifier(
+          id = verifierId,
+          verificationDate = timestamp,
+          extensionDate = timestamp.plusYears(9).some,
+          expirationDate = None
         )
-      )
+      ),
+      revokedBy = Nil
     )
 
-  def matchingCertifiedAttributes: (Attributes, TenantAttribute) = {
+  def matchingCertifiedAttributes: (CatalogAttributes, PersistentCertifiedAttribute) = {
     val attributeId       = UUID.randomUUID()
     val eServiceAttribute = catalogCertifiedAttribute(attributeId)
     val tenantAttribute   = tenantCertifiedAttribute(attributeId)
@@ -123,7 +160,7 @@ object SpecData {
     (eServiceAttribute, tenantAttribute)
   }
 
-  def matchingDeclaredAttributes: (Attributes, TenantAttribute) = {
+  def matchingDeclaredAttributes: (CatalogAttributes, PersistentDeclaredAttribute) = {
     val attributeId       = UUID.randomUUID()
     val eServiceAttribute = catalogDeclaredAttribute(attributeId)
     val tenantAttribute   = tenantDeclaredAttribute(attributeId)
@@ -131,7 +168,9 @@ object SpecData {
     (eServiceAttribute, tenantAttribute)
   }
 
-  def matchingVerifiedAttributes(verifierId: UUID = UUID.randomUUID()): (Attributes, TenantAttribute) = {
+  def matchingVerifiedAttributes(
+    verifierId: UUID = UUID.randomUUID()
+  ): (CatalogAttributes, PersistentVerifiedAttribute) = {
     val attributeId       = UUID.randomUUID()
     val eServiceAttribute = catalogVerifiedAttribute(attributeId)
     val tenantAttribute   = tenantVerifiedAttribute(attributeId, verifierId)
@@ -213,10 +252,10 @@ object SpecData {
     verifiedAttributes = Seq(VerifiedAttribute(UUID.randomUUID()), VerifiedAttribute(UUID.randomUUID()))
   )
 
-  def clientAttribute(id: UUID): ClientAttribute = AttributeManagement.Attribute(
+  def clientAttribute(id: UUID): PersistentAttribute = PersistentAttribute(
     id = id,
     code = "code".some,
-    kind = AttributeManagement.AttributeKind.CERTIFIED,
+    kind = Certified,
     description = "description",
     origin = "origin".some,
     name = "attr",

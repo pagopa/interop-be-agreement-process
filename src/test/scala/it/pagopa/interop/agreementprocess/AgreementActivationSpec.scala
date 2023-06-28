@@ -55,14 +55,14 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       val eServiceAttr =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr   = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
+      val tenantAttr   = List(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
 
       val descriptor = SpecData.publishedDescriptor
       val eService   =
         SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttr, producerId = producerId)
       val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
       val agreement  =
-        SpecData.pendingAgreement.copy(
+        SpecData.persistentPendingAgreement.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           consumerId = consumer.id,
@@ -92,7 +92,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId)
       val agreement  =
-        SpecData.suspendedByConsumerAgreement.copy(
+        SpecData.persistentSuspendedByConsumerAgreement.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           consumerId = consumer.id

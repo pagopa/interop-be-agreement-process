@@ -1,7 +1,13 @@
 package it.pagopa.interop.agreementprocess.service
 
-import scala.concurrent.Future
+import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.PersistentAttribute
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
+
+import java.util.UUID
+import scala.concurrent.{Future, ExecutionContext}
 
 trait AttributeManagementService {
-  def getAttribute(attributeId: String)(implicit contexts: Seq[(String, String)]): Future[ClientAttribute]
+  def getAttributeById(
+    attributeId: UUID
+  )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PersistentAttribute]
 }

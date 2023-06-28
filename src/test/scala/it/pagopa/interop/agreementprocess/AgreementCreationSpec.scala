@@ -18,7 +18,7 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val descriptor                             = SpecData.publishedDescriptor
       val (eServiceAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
       val eService = SpecData.eService.copy(descriptors = Seq(descriptor), attributes = eServiceAttributes)
-      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(tenantAttributes))
+      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = List(tenantAttributes))
       val payload  = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
       mockEServiceRetrieve(eService.id, eService)
@@ -40,7 +40,7 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
       val eServiceAttr     =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val tenantAttr       = List(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
       val descriptor = SpecData.publishedDescriptor
       val eService   =
@@ -102,7 +102,7 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
       mockEServiceRetrieve(eService.id, eService)
-      mockAgreementsRetrieve(Seq(SpecData.agreement))
+      mockAgreementsRetrieve(Seq(SpecData.persistentAgreement))
 
       Get() ~> service.createAgreement(payload) ~> check {
         status shouldEqual StatusCodes.Conflict
@@ -113,7 +113,7 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val descriptor = SpecData.publishedDescriptor
       val eService   =
         SpecData.eService.copy(descriptors = Seq(descriptor), attributes = SpecData.catalogCertifiedAttribute())
-      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute()))
+      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = List(SpecData.tenantCertifiedAttribute()))
       val payload    = AgreementPayload(eserviceId = eService.id, descriptorId = descriptor.id)
 
       mockEServiceRetrieve(eService.id, eService)

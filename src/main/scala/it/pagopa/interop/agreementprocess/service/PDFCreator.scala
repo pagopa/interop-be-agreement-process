@@ -5,10 +5,10 @@ import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.commons.files.model.PDFConfiguration
 import it.pagopa.interop.commons.files.service.PDFManager
 import it.pagopa.interop.commons.utils.TypeConversions.TryOps
-import it.pagopa.interop.tenantmanagement.client.model.{
-  CertifiedTenantAttribute,
-  DeclaredTenantAttribute,
-  VerifiedTenantAttribute
+import it.pagopa.interop.tenantmanagement.model.tenant.{
+  PersistentCertifiedAttribute,
+  PersistentDeclaredAttribute,
+  PersistentVerifiedAttribute
 }
 
 import java.io.ByteArrayOutputStream
@@ -70,7 +70,7 @@ object PDFCreator extends PDFCreator with PDFManager {
     )
   }
 
-  private def getDeclaredAttributesText(declared: Seq[(ClientAttribute, DeclaredTenantAttribute)]): String =
+  private def getDeclaredAttributesText(declared: Seq[(ClientAttribute, PersistentDeclaredAttribute)]): String =
     declared.map { case (clientAttribute, tenantAttribute) =>
       val date = getDateText(tenantAttribute.assignmentTimestamp)
       val time = getTimeText(tenantAttribute.assignmentTimestamp)
@@ -84,7 +84,7 @@ object PDFCreator extends PDFCreator with PDFManager {
          |""".stripMargin
     }.mkString
 
-  private def getCertifiedAttributesText(certified: Seq[(ClientAttribute, CertifiedTenantAttribute)]): String =
+  private def getCertifiedAttributesText(certified: Seq[(ClientAttribute, PersistentCertifiedAttribute)]): String =
     certified.map { case (clientAttribute, tenantAttribute) =>
       val date = getDateText(tenantAttribute.assignmentTimestamp)
       val time = getTimeText(tenantAttribute.assignmentTimestamp)
@@ -97,7 +97,7 @@ object PDFCreator extends PDFCreator with PDFManager {
          |""".stripMargin
     }.mkString
 
-  private def getVerifiedAttributesText(verified: Seq[(ClientAttribute, VerifiedTenantAttribute)]): String =
+  private def getVerifiedAttributesText(verified: Seq[(ClientAttribute, PersistentVerifiedAttribute)]): String =
     verified.map { case (clientAttribute, tenantAttribute) =>
       val date = getDateText(tenantAttribute.assignmentTimestamp)
       val time = getTimeText(tenantAttribute.assignmentTimestamp)
