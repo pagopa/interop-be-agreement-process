@@ -69,14 +69,10 @@ object SpecData {
     dailyCallsTotal = 1000,
     interface = None,
     docs = Nil,
-    state = CatalogPublished,
-    agreementApprovalPolicy = Automatic.some,
+    state = EServiceDescriptorState.PUBLISHED,
+    agreementApprovalPolicy = AUTOMATIC,
     serverUrls = Nil,
-    createdAt = timestamp,
-    publishedAt = timestamp.some,
-    suspendedAt = None,
-    deprecatedAt = None,
-    archivedAt = None
+    attributes = Attributes(Nil, Nil, Nil)
   )
 
   def publishedDescriptor: CatalogDescriptor  = descriptor.copy(state = CatalogPublished)
@@ -89,10 +85,8 @@ object SpecData {
     producerId = UUID.randomUUID(),
     name = "EService1",
     description = "EService 1",
-    technology = Rest,
-    attributes = CatalogAttributes(Nil, Nil, Nil),
-    descriptors = Nil,
-    createdAt = timestamp
+    technology = REST,
+    descriptors = Nil
   )
 
   def tenant: PersistentTenant = PersistentTenant(

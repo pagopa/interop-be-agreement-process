@@ -4,473 +4,474 @@ import it.pagopa.interop.agreementmanagement.client.model.Agreement
 import it.pagopa.interop.agreementmanagement.client.model.AgreementState._
 import it.pagopa.interop.agreementprocess.service.AgreementStateByAttributesFSM._
 import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.{AUTOMATIC, MANUAL}
-import it.pagopa.interop.catalogmanagement.client.model.EService
 import it.pagopa.interop.tenantmanagement.client.model.Tenant
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import it.pagopa.interop.catalogmanagement.client.model.{EServiceDescriptor}
 
 class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
   "from DRAFT" should {
     "go to ACTIVE when Certified, Declared and Verified attributes are satisfied and Agreement Approval Policy is AUTOMATIC" in {
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
+      val agreement: Agreement                 = SpecData.agreement.copy(state = DRAFT)
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (descriptorVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(agreement.producerId)
 
-      val descriptor           = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = AUTOMATIC)
-      val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, descriptors = Seq(descriptor))
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptorAttr   =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared).copy(verified = descriptorVerAttr.verified)
+      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val descriptor       =
+        SpecData.publishedDescriptor.copy(agreementApprovalPolicy = AUTOMATIC, attributes = descriptorAttr)
+      val consumer: Tenant = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe PENDING
+      nextState(agreement, descriptor, consumer) shouldBe ACTIVE
     }
 
     "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
       val producerId: UUID = UUID.randomUUID()
 
-      val eServiceCertAttr = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr   = SpecData.tenantCertifiedAttribute()
-      val eServiceDeclAttr = SpecData.catalogDeclaredAttribute()
-      val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
-      val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
-      val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr     =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val descriptorCertAttr = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr     = SpecData.tenantCertifiedAttribute()
+      val descriptorDeclAttr = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr     = SpecData.tenantDeclaredAttribute()
+      val eServiceVerAttr    = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr      = SpecData.tenantVerifiedAttribute()
+      val descriptorAttr     =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement =
+      val agreement: Agreement           =
         SpecData.agreement.copy(state = DRAFT, producerId = producerId, consumerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, producerId = producerId)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
 
-      nextState(agreement, eService, consumer) shouldBe ACTIVE
+      nextState(agreement, descriptor, consumer) shouldBe ACTIVE
     }
 
     "go to PENDING when Certified and Declared attributes are satisfied and Agreement Approval Policy is not AUTOMATIC" in {
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val descriptorAttr                       = descriptorCertAttr.copy(declared = descriptorDeclAttr.declared)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr)
 
-      val descriptor           = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL)
+      val descriptor = SpecData.publishedDescriptor.copy(agreementApprovalPolicy = MANUAL, attributes = descriptorAttr)
       val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, descriptors = Seq(descriptor))
       val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe PENDING
+      nextState(agreement, descriptor, consumer) shouldBe PENDING
     }
 
     "go to MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
-      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceAttr                       = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr)
+      val descriptorCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                       = SpecData.tenantCertifiedAttribute()
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val descriptorAttr                       = descriptorCertAttr.copy(declared = descriptorDeclAttr.declared)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = DRAFT)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
+      nextState(agreement, descriptor, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
     }
   }
 
   "from PENDING" should {
     "go to ACTIVE when Certified, Declared and Verified attributes are satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = PENDING, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe ACTIVE
+      nextState(agreement, descriptor, consumer) shouldBe ACTIVE
     }
 
     "stay in PENDING when Verified attributes are NOT satisfied" in {
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
-      val tenantVerAttr                      = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val eServiceVerAttr                      = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr                        = SpecData.tenantVerifiedAttribute()
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = PENDING)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = PENDING)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe PENDING
+      nextState(agreement, descriptor, consumer) shouldBe PENDING
     }
 
     "go to DRAFT when Declared attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
-      val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorDeclAttr                   = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr                       = SpecData.tenantDeclaredAttribute()
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = PENDING, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe DRAFT
+      nextState(agreement, descriptor, consumer) shouldBe DRAFT
     }
 
     "go to MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                       = SpecData.tenantCertifiedAttribute()
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = PENDING, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
+      nextState(agreement, descriptor, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
     }
   }
 
   "from ACTIVE" should {
     "go to SUSPENDED when Certified attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val descriptorCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                       = SpecData.tenantCertifiedAttribute()
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, descriptor, consumer) shouldBe SUSPENDED
     }
 
     "go to SUSPENDED when Declared attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
-      val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val descriptorDeclAttr                   = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr                       = SpecData.tenantDeclaredAttribute()
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, descriptor, consumer) shouldBe SUSPENDED
     }
 
     "go to SUSPENDED when Verified attributes are NOT satisfied" in {
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
-      val tenantVerAttr                      = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val eServiceVerAttr                      = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr                        = SpecData.tenantVerifiedAttribute()
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = ACTIVE)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, descriptor, consumer) shouldBe SUSPENDED
     }
 
     "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
       val producerId: UUID = UUID.randomUUID()
 
-      val eServiceCertAttr = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr   = SpecData.tenantCertifiedAttribute()
-      val eServiceDeclAttr = SpecData.catalogDeclaredAttribute()
-      val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
-      val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
-      val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr     =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val descriptorCertAttr = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr     = SpecData.tenantCertifiedAttribute()
+      val descriptorDeclAttr = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr     = SpecData.tenantDeclaredAttribute()
+      val eServiceVerAttr    = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr      = SpecData.tenantVerifiedAttribute()
+      val descriptorAttr     =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement =
+      val agreement: Agreement           =
         SpecData.agreement.copy(state = ACTIVE, producerId = producerId, consumerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, producerId = producerId)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
 
-      nextState(agreement, eService, consumer) shouldBe ACTIVE
+      nextState(agreement, descriptor, consumer) shouldBe ACTIVE
     }
   }
 
   "from SUSPENDED" should {
     "go to ACTIVE when Certified, Declared and Verified attributes are satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe ACTIVE
+      nextState(agreement, descriptor, consumer) shouldBe ACTIVE
     }
 
     "stay in SUSPENDED when Certified attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val descriptorCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                       = SpecData.tenantCertifiedAttribute()
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, descriptor, consumer) shouldBe SUSPENDED
     }
 
     "stay in SUSPENDED when Declared attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
-      val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val descriptorDeclAttr                   = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr                       = SpecData.tenantDeclaredAttribute()
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, descriptor, consumer) shouldBe SUSPENDED
     }
 
     "stay in SUSPENDED when Verified attributes are NOT satisfied" in {
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
-      val tenantVerAttr                      = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val eServiceVerAttr                      = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr                        = SpecData.tenantVerifiedAttribute()
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = SUSPENDED)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe SUSPENDED
+      nextState(agreement, descriptor, consumer) shouldBe SUSPENDED
     }
 
     "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
       val producerId: UUID = UUID.randomUUID()
 
-      val eServiceCertAttr = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr   = SpecData.tenantCertifiedAttribute()
-      val eServiceDeclAttr = SpecData.catalogDeclaredAttribute()
-      val tenantDeclAttr   = SpecData.tenantDeclaredAttribute()
-      val eServiceVerAttr  = SpecData.catalogVerifiedAttribute()
-      val tenantVerAttr    = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr     =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr       = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val descriptorCertAttr = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr     = SpecData.tenantCertifiedAttribute()
+      val descriptorDeclAttr = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr     = SpecData.tenantDeclaredAttribute()
+      val eServiceVerAttr    = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr      = SpecData.tenantVerifiedAttribute()
+      val descriptorAttr     =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement =
+      val agreement: Agreement           =
         SpecData.agreement.copy(state = SUSPENDED, producerId = producerId, consumerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr, producerId = producerId)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
 
-      nextState(agreement, eService, consumer) shouldBe ACTIVE
+      nextState(agreement, descriptor, consumer) shouldBe ACTIVE
     }
   }
 
   "from ARCHIVED" should {
     "stay in ARCHIVED when Certified, Declared and Verified attributes are satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, descriptor, consumer) shouldBe ARCHIVED
     }
 
     "stay in ARCHIVED when Certified attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val descriptorCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                       = SpecData.tenantCertifiedAttribute()
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, descriptor, consumer) shouldBe ARCHIVED
     }
 
     "stay in ARCHIVED when Declared attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
-      val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val descriptorDeclAttr                   = SpecData.catalogDeclaredAttribute()
+      val tenantDeclAttr                       = SpecData.tenantDeclaredAttribute()
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, descriptor, consumer) shouldBe ARCHIVED
     }
 
     "stay in ARCHIVED when Verified attributes are NOT satisfied" in {
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
-      val tenantVerAttr                      = SpecData.tenantVerifiedAttribute()
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val eServiceVerAttr                      = SpecData.catalogVerifiedAttribute()
+      val tenantVerAttr                        = SpecData.tenantVerifiedAttribute()
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = ARCHIVED)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe ARCHIVED
+      nextState(agreement, descriptor, consumer) shouldBe ARCHIVED
     }
   }
 
   "from MISSING_CERTIFIED_ATTRIBUTES" should {
     "go to DRAFT when Certified attributes are satisfied" in {
-      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-      val eServiceAttr                       = eServiceCertAttr
-      val tenantAttr                         = Seq(tenantCertAttr)
+      val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val descriptorAttr                       = descriptorCertAttr
+      val tenantAttr                           = Seq(tenantCertAttr)
 
-      val agreement: Agreement = SpecData.agreement.copy(state = MISSING_CERTIFIED_ATTRIBUTES)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val agreement: Agreement           = SpecData.agreement.copy(state = MISSING_CERTIFIED_ATTRIBUTES)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe DRAFT
+      nextState(agreement, descriptor, consumer) shouldBe DRAFT
     }
 
     "stay in MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
-      val producerId: UUID                   = UUID.randomUUID()
-      val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
-      val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
-      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-      val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-      val eServiceAttr                       =
-        eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+      val producerId: UUID                     = UUID.randomUUID()
+      val descriptorCertAttr                   = SpecData.catalogCertifiedAttribute()
+      val tenantCertAttr                       = SpecData.tenantCertifiedAttribute()
+      val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+      val descriptorAttr                       =
+        descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+      val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
       val agreement: Agreement = SpecData.agreement.copy(state = MISSING_CERTIFIED_ATTRIBUTES, producerId = producerId)
-      val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-      val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement, eService, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
+      nextState(agreement, descriptor, consumer) shouldBe MISSING_CERTIFIED_ATTRIBUTES
     }
 
     "from REJECTED" should {
       "stay in REJECTED when Certified, Declared and Verified attributes are satisfied" in {
-        val producerId: UUID                   = UUID.randomUUID()
-        val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-        val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-        val eServiceAttr                       =
-          eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-        val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+        val producerId: UUID                     = UUID.randomUUID()
+        val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+        val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+        val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+        val descriptorAttr                       =
+          descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+        val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
-        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement           = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
+        val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+        val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement, eService, consumer) shouldBe REJECTED
+        nextState(agreement, descriptor, consumer) shouldBe REJECTED
       }
 
       "stay in REJECTED when Certified attributes are NOT satisfied" in {
-        val producerId: UUID                   = UUID.randomUUID()
-        val eServiceCertAttr                   = SpecData.catalogCertifiedAttribute()
-        val tenantCertAttr                     = SpecData.tenantCertifiedAttribute()
-        val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-        val eServiceAttr                       =
-          eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-        val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+        val producerId: UUID                     = UUID.randomUUID()
+        val descriptorCertAttr                   = SpecData.catalogCertifiedAttribute()
+        val tenantCertAttr                       = SpecData.tenantCertifiedAttribute()
+        val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+        val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+        val descriptorAttr                       =
+          descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+        val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
-        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement           = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
+        val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+        val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement, eService, consumer) shouldBe REJECTED
+        nextState(agreement, descriptor, consumer) shouldBe REJECTED
       }
 
       "stay in REJECTED when Declared attributes are NOT satisfied" in {
-        val producerId: UUID                   = UUID.randomUUID()
-        val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-        val eServiceDeclAttr                   = SpecData.catalogDeclaredAttribute()
-        val tenantDeclAttr                     = SpecData.tenantDeclaredAttribute()
-        val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
-        val eServiceAttr                       =
-          eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-        val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+        val producerId: UUID                     = UUID.randomUUID()
+        val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+        val descriptorDeclAttr                   = SpecData.catalogDeclaredAttribute()
+        val tenantDeclAttr                       = SpecData.tenantDeclaredAttribute()
+        val (eServiceVerAttr, tenantVerAttr)     = SpecData.matchingVerifiedAttributes(verifierId = producerId)
+        val descriptorAttr                       =
+          descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+        val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
-        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement           = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
+        val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+        val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement, eService, consumer) shouldBe REJECTED
+        nextState(agreement, descriptor, consumer) shouldBe REJECTED
       }
 
       "stay in REJECTED when Verified attributes are NOT satisfied" in {
-        val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
-        val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
-        val eServiceVerAttr                    = SpecData.catalogVerifiedAttribute()
-        val tenantVerAttr                      = SpecData.tenantVerifiedAttribute()
-        val eServiceAttr                       =
-          eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-        val tenantAttr                         = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
+        val (descriptorCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+        val (descriptorDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+        val eServiceVerAttr                      = SpecData.catalogVerifiedAttribute()
+        val tenantVerAttr                        = SpecData.tenantVerifiedAttribute()
+        val descriptorAttr                       =
+          descriptorCertAttr.copy(declared = descriptorDeclAttr.declared, verified = eServiceVerAttr.verified)
+        val tenantAttr                           = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
 
-        val agreement: Agreement = SpecData.agreement.copy(state = REJECTED)
-        val eService: EService   = SpecData.eService.copy(attributes = eServiceAttr)
-        val consumer: Tenant     = SpecData.tenant.copy(attributes = tenantAttr)
+        val agreement: Agreement           = SpecData.agreement.copy(state = REJECTED)
+        val descriptor: EServiceDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
+        val consumer: Tenant               = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement, eService, consumer) shouldBe REJECTED
+        nextState(agreement, descriptor, consumer) shouldBe REJECTED
       }
     }
   }

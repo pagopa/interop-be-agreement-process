@@ -2,43 +2,36 @@ package it.pagopa.interop.agreementprocess.service
 
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
-import it.pagopa.interop.agreementmanagement.model.agreement._
-import it.pagopa.interop.catalogmanagement.model.CatalogItem
-import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
-import it.pagopa.interop.catalogmanagement.model.Automatic
+import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
+import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
+import it.pagopa.interop.tenantmanagement.client.model.Tenant
 
 object AgreementStateByAttributesFSM {
 
-  def nextState(
-    agreement: PersistentAgreement,
-    eService: CatalogItem,
-    consumer: PersistentTenant
-  ): AgreementManagement.AgreementState =
+  def nextState(agreement: Agreement, descriptor: EServiceDescriptor, consumer: Tenant): AgreementState =
     agreement.state match {
       case Draft                      =>
         // Skip attributes validation if consuming own EServices
-        if (agreement.consumerId == agreement.producerId) AgreementManagement.AgreementState.ACTIVE
-        else if (!certifiedAttributesSatisfied(eService, consumer))
-          AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
+        if (agreement.consumerId == agreement.producerId) ACTIVE
+        else if (!certifiedAttributesSatisfied(descriptor, consumer)) MISSING_CERTIFIED_ATTRIBUTES
         else if (
-          eService.descriptors.exists(d => d.id == agreement.descriptorId && d.agreementApprovalPolicy == Automatic) &&
-          declaredAttributesSatisfied(eService, consumer) &&
-          verifiedAttributesSatisfied(agreement, eService, consumer)
-        ) AgreementManagement.AgreementState.ACTIVE
-        else if (declaredAttributesSatisfied(eService, consumer)) AgreementManagement.AgreementState.PENDING
-        else AgreementManagement.AgreementState.DRAFT
-      case Pending                    =>
-        if (!certifiedAttributesSatisfied(eService, consumer))
-          AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-        else if (!declaredAttributesSatisfied(eService, consumer)) AgreementManagement.AgreementState.DRAFT
-        else if (!verifiedAttributesSatisfied(agreement, eService, consumer)) AgreementManagement.AgreementState.PENDING
-        else AgreementManagement.AgreementState.ACTIVE
-      case Active                     =>
-        if (agreement.consumerId == agreement.producerId) AgreementManagement.AgreementState.ACTIVE
+          descriptor.agreementApprovalPolicy == AUTOMATIC &&
+          declaredAttributesSatisfied(descriptor, consumer) &&
+          verifiedAttributesSatisfied(agreement, descriptor, consumer)
+        ) ACTIVE
+        else if (declaredAttributesSatisfied(descriptor, consumer)) PENDING
+        else DRAFT
+      case PENDING                      =>
+        if (!certifiedAttributesSatisfied(descriptor, consumer)) MISSING_CERTIFIED_ATTRIBUTES
+        else if (!declaredAttributesSatisfied(descriptor, consumer)) DRAFT
+        else if (!verifiedAttributesSatisfied(agreement, descriptor, consumer)) PENDING
+        else ACTIVE
+      case ACTIVE                       =>
+        if (agreement.consumerId == agreement.producerId) ACTIVE
         else if (
-          certifiedAttributesSatisfied(eService, consumer) &&
-          declaredAttributesSatisfied(eService, consumer) &&
-          verifiedAttributesSatisfied(agreement, eService, consumer)
+          certifiedAttributesSatisfied(descriptor, consumer) &&
+          declaredAttributesSatisfied(descriptor, consumer) &&
+          verifiedAttributesSatisfied(agreement, descriptor, consumer)
         )
           AgreementManagement.AgreementState.ACTIVE
         else
@@ -46,18 +39,18 @@ object AgreementStateByAttributesFSM {
       case Suspended                  =>
         if (agreement.consumerId == agreement.producerId) AgreementManagement.AgreementState.ACTIVE
         else if (
-          certifiedAttributesSatisfied(eService, consumer) &&
-          declaredAttributesSatisfied(eService, consumer) &&
-          verifiedAttributesSatisfied(agreement, eService, consumer)
+          certifiedAttributesSatisfied(descriptor, consumer) &&
+          declaredAttributesSatisfied(descriptor, consumer) &&
+          verifiedAttributesSatisfied(agreement, descriptor, consumer)
         )
           AgreementManagement.AgreementState.ACTIVE
         else
-          AgreementManagement.AgreementState.SUSPENDED
-      case Archived                   => AgreementManagement.AgreementState.ARCHIVED
-      case MissingCertifiedAttributes =>
-        if (certifiedAttributesSatisfied(eService, consumer)) AgreementManagement.AgreementState.DRAFT
-        else AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-      case Rejected                   => AgreementManagement.AgreementState.REJECTED
+          SUSPENDED
+      case ARCHIVED                     => ARCHIVED
+      case MISSING_CERTIFIED_ATTRIBUTES =>
+        if (certifiedAttributesSatisfied(descriptor, consumer)) DRAFT
+        else MISSING_CERTIFIED_ATTRIBUTES
+      case REJECTED                     => REJECTED
     }
 
 }

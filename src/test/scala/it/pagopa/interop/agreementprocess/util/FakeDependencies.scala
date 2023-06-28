@@ -126,10 +126,20 @@ object FakeDependencies {
           producerId = UUID.randomUUID(),
           name = "fake",
           description = "fake",
-          technology = Rest,
-          attributes = CatalogAttributes(Seq.empty, Seq.empty, Seq.empty),
-          descriptors = Seq.empty,
-          createdAt = OffsetDateTime.now()
+          technology = EServiceTechnology.REST,
+          descriptors = EServiceDescriptor(
+            id = UUID.randomUUID(),
+            version = "1",
+            audience = Nil,
+            voucherLifespan = 0,
+            dailyCallsPerConsumer = 0,
+            dailyCallsTotal = 0,
+            docs = Nil,
+            state = EServiceDescriptorState.PUBLISHED,
+            agreementApprovalPolicy = AgreementApprovalPolicy.AUTOMATIC,
+            serverUrls = Nil,
+            attributes = Attributes(Nil, Nil, Nil)
+          ) :: Nil
         )
       )
   }

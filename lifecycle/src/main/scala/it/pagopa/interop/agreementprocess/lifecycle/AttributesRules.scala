@@ -2,7 +2,7 @@ package it.pagopa.interop.agreementprocess.lifecycle
 
 import it.pagopa.interop.agreementmanagement.model.agreement._
 import it.pagopa.interop.catalogmanagement.model.{
-  CatalogItem,
+  CatalogDescriptor,
   CatalogAttribute,
   SingleAttribute,
   GroupAttribute,
@@ -29,11 +29,8 @@ object AttributesRules {
     consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id)
   )
 
-  def certifiedAttributesSatisfied(eService: CatalogItem, consumer: PersistentTenant): Boolean =
-    certifiedAttributesSatisfied(
-      eService.attributes,
-      consumer.attributes.collect { case a: PersistentCertifiedAttribute => a }
-    )
+  def certifiedAttributesSatisfied(descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
+    certifiedAttributesSatisfied(descriptor.attributes, consumer.attributes.mapFilter(_.certified))
 
   def declaredAttributesSatisfied(
     eServiceAttributes: CatalogAttributes,
@@ -41,11 +38,8 @@ object AttributesRules {
   ): Boolean =
     attributesSatisfied(eServiceAttributes.declared, consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id))
 
-  def declaredAttributesSatisfied(eService: CatalogItem, consumer: PersistentTenant): Boolean =
-    declaredAttributesSatisfied(
-      eService.attributes,
-      consumer.attributes.collect { case a: PersistentDeclaredAttribute => a }
-    )
+  def declaredAttributesSatisfied(descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
+    declaredAttributesSatisfied(descriptor.attributes, consumer.attributes.mapFilter(_.declared))
 
   def verifiedAttributesSatisfied(
     producerId: UUID,
@@ -63,16 +57,8 @@ object AttributesRules {
       .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
   }
 
-  def verifiedAttributesSatisfied(
-    agreement: PersistentAgreement,
-    eService: CatalogItem,
-    consumer: PersistentTenant
-  ): Boolean =
-    verifiedAttributesSatisfied(
-      agreement.producerId,
-      eService.attributes,
-      consumer.attributes.collect { case a: PersistentVerifiedAttribute => a }
-    )
+  def verifiedAttributesSatisfied(agreement: PersistentAgreement, descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
+    verifiedAttributesSatisfied(agreement.producerId, descriptor.attributes, consumer.attributes.mapFilter(_.verified))
 
   private def attributesSatisfied(requested: Seq[CatalogAttribute], assigned: Seq[UUID]): Boolean = {
     requested.forall {

@@ -17,17 +17,17 @@ trait CatalogManagementService {
 
 object CatalogManagementService {
 
-  def validateActivationOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[Unit] = {
+  def validateActivationOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[CatalogDescriptor] = {
     val allowedStatus: List[CatalogDescriptorState] =
       List(Published, Deprecated, Suspended)
     validateDescriptor(eservice, descriptorId, allowedStatus)
   }
-  def validateCreationOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[Unit]   = {
+  def validateCreationOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[CatalogDescriptor]   = {
     val allowedStatus: List[CatalogDescriptorState] =
       List(Published, Suspended)
     validateLatestDescriptor(eservice, descriptorId, allowedStatus)
   }
-  def validateSubmitOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[Unit]     = {
+  def validateSubmitOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[CatalogDescriptor]     = {
     val allowedStatus: List[CatalogDescriptorState] =
       List(Published, Suspended)
     validateLatestDescriptor(eservice, descriptorId, allowedStatus)
@@ -37,14 +37,14 @@ object CatalogManagementService {
     eService: CatalogItem,
     descriptorId: UUID,
     allowedStates: List[CatalogDescriptorState]
-  ): Future[Unit] = {
+  ): Future[CatalogDescriptor] = {
 
     eService.descriptors
       .filterNot(_.state == Draft)
       .maxByOption(_.version.toLong)
       .find(_.id == descriptorId)
       .toRight(NotLatestEServiceDescriptor(descriptorId))
-      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates))
+      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates).as(d))
       .toFuture
   }
 
@@ -52,7 +52,7 @@ object CatalogManagementService {
     eService.descriptors
       .find(_.id == descriptorId)
       .toRight(DescriptorNotFound(eService.id, descriptorId))
-      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates))
+      .flatMap(d => validateDescriptorState(eService.id, descriptorId, d.state, allowedStates).as(d))
       .toFuture
 
   def validateDescriptorState(

@@ -31,13 +31,31 @@ object SpecData {
     producerId = UUID.randomUUID(),
     name = "EService1",
     description = "EService 1",
-    technology = Rest,
-    attributes = CatalogAttributes(Nil, Nil, Nil),
-    descriptors = Nil,
-    createdAt = timestamp
+    technology = REST,
+    descriptors = Nil
   )
 
-  def tenant: PersistentTenant = PersistentTenant(
+  def descriptor: EServiceDescriptor = EServiceDescriptor(
+    id = UUID.randomUUID(),
+    version = "1",
+    description = None,
+    audience = Nil,
+    voucherLifespan = 0,
+    dailyCallsPerConsumer = 0,
+    dailyCallsTotal = 0,
+    interface = None,
+    docs = Nil,
+    state = EServiceDescriptorState.PUBLISHED,
+    agreementApprovalPolicy = AgreementApprovalPolicy.AUTOMATIC,
+    serverUrls = Nil,
+    publishedAt = None,
+    suspendedAt = None,
+    deprecatedAt = None,
+    archivedAt = None,
+    attributes = Attributes(Nil, Nil, Nil)
+  )
+
+  def tenant: Tenant = Tenant(
     id = UUID.randomUUID(),
     selfcareId = Some(UUID.randomUUID().toString),
     externalId = PersistentExternalId("origin", "value"),
