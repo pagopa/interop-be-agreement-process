@@ -991,11 +991,8 @@ final case class AgreementApiServiceImpl(
   def verifySubmissionConflictingAgreements(
     agreement: AgreementManagement.Agreement
   )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
-    val conflictingStates: List[AgreementManagement.AgreementState] = List(
-      AgreementManagement.AgreementState.DRAFT,
-      AgreementManagement.AgreementState.PENDING,
-      AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-    )
+    val conflictingStates: List[AgreementManagement.AgreementState] =
+      List(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 
