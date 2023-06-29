@@ -31,17 +31,6 @@ import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentTenantVerifier
 }
 import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{Certified, PersistentAttribute}
-import it.pagopa.interop.agreementmanagement.model.agreement.{
-  PersistentAgreement,
-  PersistentStamps,
-  PersistentAgreementDocument,
-  Rejected,
-  Active,
-  Draft
-}
-import it.pagopa.interop.agreementmanagement.model.agreement.Pending
-import it.pagopa.interop.agreementmanagement.model.agreement.PersistentStamp
-import it.pagopa.interop.agreementmanagement.model.agreement.Suspended
 
 object SpecData {
 
@@ -69,10 +58,15 @@ object SpecData {
     dailyCallsTotal = 1000,
     interface = None,
     docs = Nil,
-    state = EServiceDescriptorState.PUBLISHED,
-    agreementApprovalPolicy = AUTOMATIC,
+    state = CatalogPublished,
+    agreementApprovalPolicy = Automatic.some,
     serverUrls = Nil,
-    attributes = Attributes(Nil, Nil, Nil)
+    attributes = CatalogAttributes(Nil, Nil, Nil),
+    createdAt = timestamp,
+    publishedAt = timestamp.some,
+    suspendedAt = None,
+    deprecatedAt = None,
+    archivedAt = None
   )
 
   def publishedDescriptor: CatalogDescriptor  = descriptor.copy(state = CatalogPublished)
@@ -85,8 +79,10 @@ object SpecData {
     producerId = UUID.randomUUID(),
     name = "EService1",
     description = "EService 1",
-    technology = REST,
-    descriptors = Nil
+    technology = Rest,
+    descriptors = Nil,
+    attributes = None,
+    createdAt = timestamp
   )
 
   def tenant: PersistentTenant = PersistentTenant(

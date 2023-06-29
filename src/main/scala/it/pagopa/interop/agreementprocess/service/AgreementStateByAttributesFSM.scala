@@ -1,56 +1,70 @@
 package it.pagopa.interop.agreementprocess.service
 
-import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
-import it.pagopa.interop.catalogmanagement.client.model.AgreementApprovalPolicy.AUTOMATIC
-import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
-import it.pagopa.interop.tenantmanagement.client.model.Tenant
+import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
+import it.pagopa.interop.catalogmanagement.model.CatalogDescriptor
+import it.pagopa.interop.agreementmanagement.model.agreement.{
+  PersistentAgreement,
+  PersistentAgreementState,
+  Draft,
+  Active,
+  MissingCertifiedAttributes,
+  Pending,
+  Suspended,
+  Rejected,
+  Archived
+}
+import it.pagopa.interop.catalogmanagement.model.Automatic
 
 object AgreementStateByAttributesFSM {
 
-  def nextState(agreement: Agreement, descriptor: EServiceDescriptor, consumer: Tenant): AgreementState =
+  def nextState(
+    agreement: PersistentAgreement,
+    descriptor: CatalogDescriptor,
+    consumer: PersistentTenant
+  ): PersistentAgreementState =
     agreement.state match {
       case Draft                      =>
         // Skip attributes validation if consuming own EServices
-        if (agreement.consumerId == agreement.producerId) ACTIVE
-        else if (!certifiedAttributesSatisfied(descriptor, consumer)) MISSING_CERTIFIED_ATTRIBUTES
+        if (agreement.consumerId == agreement.producerId) Active
+        else if (!certifiedAttributesSatisfied(descriptor, consumer)) MissingCertifiedAttributes
         else if (
-          descriptor.agreementApprovalPolicy == AUTOMATIC &&
+          descriptor.agreementApprovalPolicy == Some(Automatic) &&
           declaredAttributesSatisfied(descriptor, consumer) &&
           verifiedAttributesSatisfied(agreement, descriptor, consumer)
-        ) ACTIVE
-        else if (declaredAttributesSatisfied(descriptor, consumer)) PENDING
-        else DRAFT
-      case PENDING                      =>
-        if (!certifiedAttributesSatisfied(descriptor, consumer)) MISSING_CERTIFIED_ATTRIBUTES
-        else if (!declaredAttributesSatisfied(descriptor, consumer)) DRAFT
-        else if (!verifiedAttributesSatisfied(agreement, descriptor, consumer)) PENDING
-        else ACTIVE
-      case ACTIVE                       =>
-        if (agreement.consumerId == agreement.producerId) ACTIVE
+        ) Active
+        else if (declaredAttributesSatisfied(descriptor, consumer)) Pending
+        else Draft
+      case Pending                    =>
+        if (!certifiedAttributesSatisfied(descriptor, consumer)) MissingCertifiedAttributes
+        else if (!declaredAttributesSatisfied(descriptor, consumer)) Draft
+        else if (!verifiedAttributesSatisfied(agreement, descriptor, consumer)) Pending
+        else Active
+      case Active                     =>
+        if (agreement.consumerId == agreement.producerId) Active
         else if (
           certifiedAttributesSatisfied(descriptor, consumer) &&
           declaredAttributesSatisfied(descriptor, consumer) &&
           verifiedAttributesSatisfied(agreement, descriptor, consumer)
         )
-          AgreementManagement.AgreementState.ACTIVE
+          Active
         else
-          AgreementManagement.AgreementState.SUSPENDED
+          Suspended
       case Suspended                  =>
-        if (agreement.consumerId == agreement.producerId) AgreementManagement.AgreementState.ACTIVE
+        if (agreement.consumerId == agreement.producerId) Active
         else if (
           certifiedAttributesSatisfied(descriptor, consumer) &&
           declaredAttributesSatisfied(descriptor, consumer) &&
           verifiedAttributesSatisfied(agreement, descriptor, consumer)
         )
-          AgreementManagement.AgreementState.ACTIVE
+          Active
         else
-          SUSPENDED
-      case ARCHIVED                     => ARCHIVED
-      case MISSING_CERTIFIED_ATTRIBUTES =>
-        if (certifiedAttributesSatisfied(descriptor, consumer)) DRAFT
-        else MISSING_CERTIFIED_ATTRIBUTES
-      case REJECTED                     => REJECTED
+          Suspended
+      case Archived                   => Archived
+      case MissingCertifiedAttributes =>
+        if (certifiedAttributesSatisfied(descriptor, consumer)) Draft
+        else MissingCertifiedAttributes
+      case Rejected                   => Rejected
     }
 
 }

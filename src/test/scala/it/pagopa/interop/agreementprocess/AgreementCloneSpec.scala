@@ -1,10 +1,11 @@
 package it.pagopa.interop.agreementprocess
 
+import it.pagopa.interop.agreementprocess.api.impl.AgreementApiMarshallerImpl._
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
-import it.pagopa.interop.agreementprocess.api.impl.AgreementApiMarshallerImpl._
 
 import java.util.UUID
 
@@ -14,10 +15,10 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
     "succeed on Rejected agreement when requested by Consumer" in {
 
       val (descriptorAttributes, tenantAttributes) = SpecData.matchingCertifiedAttributes
-      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(tenantAttributes))
+      val consumer = SpecData.tenant.copy(id = requesterOrgId, attributes = List(tenantAttributes))
 
-      val consumerDoc1 = SpecData.persistentDocument()
-      val consumerDoc2 = SpecData.persistentDocument()
+      val consumerDoc1 = SpecData.document()
+      val consumerDoc2 = SpecData.document()
 
       val agreement =
         SpecData.rejectedAgreement.copy(
@@ -31,7 +32,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
       val descriptor = SpecData.publishedDescriptor.copy(id = agreement.descriptorId, attributes = descriptorAttributes)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(agreement.eserviceId, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -77,7 +78,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
         producerId = UUID.randomUUID()
       )
 
-    mockAgreementRetrieve(agreement)
+    mockAgreementRetrieve(agreement.toPersistent)
     mockEServiceRetrieveNotFound(agreement.eserviceId)
 
     Get() ~> service.cloneAgreement(agreement.id.toString) ~> check {
@@ -98,11 +99,11 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
     val descriptor =
       SpecData.publishedDescriptor.copy(id = agreement.descriptorId, attributes = SpecData.catalogCertifiedAttribute())
     val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
-    val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = Seq(SpecData.tenantCertifiedAttribute()))
+    val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = List(SpecData.tenantCertifiedAttribute()))
 
     mockEServiceRetrieve(agreement.eserviceId, eService)
     mockAgreementsRetrieve(Nil)
-    mockAgreementRetrieve(agreement)
+    mockAgreementRetrieve(agreement.toPersistent)
     mockTenantRetrieve(consumer.id, consumer)
 
     Get() ~> service.cloneAgreement(agreement.id.toString) ~> check {
@@ -120,7 +121,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
         producerId = UUID.randomUUID()
       )
 
-    mockAgreementRetrieve(agreement)
+    mockAgreementRetrieve(agreement.toPersistent)
 
     Get() ~> service.cloneAgreement(agreement.id.toString) ~> check {
       status shouldEqual StatusCodes.BadRequest
@@ -137,7 +138,7 @@ class AgreementCloneSpec extends AnyWordSpecLike with SpecHelper with ScalatestR
         producerId = UUID.randomUUID()
       )
 
-    mockAgreementRetrieve(agreement)
+    mockAgreementRetrieve(agreement.toPersistent)
 
     Get() ~> service.cloneAgreement(agreement.id.toString) ~> check {
       status shouldEqual StatusCodes.Forbidden

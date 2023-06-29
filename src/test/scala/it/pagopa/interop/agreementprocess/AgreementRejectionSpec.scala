@@ -11,6 +11,7 @@ import it.pagopa.interop.agreementmanagement.client.model.{
 }
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.model.AgreementRejectionPayload
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -58,7 +59,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
 
       val descriptorAttr =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr     = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
+      val tenantAttr     = List(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
       val eService   =
@@ -89,7 +90,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
         rejectionReason = rejectionReason.some
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(
@@ -137,7 +138,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
 
       val descriptorAttr =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr     = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
+      val tenantAttr     = List(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
@@ -153,7 +154,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
 
       val payload = AgreementRejectionPayload("Document not valid")
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -165,7 +166,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
       val agreement = SpecData.pendingAgreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())
       val payload   = AgreementRejectionPayload("Document not valid")
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -187,7 +188,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
       val agreement = SpecData.activeAgreement.copy(producerId = requesterOrgId)
       val payload   = AgreementRejectionPayload("Document not valid")
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest

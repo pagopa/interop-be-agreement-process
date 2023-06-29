@@ -1,7 +1,7 @@
 package it.pagopa.interop.agreementprocess.service
 
 import akka.http.scaladsl.model.MediaTypes
-import it.pagopa.interop.agreementmanagement.client.model.{DocumentSeed, UpdateAgreementSeed, Agreement}
+import it.pagopa.interop.agreementmanagement.client.model.{DocumentSeed, UpdateAgreementSeed}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{MissingUserInfo, StampNotFound}
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
@@ -11,6 +11,7 @@ import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.catalogmanagement.model.CatalogItem
+import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreement
 import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentTenant,
   PersistentCertifiedAttribute,
@@ -43,7 +44,7 @@ final class AgreementContractCreator(
   private val contractPrettyName: String      = "Richiesta di fruizione"
 
   def create(
-    agreement: Agreement,
+    agreement: PersistentAgreement,
     eService: CatalogItem,
     consumer: PersistentTenant,
     producer: PersistentTenant,
@@ -141,7 +142,7 @@ final class AgreementContractCreator(
   } yield s"${name.value} ${familyName.value} ($fiscalCode)"
 
   def getPdfPayload(
-    agreement: Agreement,
+    agreement: PersistentAgreement,
     eService: CatalogItem,
     consumer: PersistentTenant,
     producer: PersistentTenant,

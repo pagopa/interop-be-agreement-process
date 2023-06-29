@@ -47,6 +47,29 @@ object Adapters {
       updatedAt = a.updatedAt,
       contract = a.contract.map(_.toApi)
     )
+
+    def toPersistent: PersistentAgreement = PersistentAgreement(
+      id = a.id,
+      eserviceId = a.eserviceId,
+      descriptorId = a.descriptorId,
+      producerId = a.producerId,
+      consumerId = a.consumerId,
+      state = a.state.toPersistent,
+      verifiedAttributes = a.verifiedAttributes.map(_.toPersistent),
+      certifiedAttributes = a.certifiedAttributes.map(_.toPersistent),
+      declaredAttributes = a.declaredAttributes.map(_.toPersistent),
+      suspendedByConsumer = a.suspendedByConsumer,
+      suspendedByProducer = a.suspendedByProducer,
+      suspendedByPlatform = a.suspendedByPlatform,
+      consumerNotes = a.consumerNotes,
+      rejectionReason = a.rejectionReason,
+      consumerDocuments = a.consumerDocuments.map(_.toPersistent),
+      createdAt = a.createdAt,
+      updatedAt = a.updatedAt,
+      contract = a.contract.map(_.toPersistent),
+      stamps = a.stamps.toPersistent,
+      suspendedAt = a.suspendedAt
+    )
   }
 
   implicit class AgreementManagementStateWrapper(private val s: AgreementManagement.AgreementState) extends AnyVal {
@@ -85,15 +108,18 @@ object Adapters {
   }
 
   implicit class VerifiedAttributeWrapper(private val a: AgreementManagement.VerifiedAttribute) extends AnyVal {
-    def toApi: VerifiedAttribute = VerifiedAttribute(id = a.id)
+    def toApi: VerifiedAttribute                  = VerifiedAttribute(id = a.id)
+    def toPersistent: PersistentVerifiedAttribute = PersistentVerifiedAttribute(id = a.id)
   }
 
   implicit class CertifiedAttributeWrapper(private val a: AgreementManagement.CertifiedAttribute) extends AnyVal {
-    def toApi: CertifiedAttribute = CertifiedAttribute(id = a.id)
+    def toApi: CertifiedAttribute                  = CertifiedAttribute(id = a.id)
+    def toPersistent: PersistentCertifiedAttribute = PersistentCertifiedAttribute(id = a.id)
   }
 
   implicit class DeclaredAttributeWrapper(private val a: AgreementManagement.DeclaredAttribute) extends AnyVal {
-    def toApi: DeclaredAttribute = DeclaredAttribute(id = a.id)
+    def toApi: DeclaredAttribute                  = DeclaredAttribute(id = a.id)
+    def toPersistent: PersistentDeclaredAttribute = PersistentDeclaredAttribute(id = a.id)
   }
 
   implicit class DocumentSeedWrapper(private val d: AgreementManagement.DocumentSeed) extends AnyVal {
@@ -102,7 +128,15 @@ object Adapters {
   }
 
   implicit class DocumentWrapper(private val d: AgreementManagement.Document) extends AnyVal {
-    def toApi: Document = Document(
+    def toApi: Document                           = Document(
+      id = d.id,
+      name = d.name,
+      prettyName = d.prettyName,
+      contentType = d.contentType,
+      createdAt = d.createdAt,
+      path = d.path
+    )
+    def toPersistent: PersistentAgreementDocument = PersistentAgreementDocument(
       id = d.id,
       name = d.name,
       prettyName = d.prettyName,

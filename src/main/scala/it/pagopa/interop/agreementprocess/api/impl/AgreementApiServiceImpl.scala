@@ -8,7 +8,6 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers._
-import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelAgreementQueries
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
@@ -42,11 +41,13 @@ import it.pagopa.interop.agreementmanagement.model.agreement.{
   Pending,
   MissingCertifiedAttributes,
   Active,
+  Rejected,
   PersistentAgreementState,
   PersistentAgreement,
   PersistentStamps,
   PersistentStamp
 }
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.certifiedMailSender.InteropEnvelope
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
@@ -61,7 +62,6 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import it.pagopa.interop.agreementmanagement.model.agreement.Rejected
 
 final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
@@ -108,7 +108,7 @@ final case class AgreementApiServiceImpl(
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       eService       <- catalogManagementService
         .getEServiceById(payload.eserviceId)
-      descriptor              <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
+      descriptor     <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
       _              <- verifyCreationConflictingAgreements(requesterOrgId, payload)
       consumer       <- tenantManagementService
         .getTenantById(requesterOrgId)
@@ -138,7 +138,7 @@ final case class AgreementApiServiceImpl(
       _              <- verifySubmissionConflictingAgreements(agreement)
       eService       <- catalogManagementService
         .getEServiceById(agreement.eserviceId)
-      descriptor              <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
+      descriptor     <- CatalogManagementService.validateSubmitOnDescriptor(eService, agreement.descriptorId)
       consumer       <- tenantManagementService
         .getTenantById(agreement.consumerId)
       updated        <- submit(agreement, eService, descriptor, consumer, payload)
@@ -167,7 +167,7 @@ final case class AgreementApiServiceImpl(
       _              <- verifyActivationConflictingAgreements(agreement)
       eService       <- catalogManagementService
         .getEServiceById(agreement.eserviceId)
-      descriptor              <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
+      descriptor     <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
       consumer       <- tenantManagementService
         .getTenantById(agreement.consumerId)
       updated        <- activate(agreement, eService, descriptor, consumer, requesterOrgId)
@@ -217,9 +217,9 @@ final case class AgreementApiServiceImpl(
 
     def upgradeAgreement(
       oldAgreementId: UUID,
-      newDescriptor: EServiceDescriptor
+      newDescriptor: CatalogDescriptor
     ): Future[AgreementManagement.Agreement] = for {
-      stamp <- getUidFutureUUID(contexts).map(Stamp(_, offsetDateTimeSupplier.get()))
+      stamp <- getUidFutureUUID(contexts).map(AgreementManagement.Stamp(_, offsetDateTimeSupplier.get()))
       upgradeSeed = AgreementManagement.UpgradeAgreementSeed(descriptorId = newDescriptor.id, stamp)
       newAgreement <- agreementManagementService.upgradeById(oldAgreementId, upgradeSeed)
       payload = getClientUpgradePayload(newAgreement, newDescriptor)
@@ -230,9 +230,9 @@ final case class AgreementApiServiceImpl(
       )
     } yield newAgreement
 
-    def createNewDraftAgreement(agreement: AgreementManagement.Agreement, newDescriptorId: UUID) =
+    def createNewDraftAgreement(agreement: PersistentAgreement, newDescriptorId: UUID) =
       for {
-        _            <- verifyConflictingAgreements(agreement, AgreementManagement.AgreementState.DRAFT :: Nil)
+        _            <- verifyConflictingAgreements(agreement, Draft :: Nil)
         newAgreement <- agreementManagementService.createAgreement(
           AgreementManagement.AgreementSeed(
             eserviceId = agreement.eserviceId,
@@ -248,7 +248,7 @@ final case class AgreementApiServiceImpl(
         _            <- createAndCopyDocumentsForClonedAgreement(agreement, newAgreement)
       } yield newAgreement
 
-      /*
+    /*
       val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
@@ -270,10 +270,10 @@ final case class AgreementApiServiceImpl(
         newAgreement.consumerId,
         payload
       )
-      */
+     */
     val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      tenant         <- tenantManagementService.getTenant(requesterOrgId)
+      tenant         <- tenantManagementService.getTenantById(requesterOrgId)
       agreement      <- agreementId.toFutureUUID.flatMap(agreementManagementService.getAgreementById)
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       _              <- agreement.assertUpgradableState.toFuture
@@ -388,7 +388,7 @@ final case class AgreementApiServiceImpl(
   ): ClientAgreementAndEServiceDetailsUpdate = {
     ClientAgreementAndEServiceDetailsUpdate(
       agreementId = newAgreement.id,
-      agreementState = toClientState(newAgreement.state),
+      agreementState = toClientState(newAgreement.state.toPersistent),
       descriptorId = newDescriptor.id,
       audience = newDescriptor.audience,
       voucherLifespan = newDescriptor.voucherLifespan,
@@ -418,7 +418,14 @@ final case class AgreementApiServiceImpl(
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(eService.id, agreement.descriptorId))
       uid            <- getUidFutureUUID(contexts)
-      updated <- reject(agreement, eService, descriptor, consumer, payload, PersistentStamp(uid, offsetDateTimeSupplier.get()))
+      updated        <- reject(
+        agreement,
+        eService,
+        descriptor,
+        consumer,
+        payload,
+        PersistentStamp(uid, offsetDateTimeSupplier.get())
+      )
     } yield updated.toApi
 
     onComplete(result) {
@@ -502,9 +509,7 @@ final case class AgreementApiServiceImpl(
         )
       )
 
-    def updateAgreement(
-      agreement: AgreementManagement.Agreement
-    )(fsmState: AgreementManagement.AgreementState): Future[Unit] = {
+    def updateAgreement(agreement: AgreementManagement.Agreement)(fsmState: PersistentAgreementState): Future[Unit] = {
       val newSuspendedByPlatform = suspendedByPlatformFlag(fsmState)
 
       val finalState = agreementStateByFlags(
@@ -515,7 +520,7 @@ final case class AgreementApiServiceImpl(
       )
 
       val seed = AgreementManagement.UpdateAgreementSeed(
-        state = finalState,
+        state = finalState.toManagement,
         certifiedAttributes = agreement.certifiedAttributes,
         declaredAttributes = agreement.declaredAttributes,
         verifiedAttributes = agreement.verifiedAttributes,
@@ -535,17 +540,16 @@ final case class AgreementApiServiceImpl(
           state = toClientState(finalState)
         )
         .whenA(
-          (agreement.state == AgreementManagement.AgreementState.ACTIVE && finalState == AgreementManagement.AgreementState.SUSPENDED) ||
-            (agreement.state == AgreementManagement.AgreementState.SUSPENDED && finalState == AgreementManagement.AgreementState.ACTIVE)
+          (agreement.state == AgreementManagement.AgreementState.ACTIVE && finalState == Suspended) ||
+            (agreement.state == AgreementManagement.AgreementState.SUSPENDED && finalState == Active)
         )
 
       (updateAgreement >> updateClientState)
         .whenA(
           newSuspendedByPlatform != agreement.suspendedByPlatform && allowedStateTransitions
             .get(agreement.state)
-            .exists(_.contains(finalState))
+            .exists(_.contains(finalState.toManagement))
         )
-
     }
 
     def updateStates(consumer: PersistentTenant, eServices: Map[UUID, CatalogItem])(
@@ -569,14 +573,14 @@ final case class AgreementApiServiceImpl(
       val declared  = eService.descriptors.flatMap(_.attributes.declared)
       val verified  = eService.descriptors.flatMap(_.attributes.verified)
       (certified ++ declared ++ verified)
-        .flatMap(attr => attr.single.map(_.id).toSeq ++ attr.group.traverse(_.map(_.id)).flatten)
+        .flatMap(attrs =>
+          attrs match {
+            case single: SingleAttribute => Seq(single.id.id)
+            case group: GroupAttribute   => group.ids.map(_.id)
+          }
+        )
         .contains(attributeId)
-    //  .flatMap(attrs =>
-    //       attrs match {
-    //         case single: SingleAttribute => Seq(single.id.id)
-    //         case group: GroupAttribute   => group.ids.map(_.id)
-    //       }
-    //     )   
+    }
 
     val result: Future[Unit] = for {
       consumerUuid  <- consumerId.toFutureUUID
@@ -615,28 +619,28 @@ final case class AgreementApiServiceImpl(
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
     val newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
 
-    def calculateStamps(state: AgreementManagement.AgreementState, stamp: PersistentStamp): Future[PersistentStamps] =
+    def calculateStamps(state: PersistentAgreementState, stamp: PersistentStamp): Future[PersistentStamps] =
       state match {
-        case AgreementManagement.AgreementState.DRAFT                        => Future.successful(agreement.stamps)
-        case AgreementManagement.AgreementState.PENDING                      =>
+        case Draft                      => Future.successful(agreement.stamps)
+        case Pending                    =>
           Future.successful(agreement.stamps.copy(submission = stamp.some))
-        case AgreementManagement.AgreementState.ACTIVE                       =>
+        case Active                     =>
           Future.successful(agreement.stamps.copy(submission = stamp.some, activation = stamp.some))
-        case AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES => Future.successful(agreement.stamps)
-        case _ => Future.failed(AgreementNotInExpectedState(agreement.id.toString, newState.toPersistent))
+        case MissingCertifiedAttributes => Future.successful(agreement.stamps)
+        case _                          => Future.failed(AgreementNotInExpectedState(agreement.id.toString, newState))
       }
 
-    def validateResultState(state: AgreementManagement.AgreementState) = Future
+    def validateResultState(state: PersistentAgreementState) = Future
       .failed(AgreementSubmissionFailed(agreement.id))
       .unlessA(
-        List(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.ACTIVE)
+        List(Pending, Active)
           .contains(state)
       )
 
-    def getUpdateSeed(stamps: PersistentStamps): UpdateAgreementSeed =
-      if (newState == AgreementManagement.AgreementState.ACTIVE)
+    def getUpdateSeed(stamps: PersistentStamps): AgreementManagement.UpdateAgreementSeed =
+      if (newState == Active)
         AgreementManagement.UpdateAgreementSeed(
-          state = newState,
+          state = newState.toManagement,
           certifiedAttributes = matchingCertifiedAttributes(descriptor, consumer),
           declaredAttributes = matchingDeclaredAttributes(descriptor, consumer),
           verifiedAttributes = matchingVerifiedAttributes(eService, descriptor, consumer),
@@ -648,7 +652,7 @@ final case class AgreementApiServiceImpl(
         )
       else
         AgreementManagement.UpdateAgreementSeed(
-          state = newState,
+          state = newState.toManagement,
           certifiedAttributes = Nil,
           declaredAttributes = Nil,
           verifiedAttributes = Nil,
@@ -665,7 +669,7 @@ final case class AgreementApiServiceImpl(
     ): Future[Unit] =
       for {
         producer <- tenantManagementService
-        .getTenantById(agreement.producerId)
+          .getTenantById(agreement.producerId)
         _        <- agreementContractCreator.create(
           agreement = agreement,
           eService = eService,
@@ -684,24 +688,25 @@ final case class AgreementApiServiceImpl(
 
       agreements <- agreementManagementService
         .getAgreements(
-          consumerId = agreement.consumerId.toString.some,
-          eserviceId = agreement.eserviceId.toString.some,
-          states = List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+          consumerId = agreement.consumerId.some,
+          eserviceId = agreement.eserviceId.some,
+          states = List(Active, Suspended)
         )
         .map(_.filterNot(_.id == agreement.id))
 
       _ <-
-        if (activeOrSuspended(newState))
+        if (activeOrSuspended(newState.toManagement))
           Future
             .traverse(agreements)(a =>
               agreementManagementService.updateAgreement(
                 a.id,
-                UpdateAgreementSeed(
+                AgreementManagement.UpdateAgreementSeed(
                   state = AgreementManagement.AgreementState.ARCHIVED,
-                  certifiedAttributes = a.certifiedAttributes,
-                  declaredAttributes = a.declaredAttributes,
-                  verifiedAttributes = a.verifiedAttributes,
-                  stamps = a.stamps.copy(archiving = Stamp(uid, offsetDateTimeSupplier.get()).some)
+                  certifiedAttributes = a.certifiedAttributes.map(_.toManagement),
+                  declaredAttributes = a.declaredAttributes.map(_.toManagement),
+                  verifiedAttributes = a.verifiedAttributes.map(_.toManagement),
+                  stamps = a.stamps.toManagement
+                    .copy(archiving = AgreementManagement.Stamp(uid, offsetDateTimeSupplier.get()).some)
                 )
               )
             )
@@ -712,7 +717,7 @@ final case class AgreementApiServiceImpl(
       // * That's why this check is performed downstream
       _ <- validateResultState(newState)
       _ <-
-        if (activeOrSuspended(newState))
+        if (activeOrSuspended(newState.toManagement))
           authorizationManagementService.updateStateOnClients(
             eServiceId = agreement.eserviceId,
             consumerId = agreement.consumerId,
@@ -722,19 +727,19 @@ final case class AgreementApiServiceImpl(
         else Future.unit
       _ <-
         if (updated.state == AgreementManagement.AgreementState.ACTIVE && agreements.isEmpty)
-          createContractAndSendMail(updated, updateSeed)
+          createContractAndSendMail(updated.toPersistent, updateSeed)
         else Future.unit
     } yield updated
   }
 
-  def activeOrSuspended(newState: AgreementManagement.AgreementState): Boolean =
+  private def activeOrSuspended(newState: AgreementManagement.AgreementState): Boolean =
     newState == AgreementManagement.AgreementState.ACTIVE || newState == AgreementManagement.AgreementState.SUSPENDED
 
-  def activate(
+  private def activate(
     agreement: PersistentAgreement,
     eService: CatalogItem,
     descriptor: CatalogDescriptor,
-    consumer: TenantManagement.Tenant,
+    consumer: PersistentTenant,
     requesterOrgId: UUID
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer)
@@ -744,12 +749,12 @@ final case class AgreementApiServiceImpl(
     val newState              =
       agreementStateByFlags(nextStateByAttributes, suspendedByProducer, suspendedByConsumer, suspendedByPlatform)
     val firstActivation       =
-      agreement.state.toManagement == AgreementManagement.AgreementState.PENDING && newState == AgreementManagement.AgreementState.ACTIVE
+      agreement.state == Pending && newState == Active
 
     def getUpdateSeed(): Future[AgreementManagement.UpdateAgreementSeed] = getUidFutureUUID(contexts).map { uid =>
       if (firstActivation)
         AgreementManagement.UpdateAgreementSeed(
-          state = newState,
+          state = newState.toManagement,
           certifiedAttributes = matchingCertifiedAttributes(descriptor, consumer),
           declaredAttributes = matchingDeclaredAttributes(descriptor, consumer),
           verifiedAttributes = matchingVerifiedAttributes(eService, descriptor, consumer),
@@ -764,7 +769,7 @@ final case class AgreementApiServiceImpl(
         val suspensionByProducerStamp = suspendedByProducerStamp(agreement, requesterOrgId, Active, uid)
 
         AgreementManagement.UpdateAgreementSeed(
-          state = newState,
+          state = newState.toManagement,
           certifiedAttributes = agreement.certifiedAttributes.map(_.toManagement),
           declaredAttributes = agreement.declaredAttributes.map(_.toManagement),
           verifiedAttributes = agreement.verifiedAttributes.map(_.toManagement),
@@ -774,36 +779,30 @@ final case class AgreementApiServiceImpl(
           stamps = agreement.stamps
             .copy(suspensionByConsumer = suspensionByConsumerStamp, suspensionByProducer = suspensionByProducerStamp)
             .toManagement,
-          suspendedAt = if (newState == AgreementManagement.AgreementState.ACTIVE) None else agreement.suspendedAt
+          suspendedAt = if (newState == Active) None else agreement.suspendedAt
         )
       }
     }
 
-    val failureStates = List(
-      AgreementManagement.AgreementState.DRAFT,
-      AgreementManagement.AgreementState.PENDING,
-      AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES
-    )
+    val failureStates = List(Draft, Pending, MissingCertifiedAttributes)
 
     def failOnActivationFailure() = Future
       .failed(AgreementActivationFailed(agreement.id))
       .whenA(failureStates.contains(newState))
 
-    def performActivation(
-      seed: AgreementManagement.UpdateAgreementSeed,
-      agreement: AgreementManagement.Agreement
-    ): Future[Unit] = for {
-      producer <- tenantManagementService
-        .getTenantById(agreement.producerId)
-      _        <- agreementContractCreator.create(
-        agreement = agreement,
-        eService = eService,
-        consumer = consumer,
-        producer = producer,
-        seed = seed
-      )
-      _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
-    } yield ()
+    def performActivation(seed: AgreementManagement.UpdateAgreementSeed, agreement: PersistentAgreement): Future[Unit] =
+      for {
+        producer <- tenantManagementService
+          .getTenantById(agreement.producerId)
+        _        <- agreementContractCreator.create(
+          agreement = agreement,
+          eService = eService,
+          consumer = consumer,
+          producer = producer,
+          seed = seed
+        )
+        _        <- sendActivationEnvelope(agreement, producer, consumer, eService)
+      } yield ()
 
     for {
       seed    <- getUpdateSeed()
@@ -816,12 +815,12 @@ final case class AgreementApiServiceImpl(
           agreementId = agreement.id,
           state = toClientState(newState)
         )
-      _       <- if (firstActivation) performActivation(seed, updated) else Future.unit
+      _       <- if (firstActivation) performActivation(seed, updated.toPersistent) else Future.unit
     } yield updated
   }
 
   private def sendActivationEnvelope(
-    agreement: AgreementManagement.Agreement,
+    agreement: PersistentAgreement,
     producerTenant: PersistentTenant,
     consumerTenant: PersistentTenant,
     eservice: CatalogItem
@@ -873,7 +872,7 @@ final case class AgreementApiServiceImpl(
     envelope.flatMap(queueService.send[InteropEnvelope]).map(_ => ())
   }
 
-  def suspend(
+  private def suspend(
     agreement: PersistentAgreement,
     descriptor: CatalogDescriptor,
     consumer: PersistentTenant,
@@ -892,7 +891,7 @@ final case class AgreementApiServiceImpl(
       suspensionByConsumerStamp = suspendedByConsumerStamp(agreement, requesterOrgId, Suspended, uid)
       suspensionByProducerStamp = suspendedByProducerStamp(agreement, requesterOrgId, Suspended, uid)
       updateSeed                = AgreementManagement.UpdateAgreementSeed(
-        state = newState,
+        state = newState.toManagement,
         certifiedAttributes = agreement.certifiedAttributes.map(_.toManagement),
         declaredAttributes = agreement.declaredAttributes.map(_.toManagement),
         verifiedAttributes = agreement.verifiedAttributes.map(_.toManagement),
@@ -916,7 +915,7 @@ final case class AgreementApiServiceImpl(
     } yield updated
   }
 
-  def reject(
+  private def reject(
     agreement: PersistentAgreement,
     eService: CatalogItem,
     descriptor: CatalogDescriptor,
@@ -955,9 +954,9 @@ final case class AgreementApiServiceImpl(
     if (requesterOrgId == agreement.producerId) Some(destinationState == Suspended)
     else agreement.suspendedByProducer
 
-  private def suspendedByPlatformFlag(fsmState: AgreementManagement.AgreementState): Option[Boolean] =
+  private def suspendedByPlatformFlag(fsmState: PersistentAgreementState): Option[Boolean] =
     // TODO Which states enable the suspendedByPlatform?
-    List(AgreementManagement.AgreementState.SUSPENDED, AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
+    List(Suspended, MissingCertifiedAttributes)
       .contains(fsmState)
       .some
 
@@ -985,20 +984,20 @@ final case class AgreementApiServiceImpl(
     case _                                 => agreement.stamps.suspensionByProducer
   }
 
-  def agreementStateByFlags(
-    stateByAttribute: AgreementManagement.AgreementState,
+  private def agreementStateByFlags(
+    stateByAttribute: PersistentAgreementState,
     suspendedByProducer: Option[Boolean],
     suspendedByConsumer: Option[Boolean],
     suspendedByPlatform: Option[Boolean]
-  ): AgreementManagement.AgreementState =
+  ): PersistentAgreementState =
     (stateByAttribute, suspendedByProducer, suspendedByConsumer, suspendedByPlatform) match {
-      case (AgreementManagement.AgreementState.ACTIVE, Some(true), _, _) => AgreementManagement.AgreementState.SUSPENDED
-      case (AgreementManagement.AgreementState.ACTIVE, _, Some(true), _) => AgreementManagement.AgreementState.SUSPENDED
-      case (AgreementManagement.AgreementState.ACTIVE, _, _, Some(true)) => AgreementManagement.AgreementState.SUSPENDED
-      case _                                                             => stateByAttribute
+      case (Active, Some(true), _, _) => Suspended
+      case (Active, _, Some(true), _) => Suspended
+      case (Active, _, _, Some(true)) => Suspended
+      case _                          => stateByAttribute
     }
 
-  def matchingAttributes(eServiceAttributes: Seq[CatalogAttribute], consumerAttributes: Seq[UUID]): Seq[UUID] =
+  private def matchingAttributes(eServiceAttributes: Seq[CatalogAttribute], consumerAttributes: Seq[UUID]): Seq[UUID] =
     eServiceAttributes
       .flatMap(attrs =>
         attrs match {
@@ -1007,10 +1006,8 @@ final case class AgreementApiServiceImpl(
         }
       )
       .intersect(consumerAttributes)
-  // eServiceAttributes.flatMap(_.single.map(_.id)).intersect(consumerAttributes) ++
-  //   eServiceAttributes.flatMap(_.group).flatten.map(_.id).intersect(consumerAttributes)
 
-  def matchingCertifiedAttributes(
+  private def matchingCertifiedAttributes(
     descriptor: CatalogDescriptor,
     consumer: PersistentTenant
   ): Seq[AgreementManagement.CertifiedAttribute] = {
@@ -1022,7 +1019,7 @@ final case class AgreementApiServiceImpl(
     matchingAttributes(descriptor.attributes.certified, attributes).map(AgreementManagement.CertifiedAttribute)
   }
 
-  def matchingDeclaredAttributes(
+  private def matchingDeclaredAttributes(
     descriptor: CatalogDescriptor,
     consumer: PersistentTenant
   ): Seq[AgreementManagement.DeclaredAttribute] = {
@@ -1034,7 +1031,7 @@ final case class AgreementApiServiceImpl(
     matchingAttributes(descriptor.attributes.declared, attributes).map(AgreementManagement.DeclaredAttribute)
   }
 
-  def matchingVerifiedAttributes(
+  private def matchingVerifiedAttributes(
     eService: CatalogItem,
     descriptor: CatalogDescriptor,
     consumer: PersistentTenant
@@ -1048,58 +1045,54 @@ final case class AgreementApiServiceImpl(
     matchingAttributes(descriptor.attributes.verified, attributes).map(AgreementManagement.VerifiedAttribute)
   }
 
-  def verifyRequester(requesterId: UUID, expected: UUID): Future[Unit] =
+  private def verifyRequester(requesterId: UUID, expected: UUID): Future[Unit] =
     Future.failed(OperationNotAllowed(requesterId)).whenA(requesterId != expected)
 
-  def assertRequesterIsConsumer(requesterOrgId: UUID, agreement: PersistentAgreement): Future[Unit] =
+  private def assertRequesterIsConsumer(requesterOrgId: UUID, agreement: PersistentAgreement): Future[Unit] =
     verifyRequester(requesterOrgId, agreement.consumerId)
 
-  def assertRequesterIsProducer(requesterOrgId: UUID, agreement: PersistentAgreement): Future[Unit] =
+  private def assertRequesterIsProducer(requesterOrgId: UUID, agreement: PersistentAgreement): Future[Unit] =
     verifyRequester(requesterOrgId, agreement.producerId)
 
-  def assertRequesterIsConsumerOrProducer(requesterOrgId: UUID, agreement: PersistentAgreement): Future[Unit] =
+  private def assertRequesterIsConsumerOrProducer(requesterOrgId: UUID, agreement: PersistentAgreement): Future[Unit] =
     assertRequesterIsConsumer(requesterOrgId, agreement) orElse assertRequesterIsProducer(requesterOrgId, agreement)
 
-  def verifyCreationConflictingAgreements(consumerId: UUID, payload: AgreementPayload): Future[Unit] = {
+  private def verifyCreationConflictingAgreements(consumerId: UUID, payload: AgreementPayload): Future[Unit] = {
     val conflictingStates: List[PersistentAgreementState] =
       List(Draft, Pending, MissingCertifiedAttributes, Active, Suspended)
     verifyConflictingAgreements(consumerId, payload.eserviceId, conflictingStates)
   }
 
-  def verifyCloningConflictingAgreements(consumerId: UUID, eserviceId: UUID): Future[Unit] = {
+  private def verifyCloningConflictingAgreements(consumerId: UUID, eserviceId: UUID): Future[Unit] = {
     val conflictingStates: List[PersistentAgreementState] =
       List(Draft, Pending, MissingCertifiedAttributes, Active, Suspended)
     verifyConflictingAgreements(consumerId, eserviceId, conflictingStates)
   }
 
-  def verifySubmissionConflictingAgreements(
-    agreement: PersistentAgreement
-  )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
-    val conflictingStates: List[AgreementManagement.AgreementState] = List(
-      Draft, Pending, MissingCertifiedAttributes
-    )
+  private def verifySubmissionConflictingAgreements(agreement: PersistentAgreement): Future[Unit] = {
+    val conflictingStates: List[PersistentAgreementState] = List(Draft, Pending, MissingCertifiedAttributes)
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 
-  def verifyActivationConflictingAgreements(agreement: PersistentAgreement): Future[Unit] =
+  private def verifyActivationConflictingAgreements(agreement: PersistentAgreement): Future[Unit] =
     verifyFirstActivationConflictingAgreements(agreement)
       .whenA(agreement.state == Pending) >>
       verifyReActivationConflictingAgreements(agreement)
         .whenA(agreement.state != Pending)
 
-  def verifyFirstActivationConflictingAgreements(agreement: PersistentAgreement): Future[Unit] = {
+  private def verifyFirstActivationConflictingAgreements(agreement: PersistentAgreement): Future[Unit] = {
     val conflictingStates: List[PersistentAgreementState] =
       List(Active, Suspended)
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 
-  def verifyReActivationConflictingAgreements(agreement: PersistentAgreement): Future[Unit] = {
+  private def verifyReActivationConflictingAgreements(agreement: PersistentAgreement): Future[Unit] = {
     val conflictingStates: List[PersistentAgreementState] =
       List(Active)
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 
-  def createAndCopyDocumentsForClonedAgreement(
+  private def createAndCopyDocumentsForClonedAgreement(
     oldAgreement: PersistentAgreement,
     newAgreement: AgreementManagement.Agreement
   )(implicit contexts: Seq[(String, String)]): Future[Seq[AgreementManagement.Document]] = {
@@ -1117,22 +1110,22 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  def validateCertifiedAttributes(
-    descriptor: CatalogDescriptor,
-    consumer: PersistentTenant
-  ): Future[Unit] =
+  private def validateCertifiedAttributes(descriptor: CatalogDescriptor, consumer: PersistentTenant): Future[Unit] =
     Future
       .failed(MissingCertifiedAttributesError(descriptor.id, consumer.id))
       .unlessA(certifiedAttributesSatisfied(descriptor, consumer))
 
-  def verifiedAndDeclareSatisfied(
-    agreement: AgreementManagement.Agreement,
-    newDescriptor: EServiceDescriptor,
-    tenant: TenantManagement.Tenant
+  private def verifiedAndDeclareSatisfied(
+    agreement: PersistentAgreement,
+    newDescriptor: CatalogDescriptor,
+    tenant: PersistentTenant
   ): Boolean =
     verifiedAttributesSatisfied(agreement, newDescriptor, tenant) && declaredAttributesSatisfied(newDescriptor, tenant)
 
-  def verifyConsumerDoesNotActivatePending(agreement: PersistentAgreement, requesterOrgUuid: UUID): Future[Unit] =
+  private def verifyConsumerDoesNotActivatePending(
+    agreement: PersistentAgreement,
+    requesterOrgUuid: UUID
+  ): Future[Unit] =
     Future
       .failed(OperationNotAllowed(requesterOrgUuid))
       .whenA(
@@ -1141,13 +1134,13 @@ final case class AgreementApiServiceImpl(
           agreement.producerId != agreement.consumerId
       )
 
-  def toClientState(state: AgreementManagement.AgreementState): AuthorizationManagement.ClientComponentState =
+  private def toClientState(state: PersistentAgreementState): AuthorizationManagement.ClientComponentState =
     state match {
-      case AgreementManagement.AgreementState.ACTIVE => AuthorizationManagement.ClientComponentState.ACTIVE
-      case _                                         => AuthorizationManagement.ClientComponentState.INACTIVE
+      case Active => AuthorizationManagement.ClientComponentState.ACTIVE
+      case _      => AuthorizationManagement.ClientComponentState.INACTIVE
     }
 
-  def toClientState(state: CatalogDescriptorState): AuthorizationManagement.ClientComponentState =
+  private def toClientState(state: CatalogDescriptorState): AuthorizationManagement.ClientComponentState =
     state match {
       case Published | Deprecated =>
         AuthorizationManagement.ClientComponentState.ACTIVE
@@ -1177,7 +1170,7 @@ final case class AgreementApiServiceImpl(
     } yield ()
   }
 
-  def assertCanWorkOnConsumerDocuments(agreementState: PersistentAgreementState): Future[Unit] =
+  private def assertCanWorkOnConsumerDocuments(agreementState: PersistentAgreementState): Future[Unit] =
     Future
       .failed(DocumentsChangeNotAllowed(agreementState))
       .unlessA(Set[PersistentAgreementState](Draft, Pending).contains(agreementState))

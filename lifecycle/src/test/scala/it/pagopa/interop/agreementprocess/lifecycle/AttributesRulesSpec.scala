@@ -5,13 +5,12 @@ import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import it.pagopa.interop.catalogmanagement.model.CatalogItem
+import it.pagopa.interop.catalogmanagement.model.CatalogDescriptor
 import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
 import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreement
 
 import java.time.OffsetDateTime
 import java.util.UUID
-import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptor
 
 class AttributesRulesSpec extends AnyWordSpecLike {
 
@@ -31,7 +30,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(descriptor, consumer) shouldBe true
     }
@@ -56,7 +55,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(descriptor, consumer) shouldBe true
     }
@@ -78,7 +77,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(descriptor, consumer) shouldBe true
     }
@@ -94,7 +93,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantCertifiedAttribute(attr1), SpecData.tenantCertifiedAttribute())
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -115,7 +114,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantCertifiedAttribute(attr1), SpecData.tenantCertifiedAttribute())
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -130,7 +129,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantRevokedCertifiedAttribute(attr1))
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -145,7 +144,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantRevokedCertifiedAttribute(attr1))
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -167,7 +166,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(descriptor, consumer) shouldBe true
     }
@@ -192,7 +191,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(descriptor, consumer) shouldBe true
     }
@@ -214,7 +213,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(descriptor, consumer) shouldBe true
     }
@@ -230,7 +229,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantDeclaredAttribute(attr1), SpecData.tenantDeclaredAttribute())
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -251,7 +250,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantDeclaredAttribute(attr1), SpecData.tenantDeclaredAttribute())
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -266,7 +265,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantRevokedDeclaredAttribute(attr1))
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -277,10 +276,10 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptorAttr = SpecData
         .catalogDeclaredAttribute()
         .copy(declared = Seq(SpecData.catalogGroupAttributes(attr1, UUID.randomUUID())))
-      val tenantAttr   = List(SpecData.tenantRevokedDeclaredAttribute(attr1))
+      val tenantAttr     = List(SpecData.tenantRevokedDeclaredAttribute(attr1))
 
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
       declaredAttributesSatisfied(descriptor, consumer) shouldBe false
     }
@@ -303,8 +302,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe true
     }
@@ -330,8 +329,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe true
     }
@@ -354,8 +353,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe true
     }
@@ -375,8 +374,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }
@@ -401,8 +400,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }
@@ -418,8 +417,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }
@@ -435,8 +434,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val tenantAttr = List(SpecData.tenantRevokedVerifiedAttribute(attr1, producerId))
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }
@@ -455,8 +454,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }
@@ -475,8 +474,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }
@@ -500,8 +499,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }
@@ -530,8 +529,8 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       )
 
       val agreement: PersistentAgreement = SpecData.agreement.copy(producerId = producerId)
-      val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer: PersistentTenant               = SpecData.tenant.copy(attributes = tenantAttr)
+      val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
+      val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
       verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
     }

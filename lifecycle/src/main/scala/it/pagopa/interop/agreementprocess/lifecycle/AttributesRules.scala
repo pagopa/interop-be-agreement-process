@@ -30,7 +30,10 @@ object AttributesRules {
   )
 
   def certifiedAttributesSatisfied(descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
-    certifiedAttributesSatisfied(descriptor.attributes, consumer.attributes.mapFilter(_.certified))
+    certifiedAttributesSatisfied(
+      descriptor.attributes,
+      consumer.attributes.collect { case a: PersistentCertifiedAttribute => a }
+    )
 
   def declaredAttributesSatisfied(
     eServiceAttributes: CatalogAttributes,
@@ -39,7 +42,10 @@ object AttributesRules {
     attributesSatisfied(eServiceAttributes.declared, consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id))
 
   def declaredAttributesSatisfied(descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
-    declaredAttributesSatisfied(descriptor.attributes, consumer.attributes.mapFilter(_.declared))
+    declaredAttributesSatisfied(
+      descriptor.attributes,
+      consumer.attributes.collect { case a: PersistentDeclaredAttribute => a }
+    )
 
   def verifiedAttributesSatisfied(
     producerId: UUID,
@@ -57,8 +63,16 @@ object AttributesRules {
       .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
   }
 
-  def verifiedAttributesSatisfied(agreement: PersistentAgreement, descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
-    verifiedAttributesSatisfied(agreement.producerId, descriptor.attributes, consumer.attributes.mapFilter(_.verified))
+  def verifiedAttributesSatisfied(
+    agreement: PersistentAgreement,
+    descriptor: CatalogDescriptor,
+    consumer: PersistentTenant
+  ): Boolean =
+    verifiedAttributesSatisfied(
+      agreement.producerId,
+      descriptor.attributes,
+      consumer.attributes.collect { case a: PersistentVerifiedAttribute => a }
+    )
 
   private def attributesSatisfied(requested: Seq[CatalogAttribute], assigned: Seq[UUID]): Boolean = {
     requested.forall {

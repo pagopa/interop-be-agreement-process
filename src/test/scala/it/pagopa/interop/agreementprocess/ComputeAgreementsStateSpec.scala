@@ -2,6 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, UpdateAgreementSeed}
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 import it.pagopa.interop.commons.jwt.INTERNAL_ROLE
@@ -18,7 +19,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val consumerId                               = UUID.randomUUID()
 
       val (descriptorAttr, tenantAttr) = SpecData.matchingCertifiedAttributes
-      val attributeId                  = tenantAttr.certified.get.id
+      val attributeId                  = tenantAttr.id
 
       val descriptor1 = SpecData.descriptor.copy(attributes = descriptorAttr)
       val descriptor2 = SpecData.descriptor
@@ -26,7 +27,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val eService1   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor1 :: Nil)
       val eService2   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor2 :: Nil)
       val eService3   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor3 :: Nil)
-      val tenant      = SpecData.tenant.copy(attributes = Seq(tenantAttr))
+      val tenant      = SpecData.tenant.copy(attributes = List(tenantAttr))
 
       val suspendedAgreement1      =
         SpecData.suspendedByPlatformAgreement.copy(
@@ -98,7 +99,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
         rejectionReason = suspendedAgreement3.rejectionReason
       )
 
-      mockAgreementsRetrieve(agreements)
+      mockAgreementsRetrieve(agreements.map(_.toPersistent))
       mockEServiceRetrieve(eService1.id, eService1)
       mockEServiceRetrieve(eService2.id, eService2)
       mockEServiceRetrieve(eService3.id, eService3)
@@ -140,7 +141,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val agreements =
         Seq(draftAgreement, pendingAgreement, activeAgreement, activeAgreement2)
 
-      mockAgreementsRetrieve(agreements)
+      mockAgreementsRetrieve(agreements.map(_.toPersistent))
       mockEServiceRetrieve(eService1.id, eService1)
       mockEServiceRetrieve(eService2.id, eService2)
       mockTenantRetrieve(consumerId, tenant)
@@ -180,7 +181,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
 
       val agreements = Seq(agreementWithoutChanges1, agreementWithoutChanges2, agreementAlreadySuspended)
 
-      mockAgreementsRetrieve(agreements)
+      mockAgreementsRetrieve(agreements.map(_.toPersistent))
       mockEServiceRetrieve(eServiceId1, eService1)
       mockEServiceRetrieve(eServiceId2, eService2)
       mockTenantRetrieve(consumerId, SpecData.tenant)

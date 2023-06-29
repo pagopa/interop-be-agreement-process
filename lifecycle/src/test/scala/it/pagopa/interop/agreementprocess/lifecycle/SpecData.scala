@@ -4,6 +4,7 @@ import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
 import it.pagopa.interop.catalogmanagement.model.{
   CatalogItem,
+  CatalogDescriptor,
   Rest,
   CatalogAttributes,
   SingleAttribute,
@@ -20,7 +21,10 @@ import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentTenantKind,
   PersistentExternalId
 }
+import cats.syntax.all._
 import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, Active, PersistentStamps}
+import it.pagopa.interop.catalogmanagement.model.Published
+import it.pagopa.interop.catalogmanagement.model.Automatic
 
 object SpecData {
 
@@ -31,11 +35,13 @@ object SpecData {
     producerId = UUID.randomUUID(),
     name = "EService1",
     description = "EService 1",
-    technology = REST,
-    descriptors = Nil
+    technology = Rest,
+    descriptors = Nil,
+    attributes = None,
+    createdAt = timestamp
   )
 
-  def descriptor: EServiceDescriptor = EServiceDescriptor(
+  def descriptor: CatalogDescriptor = CatalogDescriptor(
     id = UUID.randomUUID(),
     version = "1",
     description = None,
@@ -45,17 +51,18 @@ object SpecData {
     dailyCallsTotal = 0,
     interface = None,
     docs = Nil,
-    state = EServiceDescriptorState.PUBLISHED,
-    agreementApprovalPolicy = AgreementApprovalPolicy.AUTOMATIC,
+    state = Published,
+    agreementApprovalPolicy = Automatic.some,
     serverUrls = Nil,
-    publishedAt = None,
+    publishedAt = timestamp.some,
     suspendedAt = None,
     deprecatedAt = None,
     archivedAt = None,
-    attributes = Attributes(Nil, Nil, Nil)
+    attributes = CatalogAttributes(Nil, Nil, Nil),
+    createdAt = timestamp
   )
 
-  def tenant: Tenant = Tenant(
+  def tenant: PersistentTenant = PersistentTenant(
     id = UUID.randomUUID(),
     selfcareId = Some(UUID.randomUUID().toString),
     externalId = PersistentExternalId("origin", "value"),

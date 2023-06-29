@@ -5,11 +5,11 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
-
 class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
 
   import agreementApiMarshaller._
@@ -55,14 +55,14 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       val attr       =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr = Seq(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
+      val tenantAttr = List(tenantCertAttr, tenantDeclAttr, tenantVerAttr).flatten
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = attr)
       val eService   =
         SpecData.eService.copy(descriptors = Seq(descriptor), producerId = producerId)
       val consumer   = SpecData.tenant.copy(attributes = tenantAttr)
       val agreement  =
-        SpecData.persistentPendingAgreement.copy(
+        SpecData.pendingAgreement.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           consumerId = consumer.id,
@@ -80,7 +80,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockContractCreation(agreement, eService, consumer, expectedSeed)
+      mockContractCreation(agreement.toPersistent, eService, consumer, expectedSeed)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
@@ -92,7 +92,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
       val consumer   = SpecData.tenant.copy(id = requesterOrgId)
       val agreement  =
-        SpecData.persistentSuspendedByConsumerAgreement.copy(
+        SpecData.suspendedByConsumerAgreement.copy(
           eserviceId = eService.id,
           descriptorId = descriptor.id,
           consumerId = consumer.id
@@ -109,7 +109,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -144,7 +144,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -179,7 +179,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.suspensionByConsumerStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -214,7 +214,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.suspensionByProducerStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -250,7 +250,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -286,7 +286,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -305,7 +305,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val attrs                              =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantVerAttr, tenantDeclAttr)
+      val tenantAttr                         = List(tenantVerAttr, tenantDeclAttr)
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = attrs)
       val eService   =
@@ -330,7 +330,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.submissionStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -348,7 +348,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val attrs                              =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantVerAttr, tenantCertAttr)
+      val tenantAttr                         = List(tenantVerAttr, tenantCertAttr)
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = attrs)
       val eService   =
@@ -374,7 +374,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.submissionStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -398,7 +398,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           producerId = eService.producerId
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -418,7 +418,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Agreement is not in expected state" in {
       val agreement = SpecData.draftAgreement.copy(consumerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -428,8 +428,8 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if other Agreements exist in conflicting state" in {
       val agreement = SpecData.pendingAgreement.copy(producerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Seq(SpecData.agreement))
+      mockAgreementRetrieve(agreement.toPersistent)
+      mockAgreementsRetrieve(Seq(SpecData.agreement.toPersistent))
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Conflict
@@ -448,7 +448,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           producerId = eService.producerId
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
 
@@ -468,7 +468,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           consumerId = consumer.id
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
 
@@ -482,7 +482,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       val agreement =
         SpecData.suspendedByConsumerAgreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden

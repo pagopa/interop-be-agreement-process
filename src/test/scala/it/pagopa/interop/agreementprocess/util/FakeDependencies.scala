@@ -11,10 +11,16 @@ import it.pagopa.interop.selfcare.partyprocess.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import spray.json.JsonWriter
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
-import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, PersistentAgreementState}
+import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.agreementmanagement.model.agreement.{
+  PersistentAgreementDocument,
+  PersistentAgreement,
+  PersistentAgreementState
+}
 import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{PersistentAttribute, Declared}
 import it.pagopa.interop.catalogmanagement.model.{CatalogItem, Rest, CatalogAttributes}
 import it.pagopa.interop.tenantmanagement.model.tenant.{PersistentTenant, PersistentExternalId, PersistentTenantKind}
+import it.pagopa.interop.catalogmanagement.model.{CatalogDescriptor, Published, Automatic}
 
 import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
@@ -74,8 +80,8 @@ object FakeDependencies {
 
     override def getAgreementById(
       agreementId: UUID
-    )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[Agreement] =
-      Future.successful(agreement)
+    )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PersistentAgreement] =
+      Future.successful(agreement.toPersistent)
 
     override def getAgreements(
       producerId: Option[UUID],
@@ -109,7 +115,7 @@ object FakeDependencies {
     override def getConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
       ec: ExecutionContext,
       readModel: ReadModelService
-    ): Future[Document] = Future.successful(document)
+    ): Future[PersistentAgreementDocument] = Future.successful(document.toPersistent)
 
     override def removeConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
       contexts: Seq[(String, String)]
@@ -126,8 +132,8 @@ object FakeDependencies {
           producerId = UUID.randomUUID(),
           name = "fake",
           description = "fake",
-          technology = EServiceTechnology.REST,
-          descriptors = EServiceDescriptor(
+          technology = Rest,
+          descriptors = CatalogDescriptor(
             id = UUID.randomUUID(),
             version = "1",
             audience = Nil,
@@ -135,11 +141,20 @@ object FakeDependencies {
             dailyCallsPerConsumer = 0,
             dailyCallsTotal = 0,
             docs = Nil,
-            state = EServiceDescriptorState.PUBLISHED,
-            agreementApprovalPolicy = AgreementApprovalPolicy.AUTOMATIC,
+            state = Published,
+            agreementApprovalPolicy = Automatic.some,
             serverUrls = Nil,
-            attributes = Attributes(Nil, Nil, Nil)
-          ) :: Nil
+            attributes = CatalogAttributes(Nil, Nil, Nil),
+            description = None,
+            interface = None,
+            createdAt = OffsetDateTime.now(),
+            publishedAt = OffsetDateTime.now().some,
+            suspendedAt = None,
+            deprecatedAt = None,
+            archivedAt = None
+          ) :: Nil,
+          attributes = None,
+          createdAt = OffsetDateTime.now()
         )
       )
   }
