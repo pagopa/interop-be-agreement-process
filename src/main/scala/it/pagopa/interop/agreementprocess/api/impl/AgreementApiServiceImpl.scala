@@ -248,29 +248,6 @@ final case class AgreementApiServiceImpl(
         _            <- createAndCopyDocumentsForClonedAgreement(agreement, newAgreement)
       } yield newAgreement
 
-    /*
-      val result: Future[Agreement] = for {
-      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      agreementUUID  <- agreementId.toFutureUUID
-      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
-      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
-      _              <- agreement.assertUpgradableState.toFuture
-      eService       <- catalogManagementService
-        .getEServiceById(agreement.eserviceId)
-      newDescriptor  <- CatalogManagementService.getEServiceNewerPublishedDescriptor(eService, agreement.descriptorId)
-      uid            <- getUidFutureUUID(contexts)
-      upgradeSeed = AgreementManagement.UpgradeAgreementSeed(
-        descriptorId = newDescriptor.id,
-        AgreementManagement.Stamp(uid, offsetDateTimeSupplier.get())
-      )
-      newAgreement <- agreementManagementService.upgradeById(agreement.id, upgradeSeed)
-      payload = getClientUpgradePayload(newAgreement, newDescriptor)
-      _ <- authorizationManagementService.updateAgreementAndEServiceStates(
-        newAgreement.eserviceId,
-        newAgreement.consumerId,
-        payload
-      )
-     */
     val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       tenant         <- tenantManagementService.getTenantById(requesterOrgId)
@@ -593,10 +570,7 @@ final case class AgreementApiServiceImpl(
         .getTenantById(consumerUuid)
       uniqueEServiceIds = agreements.map(_.eserviceId).distinct
       // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
-      eServices <- uniqueEServiceIds.traverse(id =>
-        catalogManagementService
-          .getEServiceById(id)
-      )
+      eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
       filteredEServices = eServices.filter(eServiceContainsAttribute(attributeUuid))
       eServicesMap      = filteredEServices.fproductLeft(_.id).toMap
       filteredAgreement = agreements.filter(a => filteredEServices.exists(_.id == a.eserviceId))
