@@ -1044,7 +1044,7 @@ final case class AgreementApiServiceImpl(
   }
 
   private def verifySubmissionConflictingAgreements(agreement: PersistentAgreement): Future[Unit] = {
-    val conflictingStates: List[PersistentAgreementState] = List(Draft, Pending, MissingCertifiedAttributes)
+    val conflictingStates: List[PersistentAgreementState] = List(Pending, MissingCertifiedAttributes)
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 

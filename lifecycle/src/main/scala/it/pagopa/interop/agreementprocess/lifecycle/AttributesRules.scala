@@ -58,10 +58,8 @@ object AttributesRules {
       .map(_.id)
   )
 
-  private def isNotExpired(verifier: PersistentTenantVerifier): Boolean = {
-    verifier.extensionDate
-      .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
-  }
+  private def isNotExpired(verifier: PersistentTenantVerifier): Boolean =
+    verifier.extensionDate.forall(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
 
   def verifiedAttributesSatisfied(
     agreement: PersistentAgreement,
