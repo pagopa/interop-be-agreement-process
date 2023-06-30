@@ -47,10 +47,8 @@ object AttributesRules {
       .map(_.id)
   )
 
-  private def isNotExpired(verifier: TenantVerifier): Boolean = {
-    verifier.extensionDate
-      .exists(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
-  }
+  private def isNotExpired(verifier: TenantVerifier): Boolean =
+    verifier.extensionDate.forall(ed => ed.isAfter(OffsetDateTimeSupplier.get()))
 
   def verifiedAttributesSatisfied(agreement: Agreement, descriptor: EServiceDescriptor, consumer: Tenant): Boolean =
     verifiedAttributesSatisfied(agreement.producerId, descriptor.attributes, consumer.attributes.mapFilter(_.verified))
