@@ -730,8 +730,7 @@ final case class AgreementApiServiceImpl(
       archivables = extractArchivables(agreement.id, existingAgreements)
       updated <- agreementManagementService.updateAgreement(agreement.id, seed)
       _       <-
-        if (archivables.isEmpty) Future.unit
-        else Future.traverse(archivables)(archive).map(_ => ())
+        Future.traverse(archivables)(archive).map(_ => ())
       _       <- failOnActivationFailure()
       _       <- authorizationManagementService
         .updateStateOnClients(
