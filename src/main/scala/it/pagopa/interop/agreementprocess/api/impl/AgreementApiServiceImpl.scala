@@ -134,7 +134,7 @@ final case class AgreementApiServiceImpl(
       _              <- assertRequesterIsConsumerOrProducer(requesterOrgId, agreement)
       _              <- verifyConsumerDoesNotActivatePending(agreement, requesterOrgId)
       _              <- agreement.assertActivableState.toFuture
-      _              <- verifyActivationConflictingAgreements(agreement)
+      _              <- verifyAgreementActivation(agreement)
       eService       <- catalogManagementService.getEServiceById(agreement.eserviceId)
       descriptor     <- CatalogManagementService.validateActivationOnDescriptor(eService, agreement.descriptorId)
       consumer       <- tenantManagementService.getTenant(agreement.consumerId)
@@ -722,8 +722,16 @@ final case class AgreementApiServiceImpl(
     } yield ()
 
     for {
-      seed    <- getUpdateSeed()
+      seed               <- getUpdateSeed()
+      existingAgreements <- agreementManagementService.getAgreements(
+        consumerId = Some(agreement.consumerId.toString),
+        eserviceId = Some(agreement.eserviceId.toString)
+      )
+      archivables = extractArchivables(agreement.id, existingAgreements)
       updated <- agreementManagementService.updateAgreement(agreement.id, seed)
+      _       <-
+        if (archivables.isEmpty) Future.unit
+        else Future.traverse(archivables)(archive).map(_ => ())
       _       <- failOnActivationFailure()
       _       <- authorizationManagementService
         .updateStateOnClients(
@@ -735,6 +743,29 @@ final case class AgreementApiServiceImpl(
       _       <- if (firstActivation) performActivation(seed, updated) else Future.unit
     } yield updated
   }
+
+  private def extractArchivables(
+    activatingAgreementId: UUID,
+    agreements: Seq[AgreementManagement.Agreement]
+  ): Seq[AgreementManagement.Agreement] =
+    agreements.filter(a => ARCHIVABLE_STATES.contains(a.state) && a.id == activatingAgreementId)
+
+  private def archive(
+    agreement: AgreementManagement.Agreement
+  )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = for {
+    uid <- getUidFutureUUID(contexts)
+    seed: UpdateAgreementSeed = AgreementManagement.UpdateAgreementSeed(
+      state = AgreementManagement.AgreementState.ARCHIVED,
+      certifiedAttributes = agreement.certifiedAttributes,
+      declaredAttributes = agreement.declaredAttributes,
+      verifiedAttributes = agreement.verifiedAttributes,
+      suspendedByConsumer = agreement.suspendedByConsumer,
+      suspendedByProducer = agreement.suspendedByProducer,
+      suspendedByPlatform = agreement.suspendedByPlatform,
+      stamps = agreement.stamps.copy(archiving = Stamp(uid, offsetDateTimeSupplier.get()).some)
+    )
+    updated <- agreementManagementService.updateAgreement(agreement.id, seed)
+  } yield updated
 
   private def sendActivationEnvelope(
     agreement: AgreementManagement.Agreement,
@@ -996,28 +1027,14 @@ final case class AgreementApiServiceImpl(
     verifyConflictingAgreements(agreement, conflictingStates)
   }
 
-  def verifyActivationConflictingAgreements(
-    agreement: AgreementManagement.Agreement
-  )(implicit contexts: Seq[(String, String)]): Future[Unit] =
-    verifyFirstActivationConflictingAgreements(agreement)
-      .whenA(agreement.state == AgreementManagement.AgreementState.PENDING) >>
-      verifyReActivationConflictingAgreements(agreement)
-        .whenA(agreement.state != AgreementManagement.AgreementState.PENDING)
+  def verifyAgreementActivation(agreement: AgreementManagement.Agreement): Future[Unit] = {
+    val admittedStates: List[AgreementManagement.AgreementState] =
+      List(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
 
-  def verifyFirstActivationConflictingAgreements(
-    agreement: AgreementManagement.Agreement
-  )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
-    val conflictingStates: List[AgreementManagement.AgreementState] =
-      List(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
-    verifyConflictingAgreements(agreement, conflictingStates)
-  }
+    Future
+      .failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
+      .unlessA(admittedStates.contains(agreement.state))
 
-  def verifyReActivationConflictingAgreements(
-    agreement: AgreementManagement.Agreement
-  )(implicit contexts: Seq[(String, String)]): Future[Unit] = {
-    val conflictingStates: List[AgreementManagement.AgreementState] =
-      List(AgreementManagement.AgreementState.ACTIVE)
-    verifyConflictingAgreements(agreement, conflictingStates)
   }
 
   def createAndCopyDocumentsForClonedAgreement(

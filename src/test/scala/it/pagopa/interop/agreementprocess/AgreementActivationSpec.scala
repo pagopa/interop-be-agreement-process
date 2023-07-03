@@ -415,7 +415,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       }
     }
 
-    "fail if Agreement is not in expected state" in {
+    "fail if Agreement is not in expected state - Draft" in {
       val agreement = SpecData.draftAgreement.copy(consumerId = requesterOrgId)
 
       mockAgreementRetrieve(agreement)
@@ -425,14 +425,43 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       }
     }
 
-    "fail if other Agreements exist in conflicting state" in {
-      val agreement = SpecData.pendingAgreement.copy(producerId = requesterOrgId)
+    "fail if Agreement is not in expected state - Active" in {
+      val agreement = SpecData.activeAgreement.copy(consumerId = requesterOrgId)
 
       mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Seq(SpecData.agreement))
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
-        status shouldEqual StatusCodes.Conflict
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if Agreement is not in expected state - Archived" in {
+      val agreement = SpecData.archivedAgreement.copy(consumerId = requesterOrgId)
+
+      mockAgreementRetrieve(agreement)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if Agreement is not in expected state - Missing Certified Attributes" in {
+      val agreement = SpecData.missingCertifiedAttributesAgreement.copy(consumerId = requesterOrgId)
+
+      mockAgreementRetrieve(agreement)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "fail if Agreement is not in expected state - Rejected" in {
+      val agreement = SpecData.rejectedAgreement.copy(consumerId = requesterOrgId)
+
+      mockAgreementRetrieve(agreement)
+
+      Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 
@@ -449,7 +478,6 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         )
 
       mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -469,7 +497,6 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         )
 
       mockAgreementRetrieve(agreement)
-      mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
