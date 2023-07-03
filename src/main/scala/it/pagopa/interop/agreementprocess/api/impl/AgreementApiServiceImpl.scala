@@ -1030,9 +1030,8 @@ final case class AgreementApiServiceImpl(
     val admittedStates: List[AgreementManagement.AgreementState] =
       List(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
 
-    Future
-      .failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
-      .unlessA(admittedStates.contains(agreement.state))
+    if (admittedStates.contains(agreement.state)) Future.unit
+    else Future.failed(AgreementNotInExpectedState(agreement.id.toString, agreement.state))
 
   }
 
