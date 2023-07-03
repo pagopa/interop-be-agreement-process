@@ -748,7 +748,7 @@ final case class AgreementApiServiceImpl(
     activatingAgreementId: UUID,
     agreements: Seq[AgreementManagement.Agreement]
   ): Seq[AgreementManagement.Agreement] =
-    agreements.filter(a => ARCHIVABLE_STATES.contains(a.state) && a.id == activatingAgreementId)
+    agreements.filter(a => ARCHIVABLE_STATES.contains(a.state) && a.id != activatingAgreementId)
 
   private def archive(
     agreement: AgreementManagement.Agreement
