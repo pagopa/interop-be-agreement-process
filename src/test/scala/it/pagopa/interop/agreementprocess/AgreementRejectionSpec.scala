@@ -89,7 +89,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
         rejectionReason = rejectionReason.some
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(
@@ -153,7 +153,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
 
       val payload = AgreementRejectionPayload("Document not valid")
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -165,7 +165,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
       val agreement = SpecData.pendingAgreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())
       val payload   = AgreementRejectionPayload("Document not valid")
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -187,7 +187,7 @@ class AgreementRejectionSpec extends AnyWordSpecLike with SpecHelper with Scalat
       val agreement = SpecData.activeAgreement.copy(producerId = requesterOrgId)
       val payload   = AgreementRejectionPayload("Document not valid")
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.rejectAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest

@@ -46,7 +46,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
         stamps = agreement.stamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementUpdate(agreement.id, seed, updatedAgreement)
 
       Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
@@ -73,7 +73,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
           consumerNotes = Some("old-consumer-notes")
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -114,7 +114,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
         stamps = agreement.stamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementUpdate(agreement.id, seed, updatedAgreement)
 
       Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {

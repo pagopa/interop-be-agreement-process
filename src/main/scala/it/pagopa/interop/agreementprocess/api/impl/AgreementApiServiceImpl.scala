@@ -13,6 +13,8 @@ import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelQueries
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
+import it.pagopa.interop.agreementprocess.events.ArchiveEvent
+import it.pagopa.interop.agreementprocess.events.Events._
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementprocess.service._
@@ -49,7 +51,8 @@ final case class AgreementApiServiceImpl(
   fileManager: FileManager,
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
   uuidSupplier: UUIDSupplier,
-  queueService: QueueService
+  queueService: QueueService,
+  queueEventsService: QueueService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
@@ -1221,7 +1224,7 @@ final case class AgreementApiServiceImpl(
     onComplete(result) { getAgreementProducersResponse[CompactOrganizations](operationLabel)(getAgreementProducers200) }
   }
 
-  def getAgreementConsumers(consumerName: Option[String], offset: Int, limit: Int)(implicit
+  override def getAgreementConsumers(consumerName: Option[String], offset: Int, limit: Int)(implicit
     contexts: Seq[(String, String)],
     toEntityMarshallerProblem: ToEntityMarshaller[Problem],
     toEntityMarshallerCompactOrganizations: ToEntityMarshaller[CompactOrganizations]
@@ -1237,7 +1240,7 @@ final case class AgreementApiServiceImpl(
     onComplete(result) { getAgreementConsumersResponse[CompactOrganizations](operationLabel)(getAgreementConsumers200) }
   }
 
-  def getAgreementEServices(
+  override def getAgreementEServices(
     eServiceName: Option[String],
     consumersIds: String,
     producersIds: String,
@@ -1265,6 +1268,45 @@ final case class AgreementApiServiceImpl(
 
     onComplete(result) {
       getAgreementEServicesResponse[CompactEServices](operationLabel)(getAgreementEServices200)
+    }
+  }
+
+  override def archiveAgreement(agreementId: String)(implicit
+    contexts: Seq[(String, String)],
+    toEntityMarshallerProblem: ToEntityMarshaller[Problem],
+    toEntityMarshallerAgreement: ToEntityMarshaller[Agreement]
+  ): Route = authorize(ADMIN_ROLE) {
+    val operationLabel = s"Archiving agreement $agreementId"
+    logger.info(operationLabel)
+
+    def archive(agreement: AgreementManagement.Agreement): Future[AgreementManagement.Agreement] = for {
+      uid       <- getUidFutureUUID(contexts)
+      agreement <- agreementManagementService.updateAgreement(
+        agreement.id,
+        AgreementManagement.UpdateAgreementSeed(
+          state = AgreementManagement.AgreementState.ARCHIVED,
+          certifiedAttributes = agreement.certifiedAttributes,
+          declaredAttributes = agreement.declaredAttributes,
+          verifiedAttributes = agreement.verifiedAttributes,
+          suspendedByConsumer = agreement.suspendedByConsumer,
+          suspendedByProducer = agreement.suspendedByProducer,
+          suspendedByPlatform = agreement.suspendedByPlatform,
+          stamps = agreement.stamps.copy(archiving = Stamp(uid, offsetDateTimeSupplier.get()).some)
+        )
+      )
+    } yield agreement
+
+    val result: Future[Agreement] = for {
+      requesterOrgId <- getOrganizationIdFutureUUID(contexts)
+      agreementUUID  <- agreementId.toFutureUUID
+      agreement      <- agreementManagementService.getAgreementById(agreementUUID)
+      _              <- assertRequesterIsProducer(requesterOrgId, agreement)
+      updated        <- archive(agreement)
+      _              <- queueEventsService.send[ArchiveEvent](ArchiveEvent(updated.id, updated.eserviceId))
+    } yield updated.toApi
+
+    onComplete(result) {
+      archiveAgreementResponse[Agreement](operationLabel)(archiveAgreement200)
     }
   }
 }

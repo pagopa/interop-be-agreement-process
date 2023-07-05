@@ -38,7 +38,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
       val seed = UpgradeAgreementSeed(descriptorId = newerDescriptor.id, SpecData.defaultStamp.get)
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockEServiceRetrieve(eService.id, eService)
       mockAgreementUpgrade(agreement.id, seed, newAgreement)
       mockUpdateAgreementAndEServiceStates(
@@ -83,7 +83,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
@@ -104,7 +104,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -123,7 +123,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
@@ -144,7 +144,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(requesterOrgId, SpecData.tenant.copy(id = requesterOrgId))
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden

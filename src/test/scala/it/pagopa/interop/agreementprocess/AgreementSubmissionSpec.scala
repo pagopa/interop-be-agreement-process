@@ -46,7 +46,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.submissionStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
@@ -168,7 +168,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val agreement = SpecData.draftAgreement.copy(consumerId = requesterOrgId)
       val payload   = AgreementSubmissionPayload(Some("consumer-notes"))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Seq(SpecData.agreement))
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
@@ -180,7 +180,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val agreement = SpecData.draftAgreement.copy(consumerId = UUID.randomUUID())
       val payload   = AgreementSubmissionPayload(Some("consumer-notes"))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -200,7 +200,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         )
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
 
@@ -222,7 +222,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
 
@@ -235,7 +235,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val agreement = SpecData.pendingAgreement.copy(consumerId = requesterOrgId)
       val payload   = AgreementSubmissionPayload(Some("consumer-notes"))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -266,7 +266,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = agreement.stamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
@@ -302,7 +302,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = agreement.stamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)

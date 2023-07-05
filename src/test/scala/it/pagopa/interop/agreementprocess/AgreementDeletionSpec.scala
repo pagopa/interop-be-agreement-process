@@ -17,7 +17,7 @@ class AgreementDeletionSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val agreement    =
         SpecData.draftAgreement.copy(consumerId = requesterOrgId, consumerDocuments = Seq(consumerDoc1, consumerDoc2))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc1.path)
       mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc2.path)
       mockAgreementDeletion(agreement.id)
@@ -35,7 +35,7 @@ class AgreementDeletionSpec extends AnyWordSpecLike with SpecHelper with Scalate
         consumerDocuments = Seq(consumerDoc1, consumerDoc2)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc1.path)
       mockFileDeletion(ApplicationConfiguration.storageContainer, consumerDoc2.path)
       mockAgreementDeletion(agreement.id)
@@ -60,7 +60,7 @@ class AgreementDeletionSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val agreement =
         SpecData.draftAgreement.copy(producerId = requesterOrgId, consumerDocuments = Seq(SpecData.document()))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.deleteAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -71,7 +71,7 @@ class AgreementDeletionSpec extends AnyWordSpecLike with SpecHelper with Scalate
       val agreement =
         SpecData.activeAgreement.copy(consumerId = requesterOrgId, consumerDocuments = Seq(SpecData.document()))
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.deleteAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest

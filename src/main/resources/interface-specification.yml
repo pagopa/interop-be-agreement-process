@@ -333,6 +333,48 @@ paths:
       tags:
         - agreement
       description: Rejects the agreement.
+  /agreements/{agreementId}/archive:
+    parameters:
+      - $ref: '#/components/parameters/CorrelationIdHeader'
+      - $ref: '#/components/parameters/IpAddress'
+      - schema:
+          type: string
+          format: uuid
+        name: agreementId
+        in: path
+        required: true
+        description: identifier of the agreement to be Archived
+    post:
+      summary: Archive Agreement
+      operationId: archiveAgreement
+      responses:
+        '200':
+          description: Agreement archived.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - agreement
+      description: Archive the agreement.
   /agreements:
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'

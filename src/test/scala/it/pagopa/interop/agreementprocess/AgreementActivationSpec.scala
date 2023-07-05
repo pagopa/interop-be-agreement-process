@@ -109,7 +109,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -144,7 +144,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -179,7 +179,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.suspensionByConsumerStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -214,7 +214,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.suspensionByProducerStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -250,7 +250,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -286,7 +286,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.activationStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -330,7 +330,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.submissionStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -374,7 +374,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         stamps = SpecData.submissionStamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
@@ -398,7 +398,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           producerId = eService.producerId
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden
@@ -418,7 +418,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Agreement is not in expected state - Draft" in {
       val agreement = SpecData.draftAgreement.copy(consumerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -428,7 +428,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Agreement is not in expected state - Active" in {
       val agreement = SpecData.activeAgreement.copy(consumerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -438,7 +438,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Agreement is not in expected state - Archived" in {
       val agreement = SpecData.archivedAgreement.copy(consumerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -448,7 +448,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Agreement is not in expected state - Missing Certified Attributes" in {
       val agreement = SpecData.missingCertifiedAttributesAgreement.copy(consumerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -458,7 +458,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Agreement is not in expected state - Rejected" in {
       val agreement = SpecData.rejectedAgreement.copy(consumerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -477,7 +477,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           producerId = eService.producerId
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -496,7 +496,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
           consumerId = consumer.id
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
@@ -509,7 +509,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
       val agreement =
         SpecData.suspendedByConsumerAgreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.id, agreement)
 
       Get() ~> service.activateAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden

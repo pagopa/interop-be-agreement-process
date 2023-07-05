@@ -117,6 +117,9 @@ trait Dependencies {
   def queueService(blockingEc: ExecutionContextExecutor): QueueService =
     new QueueServiceImpl(ApplicationConfiguration.certifiedMailQueueName)(blockingEc)
 
+  def queueEventsService(blockingEc: ExecutionContextExecutor): QueueService =
+    new QueueServiceImpl(ApplicationConfiguration.eventsQueueName)(blockingEc)
+
   def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
     actorSystem: ActorSystem[_],
     ec: ExecutionContext
@@ -135,7 +138,8 @@ trait Dependencies {
         fileManager(blockingEc),
         OffsetDateTimeSupplier,
         UUIDSupplier,
-        queueService(blockingEc)
+        queueService(blockingEc),
+        queueEventsService(blockingEc)
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts

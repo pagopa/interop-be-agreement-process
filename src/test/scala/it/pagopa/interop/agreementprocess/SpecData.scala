@@ -23,6 +23,7 @@ object SpecData {
   final val defaultStamp: Option[Stamp] = Stamp(who, when).some
 
   final val submissionStamps           = emptyStamps.copy(submission = defaultStamp)
+  final val archiviationStamps         = emptyStamps.copy(archiving = defaultStamp)
   final val rejectionStamps            = submissionStamps.copy(rejection = defaultStamp)
   final val activationStamps           = submissionStamps.copy(activation = defaultStamp)
   final val suspensionByConsumerStamps = activationStamps.copy(suspensionByConsumer = defaultStamp)
