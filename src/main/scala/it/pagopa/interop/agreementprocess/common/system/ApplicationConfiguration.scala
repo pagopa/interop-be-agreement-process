@@ -26,13 +26,13 @@ object ApplicationConfiguration {
   val userRegistryApiKey: String    = config.getString("agreement-process.user-registry-api-key")
   val partyProcessApiKey: String    = config.getString("agreement-process.party-process-api-key")
 
-  val readModelConfig: ReadModelConfig = {
+  val readModelConfig: ReadModelConfig   = {
     val connectionString: String = config.getString("agreement-process.read-model.db.connection-string")
     val dbName: String           = config.getString("agreement-process.read-model.db.name")
 
     ReadModelConfig(connectionString, dbName)
   }
-  val archivingPurposesQueueName: String  = config.getString("agreement-process.archiving-purposes-queue-name")
-  val certifiedMailQueueName: String      = config.getString("agreement-process.certified-mail-queue-name")
+  val archivingPurposesQueueName: String = config.getString("agreement-process.archiving-purposes-queue-name")
+  val certifiedMailQueueName: String     = config.getString("agreement-process.certified-mail-queue-name")
 
 }
