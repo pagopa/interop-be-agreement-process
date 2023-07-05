@@ -36,7 +36,6 @@ object Dependencies {
     lazy val catalogManagementModels =
       namespace %% "interop-be-catalog-management-models" % catalogManagementVersion
     lazy val partyProcessClient     = namespace %% "interop-selfcare-party-process-client" % partyProcessVersion
-    lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client"   % tenantManagementVersion
     lazy val tenantManagementModels = namespace %% "interop-be-tenant-management-models"   % tenantManagementVersion
     lazy val userRegistryManagement =
       namespace %% "interop-selfcare-user-registry-client" % userRegistryManagementVersion

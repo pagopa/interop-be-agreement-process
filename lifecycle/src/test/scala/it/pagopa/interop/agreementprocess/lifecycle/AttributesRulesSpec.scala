@@ -15,7 +15,7 @@ import java.util.UUID
 class AttributesRulesSpec extends AnyWordSpecLike {
 
   "Certified attributes check" should {
-    "return true if all CatalogItem single attributes are satisfied" in {
+    "return true if all EService single attributes are satisfied" in {
       val attr1 = UUID.randomUUID()
       val attr2 = UUID.randomUUID()
 

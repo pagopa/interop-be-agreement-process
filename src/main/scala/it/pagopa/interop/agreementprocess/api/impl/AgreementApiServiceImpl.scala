@@ -106,8 +106,7 @@ final case class AgreementApiServiceImpl(
 
     val result: Future[Agreement] = for {
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
-      eService       <- catalogManagementService
-        .getEServiceById(payload.eserviceId)
+      eService       <- catalogManagementService.getEServiceById(payload.eserviceId)
       descriptor     <- CatalogManagementService.validateCreationOnDescriptor(eService, payload.descriptorId)
       _              <- verifyCreationConflictingAgreements(requesterOrgId, payload)
       consumer       <- tenantManagementService
@@ -549,12 +548,10 @@ final case class AgreementApiServiceImpl(
       val declared  = eService.descriptors.flatMap(_.attributes.declared)
       val verified  = eService.descriptors.flatMap(_.attributes.verified)
       (certified ++ declared ++ verified)
-        .flatMap(attrs =>
-          attrs match {
+        .flatMap{
             case single: SingleAttribute => Seq(single.id.id)
             case group: GroupAttribute   => group.ids.map(_.id)
           }
-        )
         .contains(attributeId)
     }
 
@@ -1003,12 +1000,10 @@ final case class AgreementApiServiceImpl(
 
   private def matchingAttributes(eServiceAttributes: Seq[CatalogAttribute], consumerAttributes: Seq[UUID]): Seq[UUID] =
     eServiceAttributes
-      .flatMap(attrs =>
-        attrs match {
+      .flatMap {
           case single: SingleAttribute => Seq(single.id.id)
           case group: GroupAttribute   => group.ids.map(_.id)
         }
-      )
       .intersect(consumerAttributes)
 
   private def matchingCertifiedAttributes(
