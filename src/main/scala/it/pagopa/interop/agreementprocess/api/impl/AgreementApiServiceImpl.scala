@@ -51,8 +51,8 @@ final case class AgreementApiServiceImpl(
   fileManager: FileManager,
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
   uuidSupplier: UUIDSupplier,
-  queueService: QueueService,
-  queueEventsService: QueueService
+  certifiedMailQueueService: QueueService,
+  archivingPurposesQueueService: QueueService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
@@ -819,7 +819,7 @@ final case class AgreementApiServiceImpl(
       attachments = List.empty
     )
 
-    envelope.flatMap(queueService.send[InteropEnvelope]).map(_ => ())
+    envelope.flatMap(certifiedMailQueueService.send[InteropEnvelope]).map(_ => ())
   }
 
   def suspend(
@@ -1302,7 +1302,7 @@ final case class AgreementApiServiceImpl(
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsProducer(requesterOrgId, agreement)
       updated        <- archive(agreement)
-      _              <- queueEventsService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
+      _              <- archivingPurposesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
     } yield updated.toApi
 
     onComplete(result) {
