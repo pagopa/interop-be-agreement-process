@@ -32,7 +32,7 @@ object ApplicationConfiguration {
 
     ReadModelConfig(connectionString, dbName)
   }
-
-  val certifiedMailQueueName: String = config.getString("agreement-process.certified-mail-queue-name")
+  val eventsQueueName: String          = config.getString("agreement-process.events-queue-name")
+  val certifiedMailQueueName: String   = config.getString("agreement-process.certified-mail-queue-name")
 
 }

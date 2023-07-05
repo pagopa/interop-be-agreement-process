@@ -67,6 +67,16 @@ object ResponseHandlers extends AkkaResponses {
       case Failure(ex)                              => internalServerError(ex, logMessage)
     }
 
+  def archiveAgreementResponse[T](logMessage: String)(
+    success: T => Route
+  )(result: Try[T])(implicit contexts: Seq[(String, String)], logger: LoggerTakingImplicit[ContextFieldsToLog]): Route =
+    result match {
+      case Success(s)                       => success(s)
+      case Failure(ex: AgreementNotFound)   => notFound(ex, logMessage)
+      case Failure(ex: OperationNotAllowed) => forbidden(ex, logMessage)
+      case Failure(ex)                      => internalServerError(ex, logMessage)
+    }
+
   def suspendAgreementResponse[T](logMessage: String)(
     success: T => Route
   )(result: Try[T])(implicit contexts: Seq[(String, String)], logger: LoggerTakingImplicit[ContextFieldsToLog]): Route =
