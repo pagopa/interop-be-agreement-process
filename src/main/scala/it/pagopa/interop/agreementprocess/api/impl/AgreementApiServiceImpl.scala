@@ -78,7 +78,7 @@ final case class AgreementApiServiceImpl(
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
   uuidSupplier: UUIDSupplier,
   certifiedMailQueueService: QueueService,
-  eventsQueueService: QueueService
+  archivingPurposesQueueService: QueueService
 )(implicit ec: ExecutionContext)
     extends AgreementApiService {
 
@@ -1339,7 +1339,7 @@ final case class AgreementApiServiceImpl(
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsProducer(requesterOrgId, agreement)
       updated        <- archive(agreement)
-      _              <- eventsQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, updated.eserviceId))
+      _              <- archivingPurposesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
     } yield updated.toApi
 
     onComplete(result) {
