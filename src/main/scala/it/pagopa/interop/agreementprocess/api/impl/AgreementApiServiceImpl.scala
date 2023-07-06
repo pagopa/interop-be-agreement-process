@@ -800,7 +800,7 @@ final case class AgreementApiServiceImpl(
     activatingAgreementId: UUID,
     agreements: Seq[PersistentAgreement]
   ): Seq[PersistentAgreement] =
-    agreements.filter(a => PERSISTENT_ARCHIVABLE_STATES.contains(a.state) && a.id != activatingAgreementId)
+    agreements.filter(a => ARCHIVABLE_STATES.contains(a.state) && a.id != activatingAgreementId)
 
   private def archive(
     agreement: PersistentAgreement

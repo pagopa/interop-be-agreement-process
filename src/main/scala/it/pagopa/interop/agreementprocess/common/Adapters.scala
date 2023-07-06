@@ -10,78 +10,22 @@ import java.util.UUID
 
 object Adapters {
 
-  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState]   =
-    Set(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
-  val SUSPENDABLE_STATES: Set[AgreementManagement.AgreementState] =
-    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
-  val ARCHIVABLE_STATES: Set[AgreementManagement.AgreementState]  =
-    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
-  val SUBMITTABLE_STATES: Set[AgreementManagement.AgreementState] = Set(AgreementManagement.AgreementState.DRAFT)
-  val UPDATEABLE_STATES: Set[AgreementManagement.AgreementState]  =
-    Set(AgreementManagement.AgreementState.DRAFT)
-  val UPGRADABLE_STATES: Set[AgreementManagement.AgreementState]  =
-    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
-  val REJECTABLE_STATES: Set[AgreementManagement.AgreementState]  = Set(AgreementManagement.AgreementState.PENDING)
-  val DELETABLE_STATES: Set[AgreementManagement.AgreementState]   =
-    Set(AgreementManagement.AgreementState.DRAFT, AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
-
-  val PERSISTENT_ACTIVABLE_STATES: Set[PersistentAgreementState]   =
+  val ACTIVABLE_STATES: Set[PersistentAgreementState]   =
     Set(Pending, Suspended)
-  val PERSISTENT_SUSPENDABLE_STATES: Set[PersistentAgreementState] =
+  val SUSPENDABLE_STATES: Set[PersistentAgreementState] =
     Set(Active, Suspended)
-  val PERSISTENT_ARCHIVABLE_STATES: Set[PersistentAgreementState]  =
+  val ARCHIVABLE_STATES: Set[PersistentAgreementState]  =
     Set(Active, Suspended)
-  val PERSISTENT_SUBMITTABLE_STATES: Set[PersistentAgreementState] = Set(Draft)
-  val PERSISTENT_UPDATEABLE_STATES: Set[PersistentAgreementState]  =
+  val SUBMITTABLE_STATES: Set[PersistentAgreementState] = Set(Draft)
+  val UPDATEABLE_STATES: Set[PersistentAgreementState]  =
     Set(Draft)
-  val PERSISTENT_UPGRADABLE_STATES: Set[PersistentAgreementState]  =
+  val UPGRADABLE_STATES: Set[PersistentAgreementState]  =
     Set(Active, Suspended)
-  val PERSISTENT_REJECTABLE_STATES: Set[PersistentAgreementState]  = Set(Pending)
-  val PERSISTENT_DELETABLE_STATES: Set[PersistentAgreementState]   =
+  val REJECTABLE_STATES: Set[PersistentAgreementState]  = Set(Pending)
+  val DELETABLE_STATES: Set[PersistentAgreementState]   =
     Set(Draft, MissingCertifiedAttributes)
 
   implicit class AgreementWrapper(private val a: AgreementManagement.Agreement) extends AnyVal {
-
-    def assertSubmittableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(SUBMITTABLE_STATES.contains(a.state))
-
-    def assertActivableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(ACTIVABLE_STATES.contains(a.state))
-
-    def assertSuspendableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(SUSPENDABLE_STATES.contains(a.state))
-
-    def assertArchivableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(ARCHIVABLE_STATES.contains(a.state))
-
-    def assertUpdateableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(UPDATEABLE_STATES.contains(a.state))
-
-    def assertUpgradableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(UPGRADABLE_STATES.contains(a.state))
-
-    def assertRejectableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(REJECTABLE_STATES.contains(a.state))
-
-    def assertDeletableState: Either[Throwable, Unit] =
-      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
-        .withRight[Unit]
-        .unlessA(DELETABLE_STATES.contains(a.state))
-
     def toApi: Agreement                          = Agreement(
       id = a.id,
       eserviceId = a.eserviceId,
@@ -246,35 +190,35 @@ object Adapters {
   implicit class PersistentAgreementWrapper(private val p: PersistentAgreement)                   extends AnyVal {
     def assertSubmittableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_SUBMITTABLE_STATES.contains(p.state))
+      .unlessA(SUBMITTABLE_STATES.contains(p.state))
 
     def assertActivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_ACTIVABLE_STATES.contains(p.state))
+      .unlessA(ACTIVABLE_STATES.contains(p.state))
 
     def assertSuspendableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_SUSPENDABLE_STATES.contains(p.state))
+      .unlessA(SUSPENDABLE_STATES.contains(p.state))
 
     def assertArchivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_ARCHIVABLE_STATES.contains(p.state))
+      .unlessA(ARCHIVABLE_STATES.contains(p.state))
 
     def assertUpdateableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_UPDATEABLE_STATES.contains(p.state))
+      .unlessA(UPDATEABLE_STATES.contains(p.state))
 
     def assertUpgradableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_UPGRADABLE_STATES.contains(p.state))
+      .unlessA(UPGRADABLE_STATES.contains(p.state))
 
     def assertRejectableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_REJECTABLE_STATES.contains(p.state))
+      .unlessA(REJECTABLE_STATES.contains(p.state))
 
     def assertDeletableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(PERSISTENT_DELETABLE_STATES.contains(p.state))
+      .unlessA(DELETABLE_STATES.contains(p.state))
 
     def toApi: Agreement                            = Agreement(
       id = p.id,
