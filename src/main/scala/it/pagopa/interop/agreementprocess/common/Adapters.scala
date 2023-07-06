@@ -1,6 +1,6 @@
 package it.pagopa.interop.agreementprocess.common
 
-import cats.syntax.all._
+import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotInExpectedState
 import it.pagopa.interop.agreementprocess.model._
@@ -10,24 +10,79 @@ import java.util.UUID
 
 object Adapters {
 
-  val ACTIVABLE_STATES: Set[PersistentAgreementState]   =
+  val ACTIVABLE_STATES: Set[AgreementManagement.AgreementState]   =
+    Set(AgreementManagement.AgreementState.PENDING, AgreementManagement.AgreementState.SUSPENDED)
+  val SUSPENDABLE_STATES: Set[AgreementManagement.AgreementState] =
+    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+  val ARCHIVABLE_STATES: Set[AgreementManagement.AgreementState]  =
+    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+  val SUBMITTABLE_STATES: Set[AgreementManagement.AgreementState] = Set(AgreementManagement.AgreementState.DRAFT)
+  val UPDATEABLE_STATES: Set[AgreementManagement.AgreementState]  =
+    Set(AgreementManagement.AgreementState.DRAFT)
+  val UPGRADABLE_STATES: Set[AgreementManagement.AgreementState]  =
+    Set(AgreementManagement.AgreementState.ACTIVE, AgreementManagement.AgreementState.SUSPENDED)
+  val REJECTABLE_STATES: Set[AgreementManagement.AgreementState]  = Set(AgreementManagement.AgreementState.PENDING)
+  val DELETABLE_STATES: Set[AgreementManagement.AgreementState]   =
+    Set(AgreementManagement.AgreementState.DRAFT, AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES)
+
+  val PERSISTENT_ACTIVABLE_STATES: Set[PersistentAgreementState]   =
     Set(Pending, Suspended)
-  val SUSPENDABLE_STATES: Set[PersistentAgreementState] =
+  val PERSISTENT_SUSPENDABLE_STATES: Set[PersistentAgreementState] =
     Set(Active, Suspended)
-  val ARCHIVABLE_STATES: Set[PersistentAgreementState]  =
+  val PERSISTENT_ARCHIVABLE_STATES: Set[PersistentAgreementState]  =
     Set(Active, Suspended)
-  val SUBMITTABLE_STATES: Set[PersistentAgreementState] = Set(Draft)
-  val UPDATEABLE_STATES: Set[PersistentAgreementState]  =
+  val PERSISTENT_SUBMITTABLE_STATES: Set[PersistentAgreementState] = Set(Draft)
+  val PERSISTENT_UPDATEABLE_STATES: Set[PersistentAgreementState]  =
     Set(Draft)
-  val UPGRADABLE_STATES: Set[PersistentAgreementState]  =
+  val PERSISTENT_UPGRADABLE_STATES: Set[PersistentAgreementState]  =
     Set(Active, Suspended)
-  val REJECTABLE_STATES: Set[PersistentAgreementState]  = Set(Pending)
-  val DELETABLE_STATES: Set[PersistentAgreementState]   =
+  val PERSISTENT_REJECTABLE_STATES: Set[PersistentAgreementState]  = Set(Pending)
+  val PERSISTENT_DELETABLE_STATES: Set[PersistentAgreementState]   =
     Set(Draft, MissingCertifiedAttributes)
 
   implicit class AgreementWrapper(private val a: AgreementManagement.Agreement) extends AnyVal {
 
-    def toApi: Agreement = Agreement(
+    def assertSubmittableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(SUBMITTABLE_STATES.contains(a.state))
+
+    def assertActivableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(ACTIVABLE_STATES.contains(a.state))
+
+    def assertSuspendableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(SUSPENDABLE_STATES.contains(a.state))
+
+    def assertArchivableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(ARCHIVABLE_STATES.contains(a.state))
+
+    def assertUpdateableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(UPDATEABLE_STATES.contains(a.state))
+
+    def assertUpgradableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(UPGRADABLE_STATES.contains(a.state))
+
+    def assertRejectableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(REJECTABLE_STATES.contains(a.state))
+
+    def assertDeletableState: Either[Throwable, Unit] =
+      Left(AgreementNotInExpectedState(a.id.toString, a.state.toPersistent))
+        .withRight[Unit]
+        .unlessA(DELETABLE_STATES.contains(a.state))
+
+    def toApi: Agreement                          = Agreement(
       id = a.id,
       eserviceId = a.eserviceId,
       descriptorId = a.descriptorId,
@@ -47,8 +102,17 @@ object Adapters {
       updatedAt = a.updatedAt,
       contract = a.contract.map(_.toApi)
     )
-
-    def toPersistent: PersistentAgreement = PersistentAgreement(
+    def toSeed: AgreementManagement.AgreementSeed = AgreementManagement.AgreementSeed(
+      eserviceId = a.eserviceId,
+      descriptorId = a.descriptorId,
+      producerId = a.producerId,
+      consumerId = a.consumerId,
+      verifiedAttributes = Nil,
+      certifiedAttributes = Nil,
+      declaredAttributes = Nil,
+      consumerNotes = a.consumerNotes
+    )
+    def toPersistent: PersistentAgreement         = PersistentAgreement(
       id = a.id,
       eserviceId = a.eserviceId,
       descriptorId = a.descriptorId,
@@ -73,7 +137,7 @@ object Adapters {
   }
 
   implicit class AgreementManagementStateWrapper(private val s: AgreementManagement.AgreementState) extends AnyVal {
-    def toApi: AgreementState = s match {
+    def toApi: AgreementState                  = s match {
       case AgreementManagement.AgreementState.DRAFT                        => AgreementState.DRAFT
       case AgreementManagement.AgreementState.PENDING                      => AgreementState.PENDING
       case AgreementManagement.AgreementState.ACTIVE                       => AgreementState.ACTIVE
@@ -83,7 +147,6 @@ object Adapters {
         AgreementState.MISSING_CERTIFIED_ATTRIBUTES
       case AgreementManagement.AgreementState.REJECTED                     => AgreementState.REJECTED
     }
-
     def toPersistent: PersistentAgreementState = s match {
       case AgreementManagement.AgreementState.DRAFT                        => Draft
       case AgreementManagement.AgreementState.PENDING                      => Pending
@@ -128,7 +191,7 @@ object Adapters {
   }
 
   implicit class DocumentWrapper(private val d: AgreementManagement.Document) extends AnyVal {
-    def toApi: Document                           = Document(
+    def toApi: Document                                                        = Document(
       id = d.id,
       name = d.name,
       prettyName = d.prettyName,
@@ -136,7 +199,14 @@ object Adapters {
       createdAt = d.createdAt,
       path = d.path
     )
-    def toPersistent: PersistentAgreementDocument = PersistentAgreementDocument(
+    def toSeed(newId: UUID, newPath: String): AgreementManagement.DocumentSeed = AgreementManagement.DocumentSeed(
+      id = newId,
+      name = d.name,
+      prettyName = d.prettyName,
+      contentType = d.contentType,
+      path = newPath
+    )
+    def toPersistent: PersistentAgreementDocument                              = PersistentAgreementDocument(
       id = d.id,
       name = d.name,
       prettyName = d.prettyName,
@@ -158,39 +228,53 @@ object Adapters {
         declaredAttributes = Nil
       )
   }
+  implicit class StampsWrapper(private val p: AgreementManagement.Stamps) extends AnyVal {
+    def toPersistent: PersistentStamps = PersistentStamps(
+      submission = p.submission.map(_.toPersistent),
+      activation = p.activation.map(_.toPersistent),
+      rejection = p.rejection.map(_.toPersistent),
+      suspensionByProducer = p.suspensionByProducer.map(_.toPersistent),
+      suspensionByConsumer = p.suspensionByConsumer.map(_.toPersistent),
+      upgrade = p.upgrade.map(_.toPersistent),
+      archiving = p.archiving.map(_.toPersistent)
+    )
+  }
 
-  implicit class PersistentAgreementWrapper(private val p: PersistentAgreement) extends AnyVal {
+  implicit class StampWrapper(private val s: AgreementManagement.Stamp)                           extends AnyVal {
+    def toPersistent: PersistentStamp = PersistentStamp(who = s.who, when = s.when)
+  }
+  implicit class PersistentAgreementWrapper(private val p: PersistentAgreement)                   extends AnyVal {
     def assertSubmittableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(SUBMITTABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_SUBMITTABLE_STATES.contains(p.state))
 
     def assertActivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(ACTIVABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_ACTIVABLE_STATES.contains(p.state))
 
     def assertSuspendableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(SUSPENDABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_SUSPENDABLE_STATES.contains(p.state))
 
     def assertArchivableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(ARCHIVABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_ARCHIVABLE_STATES.contains(p.state))
 
     def assertUpdateableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(UPDATEABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_UPDATEABLE_STATES.contains(p.state))
 
     def assertUpgradableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(UPGRADABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_UPGRADABLE_STATES.contains(p.state))
 
     def assertRejectableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(REJECTABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_REJECTABLE_STATES.contains(p.state))
 
     def assertDeletableState: Either[Throwable, Unit] = Left(AgreementNotInExpectedState(p.id.toString, p.state))
       .withRight[Unit]
-      .unlessA(DELETABLE_STATES.contains(p.state))
+      .unlessA(PERSISTENT_DELETABLE_STATES.contains(p.state))
 
     def toApi: Agreement                            = Agreement(
       id = p.id,
@@ -244,8 +328,7 @@ object Adapters {
       consumerNotes = p.consumerNotes
     )
   }
-
-  implicit class PersistentAgreementStateWrapper(private val p: PersistentAgreementState) extends AnyVal {
+  implicit class PersistentAgreementStateWrapper(private val p: PersistentAgreementState)         extends AnyVal {
     def toApi: AgreementState                            = p match {
       case Draft                      => AgreementState.DRAFT
       case Active                     => AgreementState.ACTIVE
@@ -265,39 +348,6 @@ object Adapters {
       case Suspended                  => AgreementManagement.AgreementState.SUSPENDED
     }
   }
-
-  implicit class ManagementStampsWrapper(private val p: AgreementManagement.Stamps) extends AnyVal {
-    def toPersistent: PersistentStamps = PersistentStamps(
-      submission = p.submission.map(_.toPersistent),
-      activation = p.activation.map(_.toPersistent),
-      rejection = p.rejection.map(_.toPersistent),
-      suspensionByProducer = p.suspensionByProducer.map(_.toPersistent),
-      suspensionByConsumer = p.suspensionByConsumer.map(_.toPersistent),
-      upgrade = p.upgrade.map(_.toPersistent),
-      archiving = p.archiving.map(_.toPersistent)
-    )
-  }
-
-  implicit class PersistentStampsWrapper(private val p: PersistentStamps) extends AnyVal {
-    def toManagement: AgreementManagement.Stamps = AgreementManagement.Stamps(
-      submission = p.submission.map(_.toManagement),
-      activation = p.activation.map(_.toManagement),
-      rejection = p.rejection.map(_.toManagement),
-      suspensionByProducer = p.suspensionByProducer.map(_.toManagement),
-      suspensionByConsumer = p.suspensionByConsumer.map(_.toManagement),
-      upgrade = p.upgrade.map(_.toManagement),
-      archiving = p.archiving.map(_.toManagement)
-    )
-  }
-
-  implicit class PersistentStampWrapper(private val p: PersistentStamp) extends AnyVal {
-    def toManagement: AgreementManagement.Stamp = AgreementManagement.Stamp(who = p.who, when = p.when)
-  }
-
-  implicit class ManagementStampWrapper(private val s: AgreementManagement.Stamp) extends AnyVal {
-    def toPersistent: PersistentStamp = PersistentStamp(who = s.who, when = s.when)
-  }
-
   implicit class PersistentVerifiedAttributeWrapper(private val p: PersistentVerifiedAttribute)   extends AnyVal {
     def toApi: VerifiedAttribute                            = VerifiedAttribute(id = p.id)
     def toManagement: AgreementManagement.VerifiedAttribute = AgreementManagement.VerifiedAttribute(id = p.id)
@@ -309,6 +359,20 @@ object Adapters {
   implicit class PersistentDeclaredAttributeWrapper(private val p: PersistentDeclaredAttribute)   extends AnyVal {
     def toApi: DeclaredAttribute                            = DeclaredAttribute(id = p.id)
     def toManagement: AgreementManagement.DeclaredAttribute = AgreementManagement.DeclaredAttribute(id = p.id)
+  }
+  implicit class PersistentStampsWrapper(private val p: PersistentStamps)                         extends AnyVal {
+    def toManagement: AgreementManagement.Stamps = AgreementManagement.Stamps(
+      submission = p.submission.map(_.toManagement),
+      activation = p.activation.map(_.toManagement),
+      rejection = p.rejection.map(_.toManagement),
+      suspensionByProducer = p.suspensionByProducer.map(_.toManagement),
+      suspensionByConsumer = p.suspensionByConsumer.map(_.toManagement),
+      upgrade = p.upgrade.map(_.toManagement),
+      archiving = p.archiving.map(_.toManagement)
+    )
+  }
+  implicit class PersistentStampWrapper(private val p: PersistentStamp)                           extends AnyVal {
+    def toManagement: AgreementManagement.Stamp = AgreementManagement.Stamp(who = p.who, when = p.when)
   }
   implicit class PersistentAgreementDocumentWrapper(private val p: PersistentAgreementDocument)   extends AnyVal {
     def toApi: Document                                                        = Document(
@@ -335,5 +399,4 @@ object Adapters {
       path = newPath
     )
   }
-
 }

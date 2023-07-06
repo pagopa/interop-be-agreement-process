@@ -548,10 +548,10 @@ final case class AgreementApiServiceImpl(
       val declared  = eService.descriptors.flatMap(_.attributes.declared)
       val verified  = eService.descriptors.flatMap(_.attributes.verified)
       (certified ++ declared ++ verified)
-        .flatMap{
-            case single: SingleAttribute => Seq(single.id.id)
-            case group: GroupAttribute   => group.ids.map(_.id)
-          }
+        .flatMap {
+          case single: SingleAttribute => Seq(single.id.id)
+          case group: GroupAttribute   => group.ids.map(_.id)
+        }
         .contains(attributeId)
     }
 
@@ -800,7 +800,7 @@ final case class AgreementApiServiceImpl(
     activatingAgreementId: UUID,
     agreements: Seq[PersistentAgreement]
   ): Seq[PersistentAgreement] =
-    agreements.filter(a => ARCHIVABLE_STATES.contains(a.state) && a.id != activatingAgreementId)
+    agreements.filter(a => PERSISTENT_ARCHIVABLE_STATES.contains(a.state) && a.id != activatingAgreementId)
 
   private def archive(
     agreement: PersistentAgreement
@@ -1001,9 +1001,9 @@ final case class AgreementApiServiceImpl(
   private def matchingAttributes(eServiceAttributes: Seq[CatalogAttribute], consumerAttributes: Seq[UUID]): Seq[UUID] =
     eServiceAttributes
       .flatMap {
-          case single: SingleAttribute => Seq(single.id.id)
-          case group: GroupAttribute   => group.ids.map(_.id)
-        }
+        case single: SingleAttribute => Seq(single.id.id)
+        case group: GroupAttribute   => group.ids.map(_.id)
+      }
       .intersect(consumerAttributes)
 
   private def matchingCertifiedAttributes(
