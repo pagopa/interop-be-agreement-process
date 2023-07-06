@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.events.ArchiveEvent
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -28,7 +29,7 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
         stamps = SpecData.archiviationStamps
       )
       val now          = SpecData.when
-      mockAgreementRetrieve(agreement.id, agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.archiviationStamps))
       mockArchiveEventSending(ArchiveEvent(agreement.id, now))
 
@@ -40,7 +41,7 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
     "fail on agreement when requested by Producer" in {
       val agreement = SpecData.agreement.copy(producerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement.id, agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden

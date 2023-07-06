@@ -79,7 +79,7 @@ final case class AgreementApiServiceImpl(
   uuidSupplier: UUIDSupplier,
   certifiedMailQueueService: QueueService,
   archivingPurposesQueueService: QueueService
-)(implicit ec: ExecutionContext)
+)(implicit ec: ExecutionContext, readModel: ReadModelService)
     extends AgreementApiService {
 
   implicit val logger: LoggerTakingImplicit[ContextFieldsToLog] =
@@ -1328,7 +1328,7 @@ final case class AgreementApiServiceImpl(
           suspendedByConsumer = agreement.suspendedByConsumer,
           suspendedByProducer = agreement.suspendedByProducer,
           suspendedByPlatform = agreement.suspendedByPlatform,
-          stamps = agreement.stamps.copy(archiving = Stamp(uid, offsetDateTimeSupplier.get()).some)
+          stamps = agreement.stamps.copy(archiving = AgreementManagement.Stamp(uid, offsetDateTimeSupplier.get()).some)
         )
       )
     } yield agreement
@@ -1338,7 +1338,7 @@ final case class AgreementApiServiceImpl(
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
-      updated        <- archive(agreement)
+      updated        <- archive(agreement.toManagement)
       _ <- archivingPurposesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
     } yield updated.toApi
 

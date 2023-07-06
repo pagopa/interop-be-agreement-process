@@ -127,7 +127,7 @@ trait SpecHelper extends MockFactory {
       .getAgreementById(_: UUID)(_: ExecutionContext, _: ReadModelService))
       .expects(*, *, *)
       .once()
-      .returns(Future.successful(result.copy(id = agreementId)))
+      .returns(Future.successful(result))
 
   def mockAgreementRetrieveNotFound(agreementId: UUID) =
     (mockAgreementManagementService
@@ -281,7 +281,7 @@ trait SpecHelper extends MockFactory {
   ) = {
     val producer = SpecData.tenant.copy(id = agreement.producerId, selfcareId = Some(UUID.randomUUID().toString))
 
-    mockAgreementRetrieve(agreement.id, agreement)
+    mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
     mockEServiceRetrieve(eService.id, eService)
     mockAttributeManagementServiceRetrieve(SpecData.clientAttribute(UUID.randomUUID()))
@@ -316,7 +316,7 @@ trait SpecHelper extends MockFactory {
     expectedSeed: UpdateAgreementSeed
   ) = {
 
-    mockAgreementRetrieve(agreement.id, agreement)
+    mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
     mockEServiceRetrieve(eService.id, eService)
     mockAgreementsRetrieve(Nil)
@@ -351,7 +351,7 @@ trait SpecHelper extends MockFactory {
     expectedSeed: UpdateAgreementSeed
   ) = {
 
-    mockAgreementRetrieve(agreement.id, agreement)
+    mockAgreementRetrieve(agreement)
     mockAgreementsRetrieve(Nil)
     mockAgreementsRetrieve(Nil)
     mockEServiceRetrieve(eService.id, eService)
