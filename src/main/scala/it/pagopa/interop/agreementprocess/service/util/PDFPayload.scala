@@ -1,10 +1,10 @@
 package it.pagopa.interop.agreementprocess.service.util
 
 import it.pagopa.interop.agreementprocess.service.ClientAttribute
-import it.pagopa.interop.tenantmanagement.client.model.{
-  CertifiedTenantAttribute,
-  DeclaredTenantAttribute,
-  VerifiedTenantAttribute
+import it.pagopa.interop.tenantmanagement.model.tenant.{
+  PersistentCertifiedAttribute,
+  PersistentDeclaredAttribute,
+  PersistentVerifiedAttribute
 }
 
 import java.time.OffsetDateTime
@@ -16,9 +16,9 @@ final case class PDFPayload(
   eService: String,
   producerName: String,
   consumerName: String,
-  certified: Seq[(ClientAttribute, CertifiedTenantAttribute)],
-  declared: Seq[(ClientAttribute, DeclaredTenantAttribute)],
-  verified: Seq[(ClientAttribute, VerifiedTenantAttribute)],
+  certified: Seq[(ClientAttribute, PersistentCertifiedAttribute)],
+  declared: Seq[(ClientAttribute, PersistentDeclaredAttribute)],
+  verified: Seq[(ClientAttribute, PersistentVerifiedAttribute)],
   submitter: String,
   submissionTimestamp: OffsetDateTime,
   activator: String,

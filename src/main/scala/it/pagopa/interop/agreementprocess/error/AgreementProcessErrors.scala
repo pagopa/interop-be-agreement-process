@@ -1,8 +1,7 @@
 package it.pagopa.interop.agreementprocess.error
 
-import it.pagopa.interop.agreementmanagement.client.model.AgreementState
-import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
-import it.pagopa.interop.catalogmanagement.client.model.EServiceDescriptorState
+import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreementState
+import it.pagopa.interop.catalogmanagement.model.CatalogDescriptorState
 import it.pagopa.interop.commons.utils.errors.ComponentError
 
 import java.util.UUID
@@ -23,13 +22,13 @@ object AgreementProcessErrors {
         s"Unable to activate agreement $agreementId. Please check if attributes requirements and suspension flags are satisfied"
       )
 
-  final case class AgreementNotInExpectedState(agreementId: String, state: AgreementManagement.AgreementState)
+  final case class AgreementNotInExpectedState(agreementId: String, state: PersistentAgreementState)
       extends ComponentError("0003", s"Agreement $agreementId not in expected state (current state: ${state.toString})")
 
   final case class DescriptorNotInExpectedState(
     eServiceId: UUID,
     descriptorId: UUID,
-    allowedStates: List[EServiceDescriptorState]
+    allowedStates: List[CatalogDescriptorState]
   ) extends ComponentError(
         "0004",
         s"Descriptor $descriptorId of EService $eServiceId has not status in ${allowedStates.mkString("[", ",", "]")}"
@@ -79,7 +78,7 @@ object AgreementProcessErrors {
   final case class DocumentNotFound(agreementId: String, documentId: String)
       extends ComponentError("0017", s"Document $documentId in agreement $agreementId not found")
 
-  final case class DocumentsChangeNotAllowed(state: AgreementState)
+  final case class DocumentsChangeNotAllowed(state: PersistentAgreementState)
       extends ComponentError(
         "0018",
         s"The requested operation on consumer documents is not allowed on agreement with state ${state.toString()}"
@@ -97,4 +96,6 @@ object AgreementProcessErrors {
         s"Descriptor with descriptorId: ${descriptorId.toString} is not the latest descriptor"
       )
 
+  final case class AttributeNotFound(attributeId: UUID)
+      extends ComponentError("0022", s"Attribute ${attributeId.toString} not found")
 }

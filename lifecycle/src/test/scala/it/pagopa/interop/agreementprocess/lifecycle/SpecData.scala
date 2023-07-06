@@ -1,27 +1,47 @@
 package it.pagopa.interop.agreementprocess.lifecycle
 
-import it.pagopa.interop.agreementmanagement.client.model._
-import it.pagopa.interop.catalogmanagement.client.model.EServiceTechnology.REST
-import it.pagopa.interop.catalogmanagement.client.model._
-import it.pagopa.interop.tenantmanagement.client.model._
-
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
+import it.pagopa.interop.catalogmanagement.model.{
+  CatalogItem,
+  CatalogDescriptor,
+  Rest,
+  CatalogAttributes,
+  SingleAttribute,
+  CatalogAttributeValue,
+  GroupAttribute
+}
+import it.pagopa.interop.tenantmanagement.model.tenant.{
+  PersistentCertifiedAttribute,
+  PersistentDeclaredAttribute,
+  PersistentVerifiedAttribute,
+  PersistentTenantVerifier,
+  PersistentTenantRevoker,
+  PersistentTenant,
+  PersistentTenantKind,
+  PersistentExternalId
+}
+import cats.syntax.all._
+import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, Active, PersistentStamps}
+import it.pagopa.interop.catalogmanagement.model.Published
+import it.pagopa.interop.catalogmanagement.model.Automatic
 
 object SpecData {
 
   final val timestamp: OffsetDateTime = OffsetDateTime.of(2022, 12, 31, 11, 22, 33, 0, ZoneOffset.UTC)
 
-  def eService: EService = EService(
+  def eService: CatalogItem = CatalogItem(
     id = UUID.randomUUID(),
     producerId = UUID.randomUUID(),
     name = "EService1",
     description = "EService 1",
-    technology = REST,
-    descriptors = Nil
+    technology = Rest,
+    descriptors = Nil,
+    attributes = None,
+    createdAt = timestamp
   )
 
-  def descriptor: EServiceDescriptor = EServiceDescriptor(
+  def descriptor: CatalogDescriptor = CatalogDescriptor(
     id = UUID.randomUUID(),
     version = "1",
     description = None,
@@ -31,105 +51,107 @@ object SpecData {
     dailyCallsTotal = 0,
     interface = None,
     docs = Nil,
-    state = EServiceDescriptorState.PUBLISHED,
-    agreementApprovalPolicy = AgreementApprovalPolicy.AUTOMATIC,
+    state = Published,
+    agreementApprovalPolicy = Automatic.some,
     serverUrls = Nil,
-    publishedAt = None,
+    publishedAt = timestamp.some,
     suspendedAt = None,
     deprecatedAt = None,
     archivedAt = None,
-    attributes = Attributes(Nil, Nil, Nil)
+    attributes = CatalogAttributes(Nil, Nil, Nil),
+    createdAt = timestamp
   )
 
-  def tenant: Tenant = Tenant(
+  def tenant: PersistentTenant = PersistentTenant(
     id = UUID.randomUUID(),
     selfcareId = Some(UUID.randomUUID().toString),
-    externalId = ExternalId("origin", "value"),
+    externalId = PersistentExternalId("origin", "value"),
     features = Nil,
     attributes = Nil,
     createdAt = OffsetDateTime.now(),
     updatedAt = None,
     mails = Nil,
-    name = "test_name"
+    name = "test_name",
+    kind = Some(PersistentTenantKind.PA)
   )
 
-  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Attribute =
-    Attribute(single = Some(AttributeValue(id, explicitAttributeVerification = false)))
+  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): SingleAttribute =
+    SingleAttribute(id = CatalogAttributeValue(id, explicitAttributeVerification = false))
 
-  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): Attribute =
-    Attribute(group =
-      Some(
-        Seq(
-          AttributeValue(id1, explicitAttributeVerification = false),
-          AttributeValue(id2, explicitAttributeVerification = false)
-        )
+  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): GroupAttribute =
+    GroupAttribute(ids =
+      Seq(
+        CatalogAttributeValue(id1, explicitAttributeVerification = false),
+        CatalogAttributeValue(id2, explicitAttributeVerification = false)
       )
     )
 
-  def catalogCertifiedAttribute(id: UUID = UUID.randomUUID()): Attributes =
-    Attributes(certified = Seq(catalogSingleAttribute(id)), declared = Nil, verified = Nil)
+  def catalogCertifiedAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
+    CatalogAttributes(certified = Seq(catalogSingleAttribute(id)), declared = Nil, verified = Nil)
 
-  def catalogDeclaredAttribute(id: UUID = UUID.randomUUID()): Attributes =
-    Attributes(declared = Seq(catalogSingleAttribute(id)), certified = Nil, verified = Nil)
+  def catalogDeclaredAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
+    CatalogAttributes(declared = Seq(catalogSingleAttribute(id)), certified = Nil, verified = Nil)
 
-  def catalogVerifiedAttribute(id: UUID = UUID.randomUUID()): Attributes =
-    Attributes(declared = Nil, certified = Nil, verified = Seq(catalogSingleAttribute(id)))
+  def catalogVerifiedAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
+    CatalogAttributes(declared = Nil, certified = Nil, verified = Seq(catalogSingleAttribute(id)))
 
-  def tenantCertifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(certified = Some(CertifiedTenantAttribute(id = id, assignmentTimestamp = timestamp)))
+  def tenantCertifiedAttribute(id: UUID = UUID.randomUUID()): PersistentCertifiedAttribute =
+    PersistentCertifiedAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None)
 
-  def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(declared = Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp)))
+  def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): PersistentDeclaredAttribute =
+    PersistentDeclaredAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None)
 
   def tenantVerifiedAttribute(
     id: UUID = UUID.randomUUID(),
     verifierId: UUID = UUID.randomUUID(),
     extensionDate: Option[OffsetDateTime] = Some(timestamp.plusYears(9))
-  ): TenantAttribute =
-    TenantAttribute(verified =
-      Some(
-        VerifiedTenantAttribute(
-          id = id,
-          assignmentTimestamp = timestamp,
-          verifiedBy =
-            Seq(TenantVerifier(id = verifierId, verificationDate = timestamp, extensionDate = extensionDate)),
-          revokedBy = Nil
+  ): PersistentVerifiedAttribute =
+    PersistentVerifiedAttribute(
+      id = id,
+      assignmentTimestamp = timestamp,
+      verifiedBy = List(
+        PersistentTenantVerifier(
+          id = verifierId,
+          verificationDate = timestamp,
+          extensionDate = extensionDate,
+          expirationDate = None
         )
-      )
+      ),
+      revokedBy = Nil
     )
 
-  def tenantRevokedCertifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(certified =
-      Some(CertifiedTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp)))
-    )
+  def tenantRevokedCertifiedAttribute(id: UUID = UUID.randomUUID()): PersistentCertifiedAttribute =
+    PersistentCertifiedAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp))
 
-  def tenantRevokedDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
-    TenantAttribute(declared =
-      Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp)))
-    )
+  def tenantRevokedDeclaredAttribute(id: UUID = UUID.randomUUID()): PersistentDeclaredAttribute =
+    PersistentDeclaredAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = Some(timestamp))
 
   def tenantRevokedVerifiedAttribute(
     id: UUID = UUID.randomUUID(),
     revokerId: UUID = UUID.randomUUID()
-  ): TenantAttribute =
-    TenantAttribute(verified =
-      Some(
-        VerifiedTenantAttribute(
-          id = id,
-          assignmentTimestamp = timestamp,
-          verifiedBy = Nil,
-          revokedBy = Seq(TenantRevoker(id = revokerId, verificationDate = timestamp, revocationDate = timestamp))
+  ): PersistentVerifiedAttribute =
+    PersistentVerifiedAttribute(
+      id = id,
+      assignmentTimestamp = timestamp,
+      verifiedBy = Nil,
+      revokedBy = List(
+        PersistentTenantRevoker(
+          id = revokerId,
+          verificationDate = timestamp,
+          revocationDate = timestamp,
+          expirationDate = None,
+          extensionDate = None
         )
       )
     )
 
-  def agreement: Agreement = Agreement(
+  def agreement: PersistentAgreement = PersistentAgreement(
     id = UUID.randomUUID(),
     eserviceId = UUID.randomUUID(),
     descriptorId = UUID.randomUUID(),
     producerId = UUID.randomUUID(),
     consumerId = UUID.randomUUID(),
-    state = AgreementState.ACTIVE,
+    state = Active,
     certifiedAttributes = Nil,
     declaredAttributes = Nil,
     verifiedAttributes = Nil,
@@ -139,7 +161,11 @@ object SpecData {
     consumerDocuments = Nil,
     createdAt = OffsetDateTime.now(),
     contract = None,
-    stamps = Stamps()
+    stamps = PersistentStamps(),
+    updatedAt = Some(timestamp),
+    consumerNotes = None,
+    rejectionReason = None,
+    suspendedAt = None
   )
 
 }

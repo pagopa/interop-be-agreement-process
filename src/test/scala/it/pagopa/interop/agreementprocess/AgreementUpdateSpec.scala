@@ -2,6 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementprocess.model.AgreementUpdatePayload
 import org.scalatest.matchers.should.Matchers._
@@ -46,7 +47,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
         stamps = agreement.stamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementUpdate(agreement.id, seed, updatedAgreement)
 
       Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
@@ -73,7 +74,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
           consumerNotes = Some("old-consumer-notes")
         )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -114,7 +115,7 @@ class AgreementUpdateSpec extends AnyWordSpecLike with SpecHelper with Scalatest
         stamps = agreement.stamps
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementUpdate(agreement.id, seed, updatedAgreement)
 
       Get() ~> service.updateAgreementById(agreement.id.toString, payload) ~> check {

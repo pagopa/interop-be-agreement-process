@@ -1,7 +1,7 @@
 package it.pagopa.interop.agreementprocess.common.readmodel
 
 import it.pagopa.interop.agreementprocess.common.Adapters._
-import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreement
+import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, PersistentAgreementState}
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.agreementprocess.model.{AgreementState, CompactEService}
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,8 +16,68 @@ import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
 import it.pagopa.interop.catalogmanagement.{model => CatalogManagement}
 import it.pagopa.interop.agreementprocess.model.CompactOrganization
 import it.pagopa.interop.agreementprocess.api.impl._
+import java.util.UUID
 
-object ReadModelQueries {
+object ReadModelAgreementQueries extends ReadModelQuery {
+
+  def getAgreementById(
+    agreementId: UUID
+  )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[Option[PersistentAgreement]] = {
+    readModel.findOne[PersistentAgreement]("agreements", Filters.eq("data.id", agreementId.toString))
+  }
+
+  private def getAgreementsFilters(
+    producerId: Option[UUID],
+    consumerId: Option[UUID],
+    eserviceId: Option[UUID],
+    descriptorId: Option[UUID],
+    states: Seq[PersistentAgreementState],
+    attributeId: Option[UUID]
+  ): Bson = {
+    val producerIdFilter      = producerId.map(id => Filters.eq("data.producerId", id.toString))
+    val consumerIdFilter      = consumerId.map(id => Filters.eq("data.consumerId", id.toString))
+    val eserviceIdFilter      = eserviceId.map(id => Filters.eq("data.eserviceId", id.toString))
+    val descriptorIdFilter    = descriptorId.map(id => Filters.eq("data.descriptorId", id.toString))
+    val agreementStatesFilter = mapToVarArgs(
+      states
+        .map(_.toString)
+        .map(Filters.eq("data.state", _))
+    )(Filters.or)
+    val attributeIdFilter     = attributeId.map { id =>
+      Filters.or(
+        Filters.eq("data.certifiedAttributes.id", id.toString),
+        Filters.eq("data.declaredAttributes.id", id.toString),
+        Filters.eq("data.verifiedAttributes.id", id.toString)
+      )
+    }
+
+    mapToVarArgs(
+      producerIdFilter.toList ++ consumerIdFilter.toList ++ eserviceIdFilter.toList ++ descriptorIdFilter.toList ++ agreementStatesFilter.toList ++ attributeIdFilter.toList
+    )(Filters.and)
+      .getOrElse(Filters.empty())
+  }
+
+  def getAgreements(
+    producerId: Option[UUID],
+    consumerId: Option[UUID],
+    eserviceId: Option[UUID],
+    descriptorId: Option[UUID],
+    agreementStates: Seq[PersistentAgreementState],
+    attributeId: Option[UUID],
+    offset: Int,
+    limit: Int
+  )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[Seq[PersistentAgreement]] = {
+    val filters = getAgreementsFilters(
+      producerId = producerId,
+      consumerId = consumerId,
+      eserviceId = eserviceId,
+      descriptorId = descriptorId,
+      states = agreementStates,
+      attributeId = attributeId
+    )
+    readModel.find[PersistentAgreement]("agreements", filters, offset, limit)
+  }
+
   def listAgreements(
     eServicesIds: List[String],
     consumersIds: List[String],
@@ -27,7 +87,7 @@ object ReadModelQueries {
     showOnlyUpgradeable: Boolean,
     offset: Int,
     limit: Int
-  )(readModel: ReadModelService)(implicit ec: ExecutionContext): Future[PaginatedResult[PersistentAgreement]] = {
+  )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PaginatedResult[PersistentAgreement]] = {
 
     val query: Bson =
       listAgreementsFilters(eServicesIds, consumersIds, producersIds, descriptorsIds, states, showOnlyUpgradeable)
@@ -134,7 +194,7 @@ object ReadModelQueries {
   def listStatesFilter(states: List[AgreementState]): Option[Bson] =
     mapToVarArgs(
       states
-        .map(_.toPersistentApi)
+        .map(_.toPersistent)
         .map(_.toString)
         .map(Filters.eq("data.state", _))
     )(Filters.or)
@@ -162,9 +222,10 @@ object ReadModelQueries {
     )
   }
 
-  def listProducers(name: Option[String], offset: Int, limit: Int)(
+  def listProducers(name: Option[String], offset: Int, limit: Int)(implicit
+    ec: ExecutionContext,
     readModel: ReadModelService
-  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
+  ): Future[PaginatedResult[CompactOrganization]] = {
 
     val query: Bson               = listTenantFilters(name)
     val filterPipeline: Seq[Bson] = listTenantsFilterPipeline(query, "producerId")
@@ -199,9 +260,10 @@ object ReadModelQueries {
     } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
   }
 
-  def listConsumers(name: Option[String], offset: Int, limit: Int)(
+  def listConsumers(name: Option[String], offset: Int, limit: Int)(implicit
+    ec: ExecutionContext,
     readModel: ReadModelService
-  )(implicit ec: ExecutionContext): Future[PaginatedResult[CompactOrganization]] = {
+  ): Future[PaginatedResult[CompactOrganization]] = {
 
     val query: Bson               = listTenantFilters(name)
     val filterPipeline: Seq[Bson] = listTenantsFilterPipeline(query, "consumerId")
@@ -255,7 +317,7 @@ object ReadModelQueries {
     producersIds: List[String],
     offset: Int,
     limit: Int
-  )(readModel: ReadModelService)(implicit ec: ExecutionContext): Future[PaginatedResult[CompactEService]] = {
+  )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PaginatedResult[CompactEService]] = {
     val query: Bson               = listEServiceAgreementsFilters(eServiceName, consumersIds, producersIds)
     val filterPipeline: Seq[Bson] = Seq(
       lookup("eservices", "data.eserviceId", "data.id", "eservices"),
@@ -297,7 +359,4 @@ object ReadModelQueries {
       )
     } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
   }
-
-  def mapToVarArgs[A, B](l: Seq[A])(f: Seq[A] => B): Option[B] = Option.when(l.nonEmpty)(f(l))
-
 }

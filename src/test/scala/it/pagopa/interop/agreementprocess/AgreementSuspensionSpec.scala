@@ -2,6 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.UpdateAgreementSeed
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
@@ -40,7 +41,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByConsumerStamps.suspensionByConsumer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByConsumerStamps))
@@ -76,7 +77,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByProducerStamps))
@@ -110,7 +111,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByConsumerStamps.suspensionByConsumer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByConsumerStamps))
@@ -145,7 +146,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByProducerStamps))
@@ -180,7 +181,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByBothStamps.suspensionByProducer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByBothStamps))
@@ -215,7 +216,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByBothStamps.suspensionByProducer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByBothStamps))
@@ -251,7 +252,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByConsumerStamps.suspensionByConsumer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByConsumerStamps))
@@ -287,7 +288,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByProducerStamps))
@@ -305,7 +306,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val descriptorAttr                     =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantVerAttr, tenantDeclAttr)
+      val tenantAttr                         = List(tenantVerAttr, tenantDeclAttr)
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), producerId = producerId)
@@ -330,7 +331,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByProducerStamps))
@@ -348,7 +349,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val (eServiceVerAttr, tenantVerAttr)   = SpecData.matchingVerifiedAttributes(verifierId = producerId)
       val descriptorAttr                     =
         eServiceCertAttr.copy(declared = eServiceDeclAttr.declared, verified = eServiceVerAttr.verified)
-      val tenantAttr                         = Seq(tenantVerAttr, tenantCertAttr)
+      val tenantAttr                         = List(tenantVerAttr, tenantCertAttr)
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
       val eService   =
@@ -374,7 +375,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.suspensionByProducerStamps))
@@ -398,7 +399,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
     "fail if Agreement is not in expected state" in {
       val agreement = SpecData.draftAgreement.copy(consumerId = requesterOrgId)
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.suspendAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -409,7 +410,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val eService  = SpecData.eService.copy(producerId = UUID.randomUUID())
       val agreement = SpecData.activeAgreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())
 
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.suspendAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden

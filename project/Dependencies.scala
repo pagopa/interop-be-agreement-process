@@ -29,16 +29,14 @@ object Dependencies {
       namespace %% "interop-be-agreement-management-client" % agreementManagementVersion
     lazy val agreementManagementModels =
       namespace %% "interop-be-agreement-management-models" % agreementManagementVersion
-    lazy val attributeRegistryManagementClient =
-      namespace %% "interop-be-attribute-registry-management-client" % attributeRegistryManagementVersion
+    lazy val attributeRegistryManagementModels =
+      namespace %% "interop-be-attribute-registry-management-models" % attributeRegistryManagementVersion
     lazy val authorizationManagementClient =
       namespace %% "interop-be-authorization-management-client" % authorizationManagementVersion
-    lazy val catalogManagementClient =
-      namespace %% "interop-be-catalog-management-client" % catalogManagementVersion
     lazy val catalogManagementModels =
       namespace %% "interop-be-catalog-management-models" % catalogManagementVersion
     lazy val partyProcessClient     = namespace %% "interop-selfcare-party-process-client" % partyProcessVersion
-    lazy val tenantManagementClient = namespace %% "interop-be-tenant-management-client"   % tenantManagementVersion
+    lazy val tenantManagementModels = namespace %% "interop-be-tenant-management-models"   % tenantManagementVersion
     lazy val userRegistryManagement =
       namespace %% "interop-selfcare-user-registry-client" % userRegistryManagementVersion
 
@@ -116,10 +114,10 @@ object Dependencies {
       mustache.mustache                        % Compile,
       pagopa.agreementManagementClient         % Compile,
       pagopa.agreementManagementModels         % Compile,
-      pagopa.attributeRegistryManagementClient % Compile,
+      pagopa.attributeRegistryManagementModels % Compile,
       pagopa.authorizationManagementClient     % Compile,
-      pagopa.catalogManagementClient           % Compile,
       pagopa.catalogManagementModels           % Compile,
+      pagopa.tenantManagementModels            % Compile,
       pagopa.certifiedMailSenderModels         % Compile,
       pagopa.commons                           % Compile,
       pagopa.commonsFileManager                % Compile,
@@ -127,7 +125,6 @@ object Dependencies {
       pagopa.commonsCqrs                       % Compile,
       pagopa.commonsQueueManager               % Compile,
       pagopa.partyProcessClient                % Compile,
-      pagopa.tenantManagementClient            % Compile,
       pagopa.userRegistryManagement            % Compile,
       akka.httpTestkit                         % Test,
       akka.testkit                             % Test,
@@ -143,9 +140,9 @@ object Dependencies {
     lazy val lifecycle: Seq[ModuleID] =
       Seq(
         cats.core                        % Compile,
-        pagopa.agreementManagementClient % Compile,
-        pagopa.catalogManagementClient   % Compile,
-        pagopa.tenantManagementClient    % Compile,
+        pagopa.tenantManagementModels    % Compile,
+        pagopa.catalogManagementModels   % Compile,
+        pagopa.agreementManagementModels % Compile,
         scalatest.core                   % Test
       )
   }

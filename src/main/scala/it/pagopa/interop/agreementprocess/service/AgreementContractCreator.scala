@@ -1,20 +1,22 @@
 package it.pagopa.interop.agreementprocess.service
 
 import akka.http.scaladsl.model.MediaTypes
-import it.pagopa.interop.agreementmanagement.client.model.{Agreement, DocumentSeed, UpdateAgreementSeed}
+import it.pagopa.interop.agreementmanagement.client.model.{DocumentSeed, UpdateAgreementSeed}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{MissingUserInfo, StampNotFound}
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
-import it.pagopa.interop.catalogmanagement.client.model.EService
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
-import it.pagopa.interop.tenantmanagement.client.model.{
-  CertifiedTenantAttribute,
-  DeclaredTenantAttribute,
-  Tenant,
-  VerifiedTenantAttribute
+import it.pagopa.interop.catalogmanagement.model.CatalogItem
+import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreement
+import it.pagopa.interop.tenantmanagement.model.tenant.{
+  PersistentTenant,
+  PersistentCertifiedAttribute,
+  PersistentDeclaredAttribute,
+  PersistentVerifiedAttribute
 }
 
 import java.time.OffsetDateTime
@@ -31,7 +33,7 @@ final class AgreementContractCreator(
   attributeManagementService: AttributeManagementService,
   userRegistry: UserRegistryService,
   offsetDateTimeSupplier: OffsetDateTimeSupplier
-) {
+)(implicit readModel: ReadModelService) {
 
   private[this] val agreementTemplate = Source
     .fromResource("agreementTemplate/index.html")
@@ -41,11 +43,13 @@ final class AgreementContractCreator(
   private val agreementDocumentSuffix: String = "agreement_contract.pdf"
   private val contractPrettyName: String      = "Richiesta di fruizione"
 
-  def create(agreement: Agreement, eService: EService, consumer: Tenant, producer: Tenant, seed: UpdateAgreementSeed)(
-    implicit
-    contexts: Seq[(String, String)],
-    ec: ExecutionContext
-  ): Future[Unit] = for {
+  def create(
+    agreement: PersistentAgreement,
+    eService: CatalogItem,
+    consumer: PersistentTenant,
+    producer: PersistentTenant,
+    seed: UpdateAgreementSeed
+  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Unit] = for {
     pdfPayload <- getPdfPayload(agreement, eService, consumer, producer, seed)
     document   <- pdfCreator.create(agreementTemplate, pdfPayload)
     documentName = createAgreementDocumentName(agreement.consumerId, agreement.producerId)
@@ -60,37 +64,48 @@ final class AgreementContractCreator(
     )
   } yield ()
 
-  def getAttributeInvolved(consumer: Tenant, seed: UpdateAgreementSeed)(implicit
-    contexts: Seq[(String, String)],
+  def getAttributeInvolved(consumer: PersistentTenant, seed: UpdateAgreementSeed)(implicit
     ec: ExecutionContext
   ): Future[
     (
-      Seq[(ClientAttribute, CertifiedTenantAttribute)],
-      Seq[(ClientAttribute, DeclaredTenantAttribute)],
-      Seq[(ClientAttribute, VerifiedTenantAttribute)]
+      Seq[(ClientAttribute, PersistentCertifiedAttribute)],
+      Seq[(ClientAttribute, PersistentDeclaredAttribute)],
+      Seq[(ClientAttribute, PersistentVerifiedAttribute)]
     )
   ] = {
-    def getCertified: Future[Seq[(ClientAttribute, CertifiedTenantAttribute)]] = {
+    def getCertified: Future[Seq[(ClientAttribute, PersistentCertifiedAttribute)]] = {
       val attributes =
-        consumer.attributes.flatMap(_.certified).filter(c => seed.certifiedAttributes.map(_.id).contains(c.id))
+        consumer.attributes
+          .collect { case a: PersistentCertifiedAttribute => a }
+          .filter(c => seed.certifiedAttributes.map(_.id).contains(c.id))
       Future.traverse(attributes)(attr =>
-        attributeManagementService.getAttribute(attr.id.toString).map(ca => ca -> attr)
+        attributeManagementService
+          .getAttributeById(attr.id)
+          .map(ca => ca -> attr)
       )
     }
 
-    def getDeclared: Future[Seq[(ClientAttribute, DeclaredTenantAttribute)]] = {
+    def getDeclared: Future[Seq[(ClientAttribute, PersistentDeclaredAttribute)]] = {
       val attributes =
-        consumer.attributes.flatMap(_.declared).filter(c => seed.declaredAttributes.map(_.id).contains(c.id))
+        consumer.attributes
+          .collect { case a: PersistentDeclaredAttribute => a }
+          .filter(c => seed.declaredAttributes.map(_.id).contains(c.id))
       Future.traverse(attributes)(attr =>
-        attributeManagementService.getAttribute(attr.id.toString).map(ca => ca -> attr)
+        attributeManagementService
+          .getAttributeById(attr.id)
+          .map(ca => ca -> attr)
       )
     }
 
-    def getVerified: Future[Seq[(ClientAttribute, VerifiedTenantAttribute)]] = {
+    def getVerified: Future[Seq[(ClientAttribute, PersistentVerifiedAttribute)]] = {
       val attributes =
-        consumer.attributes.flatMap(_.verified).filter(c => seed.verifiedAttributes.map(_.id).contains(c.id))
+        consumer.attributes
+          .collect { case a: PersistentVerifiedAttribute => a }
+          .filter(c => seed.verifiedAttributes.map(_.id).contains(c.id))
       Future.traverse(attributes)(attr =>
-        attributeManagementService.getAttribute(attr.id.toString).map(ca => ca -> attr)
+        attributeManagementService
+          .getAttributeById(attr.id)
+          .map(ca => ca -> attr)
       )
     }
 
@@ -127,10 +142,10 @@ final class AgreementContractCreator(
   } yield s"${name.value} ${familyName.value} ($fiscalCode)"
 
   def getPdfPayload(
-    agreement: Agreement,
-    eService: EService,
-    consumer: Tenant,
-    producer: Tenant,
+    agreement: PersistentAgreement,
+    eService: CatalogItem,
+    consumer: PersistentTenant,
+    producer: PersistentTenant,
     seed: UpdateAgreementSeed
   )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[PDFPayload] = {
     for {

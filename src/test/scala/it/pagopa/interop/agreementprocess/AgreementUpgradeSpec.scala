@@ -2,6 +2,7 @@ package it.pagopa.interop.agreementprocess
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.UpgradeAgreementSeed
 import it.pagopa.interop.authorizationmanagement.client.model.{
   ClientAgreementAndEServiceDetailsUpdate,
@@ -38,7 +39,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
       val seed = UpgradeAgreementSeed(descriptorId = newerDescriptor.id, SpecData.defaultStamp.get)
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
       mockAgreementUpgrade(agreement.id, seed, newAgreement)
       mockUpdateAgreementAndEServiceStates(
@@ -83,7 +84,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
@@ -104,7 +105,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -123,7 +124,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(consumer.id, consumer)
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
       mockEServiceRetrieve(eService.id, eService)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
@@ -144,7 +145,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
         )
 
       mockTenantRetrieve(requesterOrgId, SpecData.tenant.copy(id = requesterOrgId))
-      mockAgreementRetrieve(agreement)
+      mockAgreementRetrieve(agreement.toPersistent)
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.Forbidden
