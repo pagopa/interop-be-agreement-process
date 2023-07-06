@@ -150,7 +150,6 @@ object Dependencies {
       )
     lazy val events: Seq[ModuleID] =
       Seq(
-        akka.httpJson                    % Compile,
         pagopa.commons                   % Compile
       )  
   }

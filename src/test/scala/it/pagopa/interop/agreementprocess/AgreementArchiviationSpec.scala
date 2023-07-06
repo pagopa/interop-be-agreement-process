@@ -14,8 +14,8 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
   import agreementApiMarshaller._
 
   "Agreement Archiviation" should {
-    "succeed on agreement when requested by Producer" in {
-      val agreement = SpecData.agreement.copy(producerId = requesterOrgId)
+    "succeed on agreement when requested by Consumer" in {
+      val agreement = SpecData.agreement.copy(consumerId = requesterOrgId)
 
       val expectedSeed = AgreementManagement.UpdateAgreementSeed(
         state = AgreementManagement.AgreementState.ARCHIVED,
@@ -37,19 +37,8 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
       }
     }
 
-    "fail on agreement when requested by Consumer" in {
-      val agreement = SpecData.agreement.copy(consumerId = requesterOrgId)
-
-      mockAgreementRetrieve(agreement.id, agreement)
-
-      Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
-        status shouldEqual StatusCodes.Forbidden
-      }
-    }
-
-    "fail if requester is not the Consumer or the Producer" in {
-      val eService  = SpecData.eService.copy(producerId = UUID.randomUUID())
-      val agreement = SpecData.agreement.copy(eserviceId = eService.id, consumerId = UUID.randomUUID())
+    "fail on agreement when requested by Producer" in {
+      val agreement = SpecData.agreement.copy(producerId = requesterOrgId)
 
       mockAgreementRetrieve(agreement.id, agreement)
 

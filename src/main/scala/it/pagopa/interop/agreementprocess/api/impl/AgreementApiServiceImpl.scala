@@ -1300,7 +1300,7 @@ final case class AgreementApiServiceImpl(
       requesterOrgId <- getOrganizationIdFutureUUID(contexts)
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
-      _              <- assertRequesterIsProducer(requesterOrgId, agreement)
+      _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       updated        <- archive(agreement)
       _ <- archivingPurposesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
     } yield updated.toApi
