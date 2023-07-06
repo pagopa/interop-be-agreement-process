@@ -14,14 +14,14 @@ import it.pagopa.interop.catalogmanagement.model.CatalogItem
 import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, PersistentAgreementState}
 import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
 import it.pagopa.interop.certifiedMailSender.InteropEnvelope
-import it.pagopa.interop.commons.cqrs.model.ReadModelConfig
-import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, UID, USER_ROLES}
 import it.pagopa.interop.selfcare.partyprocess.client.model.Institution
 import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.agreementprocess.events.ArchiveEvent
+import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import org.scalamock.scalatest.MockFactory
 import spray.json.JsonWriter
 
@@ -58,14 +58,9 @@ trait SpecHelper extends MockFactory {
   val mockOffsetDateTimeSupplier: OffsetDateTimeSupplier                 = () => SpecData.when
   val mockUUIDSupplier: UUIDSupplier                                     = () => UUID.randomUUID()
   val mockQueueService: QueueService                                     = mock[QueueService]
+  val mockReadModel: ReadModelService                                    = mock[ReadModelService]
 
-  implicit val mockReadModel: ReadModelService = new MongoDbReadModelService(
-    ReadModelConfig(
-      "mongodb://localhost/?socketTimeoutMS=1&serverSelectionTimeoutMS=1&connectTimeoutMS=1&&autoReconnect=false&keepAlive=false",
-      "db"
-    )
-  )
-  val service: AgreementApiService             = AgreementApiServiceImpl(
+  val service: AgreementApiService = AgreementApiServiceImpl(
     mockAgreementManagementService,
     mockCatalogManagementService,
     mockTenantManagementService,
@@ -77,6 +72,7 @@ trait SpecHelper extends MockFactory {
     mockFileManager,
     mockOffsetDateTimeSupplier,
     mockUUIDSupplier,
+    mockQueueService,
     mockQueueService
   )(ExecutionContext.global, mockReadModel)
 
@@ -221,6 +217,12 @@ trait SpecHelper extends MockFactory {
     (mockQueueService
       .send[InteropEnvelope](_: InteropEnvelope)(_: JsonWriter[InteropEnvelope]))
       .expects(*, *)
+      .returns(Future.successful("sent"))
+
+  def mockArchiveEventSending(event: ArchiveEvent) =
+    (mockQueueService
+      .send[ArchiveEvent](_: ArchiveEvent)(_: JsonWriter[ArchiveEvent]))
+      .expects(event, *)
       .returns(Future.successful("sent"))
 
   def mockGetInstitution(selfcareId: String) =

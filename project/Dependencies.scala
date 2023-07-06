@@ -145,5 +145,9 @@ object Dependencies {
         pagopa.agreementManagementModels % Compile,
         scalatest.core                   % Test
       )
+    lazy val events: Seq[ModuleID] =
+      Seq(
+        pagopa.commons                   % Compile
+      )  
   }
 }

@@ -63,6 +63,7 @@ cleanFiles += baseDirectory.value / "client" / "src"
 cleanFiles += baseDirectory.value / "client" / "target"
 
 cleanFiles += baseDirectory.value / "lifecycle" / "target"
+cleanFiles += baseDirectory.value / "events" / "target"
 
 val runStandalone = inputKey[Unit]("Run the app using standalone configuration")
 runStandalone := {
@@ -94,6 +95,15 @@ lazy val client = project
     Docker / publish    := {}
   )
 
+lazy val events = project
+  .in(file("events"))
+  .settings(
+    name                := "interop-be-agreement-process-events",
+    libraryDependencies := Dependencies.Jars.events,
+    scalafmtOnCompile   := true,
+    Docker / publish    := {}
+  )
+
 lazy val lifecycle = project
   .in(file("lifecycle"))
   .settings(
@@ -121,8 +131,8 @@ lazy val root = (project in file("."))
     libraryDependencies         := Dependencies.Jars.`server`,
     dockerCommands += Cmd("LABEL", s"org.opencontainers.image.source https://github.com/pagopa/${name.value}")
   )
-  .aggregate(client, lifecycle)
-  .dependsOn(generated, lifecycle)
+  .aggregate(client, lifecycle, events)
+  .dependsOn(generated, lifecycle, events)
   .enableContractTest
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)

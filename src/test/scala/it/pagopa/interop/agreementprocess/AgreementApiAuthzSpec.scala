@@ -53,6 +53,7 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     fileManager = fakeFileManager,
     offsetDateTimeSupplier = OffsetDateTimeSupplier,
     uuidSupplier = UUIDSupplier,
+    fakerQueueService,
     fakerQueueService
   )(ExecutionContext.global, fakeReadModel)
 
@@ -91,6 +92,14 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
       validateAuthorization(
         endpoint,
         { implicit c: Seq[(String, String)] => service.rejectAgreement("fake", AgreementRejectionPayload("reason")) }
+      )
+    }
+
+    "accept authorized roles for archiveAgreement" in {
+      val endpoint = AuthorizedRoutes.endpoints("archiveAgreement")
+      validateAuthorization(
+        endpoint,
+        { implicit c: Seq[(String, String)] => service.archiveAgreement(UUID.randomUUID().toString) }
       )
     }
 

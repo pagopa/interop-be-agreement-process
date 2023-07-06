@@ -89,8 +89,11 @@ trait Dependencies {
       case _      => throw new Exception("Incorrect File Manager")
     })(blockingEc)
 
-  def queueService(blockingEc: ExecutionContextExecutor): QueueService =
+  def certifiedMailQueueName(blockingEc: ExecutionContextExecutor): QueueService =
     new QueueServiceImpl(ApplicationConfiguration.certifiedMailQueueName)(blockingEc)
+
+  def archivingPurposesQueueName(blockingEc: ExecutionContextExecutor): QueueService =
+    new QueueServiceImpl(ApplicationConfiguration.archivingPurposesQueueName)(blockingEc)
 
   def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
     actorSystem: ActorSystem[_],
@@ -109,7 +112,8 @@ trait Dependencies {
         fileManager(blockingEc),
         OffsetDateTimeSupplier,
         UUIDSupplier,
-        queueService(blockingEc)
+        certifiedMailQueueName(blockingEc),
+        archivingPurposesQueueName(blockingEc)
       ),
       AgreementApiMarshallerImpl,
       jwtReader.OAuth2JWTValidatorAsContexts
