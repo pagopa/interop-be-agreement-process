@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.UpgradeAgreementSeed
+import it.pagopa.interop.agreementprocess.events.ArchiveEvent
 import it.pagopa.interop.authorizationmanagement.client.model.{
   ClientAgreementAndEServiceDetailsUpdate,
   ClientComponentState
@@ -54,6 +55,7 @@ class AgreementUpgradeSpec extends AnyWordSpecLike with SpecHelper with Scalates
           eserviceState = ClientComponentState.ACTIVE
         )
       )
+      mockArchiveEventSending(ArchiveEvent(agreement.id, SpecData.when))
 
       Get() ~> service.upgradeAgreementById(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK

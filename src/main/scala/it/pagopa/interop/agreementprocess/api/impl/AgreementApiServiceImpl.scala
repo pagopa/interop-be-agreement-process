@@ -261,6 +261,7 @@ final case class AgreementApiServiceImpl(
       newAgreement   <-
         if (verifiedAndDeclareSatisfied(agreement, newDescriptor, tenant)) upgradeAgreement(agreement.id, newDescriptor)
         else createNewDraftAgreement(agreement, newDescriptor.id)
+      _ <- archivingPurposesQueueService.send[ArchiveEvent](ArchiveEvent(agreement.id, offsetDateTimeSupplier.get()))
     } yield newAgreement.toApi
 
     onComplete(result) {
