@@ -31,7 +31,7 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
       val now          = SpecData.when
       mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.archiviationStamps))
-      mockArchiveEventSending(ArchiveEvent(agreement.id, now))
+      mockArchiveEventSending(ArchiveEvent(agreement.id, now)).twice()
 
       Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
         status shouldEqual StatusCodes.OK
