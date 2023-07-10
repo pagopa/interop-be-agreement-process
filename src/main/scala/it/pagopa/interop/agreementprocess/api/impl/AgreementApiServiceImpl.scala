@@ -78,7 +78,8 @@ final case class AgreementApiServiceImpl(
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
   uuidSupplier: UUIDSupplier,
   certifiedMailQueueService: QueueService,
-  archivingPurposesQueueService: QueueService
+  archivingPurposesQueueService: QueueService,
+  archivingEservicesQueueService: QueueService
 )(implicit ec: ExecutionContext, readModel: ReadModelService)
     extends AgreementApiService {
 
@@ -261,6 +262,7 @@ final case class AgreementApiServiceImpl(
       newAgreement   <-
         if (verifiedAndDeclareSatisfied(agreement, newDescriptor, tenant)) upgradeAgreement(agreement.id, newDescriptor)
         else createNewDraftAgreement(agreement, newDescriptor.id)
+      _ <- archivingEservicesQueueService.send[ArchiveEvent](ArchiveEvent(agreement.id, offsetDateTimeSupplier.get()))
     } yield newAgreement.toApi
 
     onComplete(result) {
@@ -1340,6 +1342,7 @@ final case class AgreementApiServiceImpl(
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
       updated        <- archive(agreement.toManagement)
       _ <- archivingPurposesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
+      _ <- archivingEservicesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
     } yield updated.toApi
 
     onComplete(result) {

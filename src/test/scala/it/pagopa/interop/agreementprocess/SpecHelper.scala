@@ -73,6 +73,7 @@ trait SpecHelper extends MockFactory {
     mockOffsetDateTimeSupplier,
     mockUUIDSupplier,
     mockQueueService,
+    mockQueueService,
     mockQueueService
   )(ExecutionContext.global, mockReadModel)
 

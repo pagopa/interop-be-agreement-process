@@ -54,6 +54,7 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     offsetDateTimeSupplier = OffsetDateTimeSupplier,
     uuidSupplier = UUIDSupplier,
     fakerQueueService,
+    fakerQueueService,
     fakerQueueService
   )(ExecutionContext.global, fakeReadModel)
 
