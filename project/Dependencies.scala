@@ -147,6 +147,7 @@ object Dependencies {
       )
     lazy val events: Seq[ModuleID] =
       Seq(
+        pagopa.commonsQueueManager       % Compile,
         pagopa.commons                   % Compile
       )  
   }

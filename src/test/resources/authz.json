@@ -58,7 +58,7 @@
     {
       "route": "getAgreementById",
       "verb": "GET",
-      "roles": ["admin", "api", "security", "m2m","support"]
+      "roles": ["admin", "api", "security", "m2m", "internal", "support"]
     },
     {
       "route": "updateAgreementById",
