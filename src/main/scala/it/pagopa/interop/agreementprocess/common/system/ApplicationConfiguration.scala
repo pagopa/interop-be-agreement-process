@@ -32,8 +32,9 @@ object ApplicationConfiguration {
 
     ReadModelConfig(connectionString, dbName)
   }
-  val archivingPurposesQueueName: String  = config.getString("agreement-process.archiving-purposes-queue-name")
-  val archivingEservicesQueueName: String = config.getString("agreement-process.archiving-eservices-queue-name")
-  val certifiedMailQueueName: String      = config.getString("agreement-process.certified-mail-queue-name")
+  val archivingPurposesQueueName: String  = config.getString("agreement-process.queue.archiving-purposes.name")
+  val archivingEservicesQueueName: String = config.getString("agreement-process.queue.archiving-eservices.name")
+  val certifiedMailQueueName: String      = config.getString("agreement-process.queue.certified-mail.name")
+  val certifiedMailMessageGroupId: String = config.getString("agreement-process.queue.certified-mail.message-group-id")
 
 }

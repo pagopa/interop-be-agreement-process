@@ -6,14 +6,16 @@ import akka.http.scaladsl.server.Route
 import cats.implicits._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
+import it.pagopa.interop.agreementmanagement.model.agreement.{MissingCertifiedAttributes, _}
 import it.pagopa.interop.agreementprocess.api.AgreementApiService
 import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers._
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.common.readmodel.ReadModelAgreementQueries
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
-  MissingCertifiedAttributes => MissingCertifiedAttributesError
+  MissingCertifiedAttributes => MissingCertifiedAttributesError,
+  _
 }
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors._
 import it.pagopa.interop.agreementprocess.events.ArchiveEvent
 import it.pagopa.interop.agreementprocess.events.Events._
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
@@ -22,34 +24,15 @@ import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.authorizationmanagement.client.model.ClientAgreementAndEServiceDetailsUpdate
 import it.pagopa.interop.authorizationmanagement.client.{model => AuthorizationManagement}
 import it.pagopa.interop.catalogmanagement.model.{
-  CatalogItem,
   CatalogAttribute,
-  SingleAttribute,
-  GroupAttribute,
   CatalogDescriptor,
   CatalogDescriptorState,
+  CatalogItem,
+  Deprecated,
+  GroupAttribute,
   Published,
-  Deprecated
+  SingleAttribute
 }
-import it.pagopa.interop.tenantmanagement.model.tenant.{
-  PersistentTenant,
-  PersistentCertifiedAttribute,
-  PersistentDeclaredAttribute,
-  PersistentVerifiedAttribute
-}
-import it.pagopa.interop.agreementmanagement.model.agreement.{
-  Draft,
-  Suspended,
-  Pending,
-  MissingCertifiedAttributes,
-  Active,
-  Rejected,
-  PersistentAgreementState,
-  PersistentAgreement,
-  PersistentStamps,
-  PersistentStamp
-}
-import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.certifiedMailSender.InteropEnvelope
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
@@ -59,6 +42,12 @@ import it.pagopa.interop.commons.utils.AkkaUtils.{getOrganizationIdFutureUUID, g
 import it.pagopa.interop.commons.utils.OpenapiUtils.parseArrayParameters
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
+import it.pagopa.interop.tenantmanagement.model.tenant.{
+  PersistentCertifiedAttribute,
+  PersistentDeclaredAttribute,
+  PersistentTenant,
+  PersistentVerifiedAttribute
+}
 
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter

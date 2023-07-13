@@ -5,31 +5,34 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.SecurityDirectives
+import cats.syntax.all._
 import com.atlassian.oai.validator.report.ValidationReport
 import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
-import it.pagopa.interop.agreementprocess.api.{AgreementApi, HealthApi}
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
+import it.pagopa.interop.agreementprocess.api.impl.ResponseHandlers.serviceCode
 import it.pagopa.interop.agreementprocess.api.impl.{HealthApiMarshallerImpl, HealthServiceApiImpl, _}
+import it.pagopa.interop.agreementprocess.api.{AgreementApi, HealthApi}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
-import ResponseHandlers.serviceCode
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
 import it.pagopa.interop.authorizationmanagement.client.api.PurposeApi
+import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.service.JWTReader
 import it.pagopa.interop.commons.jwt.service.impl.{DefaultJWTReader, getClaimsVerifier}
 import it.pagopa.interop.commons.jwt.{JWTConfiguration, KID, PublicKeysHolder, SerializedKey}
+import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
+import it.pagopa.interop.commons.queue.config.SQSHandlerConfig
+import it.pagopa.interop.commons.queue.impl.SQSHandler
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.errors.{Problem => CommonProblem}
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
+import it.pagopa.interop.selfcare.partyprocess.client.api.ProcessApi
 import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import it.pagopa.interop.commons.logging.{CanLogContextFields, ContextFieldsToLog}
-import it.pagopa.interop.selfcare.partyprocess.client.api.ProcessApi
 
 trait Dependencies {
 
@@ -89,14 +92,27 @@ trait Dependencies {
       case _      => throw new Exception("Incorrect File Manager")
     })(blockingEc)
 
-  def certifiedMailQueueName(blockingEc: ExecutionContextExecutor): QueueService =
-    new QueueServiceImpl(ApplicationConfiguration.certifiedMailQueueName)(blockingEc)
+  def certifiedMailQueueName(blockingEc: ExecutionContextExecutor): QueueService = {
+    val config: SQSHandlerConfig =
+      SQSHandlerConfig(
+        queueUrl = ApplicationConfiguration.certifiedMailQueueName,
+        messageGroupId = ApplicationConfiguration.certifiedMailMessageGroupId.some
+      )
+    val sqsHandler: SQSHandler   = SQSHandler(config)(blockingEc)
+    new QueueServiceImpl(sqsHandler)
+  }
 
-  def archivingPurposesQueueName(blockingEc: ExecutionContextExecutor): QueueService =
-    new QueueServiceImpl(ApplicationConfiguration.archivingPurposesQueueName)(blockingEc)
+  def archivingPurposesQueueName(blockingEc: ExecutionContextExecutor): QueueService = {
+    val config: SQSHandlerConfig = SQSHandlerConfig(queueUrl = ApplicationConfiguration.archivingPurposesQueueName)
+    val sqsHandler: SQSHandler   = SQSHandler(config)(blockingEc)
+    new QueueServiceImpl(sqsHandler)
+  }
 
-  def archivingEservicesQueueName(blockingEc: ExecutionContextExecutor): QueueService =
-    new QueueServiceImpl(ApplicationConfiguration.archivingEservicesQueueName)(blockingEc)
+  def archivingEservicesQueueName(blockingEc: ExecutionContextExecutor): QueueService = {
+    val config: SQSHandlerConfig = SQSHandlerConfig(queueUrl = ApplicationConfiguration.archivingEservicesQueueName)
+    val sqsHandler: SQSHandler   = SQSHandler(config)(blockingEc)
+    new QueueServiceImpl(sqsHandler)
+  }
 
   def agreementApi(jwtReader: JWTReader, blockingEc: ExecutionContextExecutor)(implicit
     actorSystem: ActorSystem[_],
