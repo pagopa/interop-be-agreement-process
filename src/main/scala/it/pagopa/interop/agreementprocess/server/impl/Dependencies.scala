@@ -103,15 +103,13 @@ trait Dependencies {
   }
 
   def archivingPurposesQueueName(blockingEc: ExecutionContextExecutor): QueueService = {
-    val config: SQSHandlerConfig =
-      SQSHandlerConfig(queueUrl = ApplicationConfiguration.archivingPurposesQueueName, messageGroupId = None)
+    val config: SQSHandlerConfig = SQSHandlerConfig(queueUrl = ApplicationConfiguration.archivingPurposesQueueName)
     val sqsHandler: SQSHandler   = SQSHandler(config)(blockingEc)
     new QueueServiceImpl(sqsHandler)
   }
 
   def archivingEservicesQueueName(blockingEc: ExecutionContextExecutor): QueueService = {
-    val config: SQSHandlerConfig =
-      SQSHandlerConfig(queueUrl = ApplicationConfiguration.archivingEservicesQueueName, messageGroupId = None)
+    val config: SQSHandlerConfig = SQSHandlerConfig(queueUrl = ApplicationConfiguration.archivingEservicesQueueName)
     val sqsHandler: SQSHandler   = SQSHandler(config)(blockingEc)
     new QueueServiceImpl(sqsHandler)
   }
