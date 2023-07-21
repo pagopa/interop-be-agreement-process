@@ -556,11 +556,6 @@ final case class AgreementApiServiceImpl(
         consumerId = consumerUuid.some,
         states = updatableStates.map(_.toPersistent)
       )
-      _             <- Future {
-        logger.warn(s"Start waiting 2 seconds")
-        Thread.sleep(2000)
-        logger.warn(s"Waiting completed")
-      }
       consumer      <- tenantManagementService
         .getTenantById(consumerUuid)
       uniqueEServiceIds = agreements.map(_.eserviceId).distinct
