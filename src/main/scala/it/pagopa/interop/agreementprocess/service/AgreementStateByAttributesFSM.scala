@@ -1,7 +1,7 @@
 package it.pagopa.interop.agreementprocess.service
 
 import it.pagopa.interop.agreementprocess.lifecycle.AttributesRules._
-import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
+import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenantAttribute
 import it.pagopa.interop.catalogmanagement.model.CatalogDescriptor
 import it.pagopa.interop.agreementmanagement.model.agreement.{
   PersistentAgreement,
@@ -21,31 +21,31 @@ object AgreementStateByAttributesFSM {
   def nextState(
     agreement: PersistentAgreement,
     descriptor: CatalogDescriptor,
-    consumer: PersistentTenant
+    consumerAttributes: List[PersistentTenantAttribute]
   ): PersistentAgreementState =
     agreement.state match {
       case Draft                      =>
         // Skip attributes validation if consuming own EServices
         if (agreement.consumerId == agreement.producerId) Active
-        else if (!certifiedAttributesSatisfied(descriptor, consumer)) MissingCertifiedAttributes
+        else if (!certifiedAttributesSatisfied(descriptor, consumerAttributes)) MissingCertifiedAttributes
         else if (
           descriptor.agreementApprovalPolicy == Some(Automatic) &&
-          declaredAttributesSatisfied(descriptor, consumer) &&
-          verifiedAttributesSatisfied(agreement, descriptor, consumer)
+          declaredAttributesSatisfied(descriptor, consumerAttributes) &&
+          verifiedAttributesSatisfied(agreement, descriptor, consumerAttributes)
         ) Active
-        else if (declaredAttributesSatisfied(descriptor, consumer)) Pending
+        else if (declaredAttributesSatisfied(descriptor, consumerAttributes)) Pending
         else Draft
       case Pending                    =>
-        if (!certifiedAttributesSatisfied(descriptor, consumer)) MissingCertifiedAttributes
-        else if (!declaredAttributesSatisfied(descriptor, consumer)) Draft
-        else if (!verifiedAttributesSatisfied(agreement, descriptor, consumer)) Pending
+        if (!certifiedAttributesSatisfied(descriptor, consumerAttributes)) MissingCertifiedAttributes
+        else if (!declaredAttributesSatisfied(descriptor, consumerAttributes)) Draft
+        else if (!verifiedAttributesSatisfied(agreement, descriptor, consumerAttributes)) Pending
         else Active
       case Active                     =>
         if (agreement.consumerId == agreement.producerId) Active
         else if (
-          certifiedAttributesSatisfied(descriptor, consumer) &&
-          declaredAttributesSatisfied(descriptor, consumer) &&
-          verifiedAttributesSatisfied(agreement, descriptor, consumer)
+          certifiedAttributesSatisfied(descriptor, consumerAttributes) &&
+          declaredAttributesSatisfied(descriptor, consumerAttributes) &&
+          verifiedAttributesSatisfied(agreement, descriptor, consumerAttributes)
         )
           Active
         else
@@ -53,16 +53,16 @@ object AgreementStateByAttributesFSM {
       case Suspended                  =>
         if (agreement.consumerId == agreement.producerId) Active
         else if (
-          certifiedAttributesSatisfied(descriptor, consumer) &&
-          declaredAttributesSatisfied(descriptor, consumer) &&
-          verifiedAttributesSatisfied(agreement, descriptor, consumer)
+          certifiedAttributesSatisfied(descriptor, consumerAttributes) &&
+          declaredAttributesSatisfied(descriptor, consumerAttributes) &&
+          verifiedAttributesSatisfied(agreement, descriptor, consumerAttributes)
         )
           Active
         else
           Suspended
       case Archived                   => Archived
       case MissingCertifiedAttributes =>
-        if (certifiedAttributesSatisfied(descriptor, consumer)) Draft
+        if (certifiedAttributesSatisfied(descriptor, consumerAttributes)) Draft
         else MissingCertifiedAttributes
       case Rejected                   => Rejected
     }

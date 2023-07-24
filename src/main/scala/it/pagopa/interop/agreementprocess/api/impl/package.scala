@@ -28,11 +28,18 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def compactOrganizationsFormat: RootJsonFormat[CompactOrganizations]  = jsonFormat2(CompactOrganizations)
   implicit def agreementCompactEServiceFormat: RootJsonFormat[CompactEService]   = jsonFormat2(CompactEService)
   implicit def agreementCompactEServicesFormat: RootJsonFormat[CompactEServices] = jsonFormat2(CompactEServices)
-
-  implicit def mailAttachmentFormat: RootJsonFormat[MailAttachment] = jsonFormat3(MailAttachment)
-
-  implicit def interopEnvelopFormat: RootJsonFormat[InteropEnvelope] = jsonFormat5(InteropEnvelope)
-
+  implicit def TenantVerifierFormat: RootJsonFormat[TenantVerifier]              = jsonFormat4(TenantVerifier)
+  implicit def TenantRevokerFormat: RootJsonFormat[TenantRevoker]                = jsonFormat5(TenantRevoker)
+  implicit def DeclaredTenantAttributeFormat: RootJsonFormat[DeclaredTenantAttribute]   =
+    jsonFormat3(DeclaredTenantAttribute)
+  implicit def CertifiedTenantAttributeFormat: RootJsonFormat[CertifiedTenantAttribute] =
+    jsonFormat3(CertifiedTenantAttribute)
+  implicit def VerifiedTenantAttributeFormat: RootJsonFormat[VerifiedTenantAttribute]   =
+    jsonFormat4(VerifiedTenantAttribute)
+  implicit def tenantAttributeFormat: RootJsonFormat[TenantAttribute]                   = jsonFormat3(TenantAttribute)
+  implicit def compactTenantFormat: RootJsonFormat[CompactTenant]                       = jsonFormat2(CompactTenant)
+  implicit def mailAttachmentFormat: RootJsonFormat[MailAttachment]                     = jsonFormat3(MailAttachment)
+  implicit def interopEnvelopFormat: RootJsonFormat[InteropEnvelope]                    = jsonFormat5(InteropEnvelope)
   implicit def mailInfoFormat: RootJsonFormat[MailTemplate] = jsonFormat2(MailTemplate.apply)
 
 }

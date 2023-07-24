@@ -15,8 +15,10 @@ import it.pagopa.interop.agreementmanagement.model.agreement.{
   Rejected,
   Draft
 }
+
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import java.util.UUID
 class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
@@ -32,8 +34,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val tenantAttr     = List(tenantCertAttr, tenantDeclAttr, tenantVerAttr)
       val descriptor     =
         SpecData.publishedDescriptor.copy(agreementApprovalPolicy = Automatic.some, attributes = descriptorAttr)
-      val consumer       = SpecData.tenant.copy(attributes = tenantAttr)
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Active
+
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Active
     }
 
     "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
@@ -52,9 +54,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val agreement: Agreement =
         SpecData.agreement.copy(state = DRAFT, producerId = producerId, consumerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Active
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Active
     }
 
     "go to PENDING when Certified and Declared attributes are satisfied and Agreement Approval Policy is not AUTOMATIC" in {
@@ -66,9 +67,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val descriptor           =
         SpecData.publishedDescriptor.copy(agreementApprovalPolicy = Manual.some, attributes = descriptorAttr)
       val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Pending
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Pending
     }
 
     "go to MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
@@ -80,9 +80,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = DRAFT)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe MissingCertifiedAttributes
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe MissingCertifiedAttributes
     }
   }
 
@@ -98,9 +97,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Active
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Active
     }
 
     "stay in PENDING when Verified attributes are NOT satisfied" in {
@@ -114,9 +112,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = PENDING)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Pending
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Pending
     }
 
     "go to DRAFT when Declared attributes are NOT satisfied" in {
@@ -131,9 +128,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Draft
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Draft
     }
 
     "go to MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
@@ -148,9 +144,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = PENDING, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe MissingCertifiedAttributes
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe MissingCertifiedAttributes
     }
   }
 
@@ -167,9 +162,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Suspended
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Suspended
     }
 
     "go to SUSPENDED when Declared attributes are NOT satisfied" in {
@@ -184,9 +178,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Suspended
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Suspended
     }
 
     "go to SUSPENDED when Verified attributes are NOT satisfied" in {
@@ -200,9 +193,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = ACTIVE)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Suspended
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Suspended
     }
 
     "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
@@ -221,9 +213,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val agreement: Agreement =
         SpecData.agreement.copy(state = ACTIVE, producerId = producerId, consumerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Active
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Active
     }
   }
 
@@ -239,9 +230,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Active
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Active
     }
 
     "stay in SUSPENDED when Certified attributes are NOT satisfied" in {
@@ -256,9 +246,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Suspended
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Suspended
     }
 
     "stay in SUSPENDED when Declared attributes are NOT satisfied" in {
@@ -273,9 +262,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Suspended
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Suspended
     }
 
     "stay in SUSPENDED when Verified attributes are NOT satisfied" in {
@@ -289,9 +277,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = SUSPENDED)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Suspended
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Suspended
     }
 
     "go to ACTIVE when Consumer and Producer are the same, even with unmet attributes" in {
@@ -310,9 +297,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
       val agreement: Agreement =
         SpecData.agreement.copy(state = SUSPENDED, producerId = producerId, consumerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr, id = producerId)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Active
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Active
     }
   }
 
@@ -328,9 +314,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Archived
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Archived
     }
 
     "stay in ARCHIVED when Certified attributes are NOT satisfied" in {
@@ -345,9 +330,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Archived
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Archived
     }
 
     "stay in ARCHIVED when Declared attributes are NOT satisfied" in {
@@ -362,9 +346,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Archived
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Archived
     }
 
     "stay in ARCHIVED when Verified attributes are NOT satisfied" in {
@@ -378,9 +361,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = ARCHIVED)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Archived
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Archived
     }
   }
 
@@ -392,9 +374,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = MISSING_CERTIFIED_ATTRIBUTES)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe Draft
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Draft
     }
 
     "stay in MISSING_CERTIFIED_ATTRIBUTES when Certified attributes are NOT satisfied" in {
@@ -409,9 +390,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
       val agreement: Agreement = SpecData.agreement.copy(state = MISSING_CERTIFIED_ATTRIBUTES, producerId = producerId)
       val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-      val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-      nextState(agreement.toPersistent, descriptor, consumer) shouldBe MissingCertifiedAttributes
+      nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe MissingCertifiedAttributes
     }
 
     "from REJECTED" should {
@@ -426,9 +406,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
         val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
         val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-        val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement.toPersistent, descriptor, consumer) shouldBe Rejected
+        nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Rejected
       }
 
       "stay in REJECTED when Certified attributes are NOT satisfied" in {
@@ -443,9 +422,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
         val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
         val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-        val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement.toPersistent, descriptor, consumer) shouldBe Rejected
+        nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Rejected
       }
 
       "stay in REJECTED when Declared attributes are NOT satisfied" in {
@@ -460,9 +438,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
         val agreement: Agreement = SpecData.agreement.copy(state = REJECTED, producerId = producerId)
         val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-        val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement.toPersistent, descriptor, consumer) shouldBe Rejected
+        nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Rejected
       }
 
       "stay in REJECTED when Verified attributes are NOT satisfied" in {
@@ -476,9 +453,8 @@ class AgreementStateByAttributesFSMSpec extends AnyWordSpecLike {
 
         val agreement: Agreement = SpecData.agreement.copy(state = REJECTED)
         val descriptor           = SpecData.descriptor.copy(attributes = descriptorAttr)
-        val consumer             = SpecData.tenant.copy(attributes = tenantAttr)
 
-        nextState(agreement.toPersistent, descriptor, consumer) shouldBe Rejected
+        nextState(agreement.toPersistent, descriptor, tenantAttr) shouldBe Rejected
       }
     }
   }

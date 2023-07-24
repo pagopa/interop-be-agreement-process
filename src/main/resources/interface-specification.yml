@@ -776,13 +776,6 @@ paths:
       description: Re-calculate state for all agreements that contain the given attribute
       operationId: computeAgreementsByAttribute
       parameters:
-        - name: consumerId
-          in: path
-          description: The identifier of the consumer
-          required: true
-          schema:
-            type: string
-            format: uuid
         - name: attributeId
           in: path
           description: The identifier of the attribute
@@ -790,6 +783,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompactTenant'
+        required: true
       responses:
         '204':
           description: Bulk operation executed
@@ -1016,6 +1015,124 @@ components:
           format: uuid
       required:
         - id
+    CompactTenant:
+      description: Tenant model
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantAttribute'
+      required:
+        - id
+        - attributes
+    TenantAttribute:
+      type: object
+      properties:
+        declared:
+          $ref: '#/components/schemas/DeclaredTenantAttribute'
+        certified:
+          $ref: '#/components/schemas/CertifiedTenantAttribute'
+        verified:
+          $ref: '#/components/schemas/VerifiedTenantAttribute'
+    DeclaredTenantAttribute:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assignmentTimestamp:
+          type: string
+          format: date-time
+        revocationTimestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - kind
+        - assignmentTimestamp
+    CertifiedTenantAttribute:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assignmentTimestamp:
+          type: string
+          format: date-time
+        revocationTimestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - kind
+        - assignmentTimestamp
+    VerifiedTenantAttribute:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assignmentTimestamp:
+          type: string
+          format: date-time
+        verifiedBy:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantVerifier'
+        revokedBy:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantRevoker'
+      required:
+        - id
+        - kind
+        - assignmentTimestamp
+        - verifiedBy
+        - revokedBy
+    TenantVerifier:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        verificationDate:
+          type: string
+          format: date-time
+        expirationDate:
+          type: string
+          format: date-time
+        extensionDate:
+          type: string
+          format: date-time
+      required:
+        - id
+        - verificationDate
+    TenantRevoker:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        verificationDate:
+          type: string
+          format: date-time
+        expirationDate:
+          type: string
+          format: date-time
+        extensionDate:
+          type: string
+          format: date-time
+        revocationDate:
+          type: string
+          format: date-time
+      required:
+        - id
+        - verificationDate
+        - revocationDate
     Agreements:
       type: object
       properties:
