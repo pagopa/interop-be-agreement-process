@@ -28,16 +28,18 @@ import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentDeclaredAttribute,
   PersistentCertifiedAttribute,
   PersistentVerifiedAttribute,
-  PersistentTenantVerifier
+  PersistentTenantVerifier,
+  PersistentTenantMail
 }
+import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenantMailKind.ContactEmail
 import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{Certified, PersistentAttribute}
 
 object SpecData {
 
   final val timestamp: OffsetDateTime   = OffsetDateTime.of(2022, 12, 31, 11, 22, 33, 0, ZoneOffset.UTC)
   final val emptyStamps: Stamps         = Stamps()
-  val who: UUID                         = UUID.randomUUID()
-  val when: OffsetDateTime              = OffsetDateTime.now()
+  final val who: UUID                   = UUID.randomUUID()
+  final val when: OffsetDateTime        = OffsetDateTime.now()
   final val defaultStamp: Option[Stamp] = Stamp(who, when).some
 
   final val submissionStamps           = emptyStamps.copy(submission = defaultStamp)
@@ -49,6 +51,9 @@ object SpecData {
   final val suspensionByBothStamps     =
     activationStamps.copy(suspensionByConsumer = defaultStamp, suspensionByProducer = defaultStamp)
   final val archivingStamps            = activationStamps.copy(archiving = defaultStamp)
+
+  final val validEmail =
+    PersistentTenantMail(kind = ContactEmail, address = "address", description = None, createdAt = timestamp)
 
   def descriptor: CatalogDescriptor = CatalogDescriptor(
     id = UUID.randomUUID(),

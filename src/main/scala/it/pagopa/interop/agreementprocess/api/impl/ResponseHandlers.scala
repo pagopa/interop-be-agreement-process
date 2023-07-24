@@ -33,6 +33,7 @@ object ResponseHandlers extends AkkaResponses {
       case Failure(ex: NotLatestEServiceDescriptor)  => badRequest(ex, logMessage)
       case Failure(ex: AgreementNotFound)            => notFound(ex, logMessage)
       case Failure(ex: AgreementNotInExpectedState)  => badRequest(ex, logMessage)
+      case Failure(ex: ConsumerWithNotValidEmail)    => badRequest(ex, logMessage)
       case Failure(ex: AgreementSubmissionFailed)    => badRequest(ex, logMessage)
       case Failure(ex: MissingCertifiedAttributes)   => badRequest(ex, logMessage)
       case Failure(ex: DescriptorNotInExpectedState) => badRequest(ex, logMessage)
