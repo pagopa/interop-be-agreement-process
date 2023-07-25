@@ -457,10 +457,10 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  override def computeAgreementsByAttribute(attributeId: String, consumer: CompactTenant)(implicit
-    contexts: Seq[(String, String)]
-  ): Route = authorize(ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE) {
-    val operationLabel = s"Recalculating agreements status for attribute $attributeId"
+  override def computeAgreementsByAttribute(
+    payload: ComputeAgreementStatePayload
+  )(implicit contexts: Seq[(String, String)]): Route = authorize(ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE) {
+    val operationLabel = s"Recalculating agreements status for attribute ${payload.attributeId}"
     logger.info(operationLabel)
 
     val allowedStateTransitions: Map[AgreementManagement.AgreementState, List[AgreementManagement.AgreementState]] =
@@ -550,16 +550,15 @@ final case class AgreementApiServiceImpl(
     }
 
     val result: Future[Unit] = for {
-      attributeUuid <- attributeId.toFutureUUID
-      agreements    <- agreementManagementService.getAgreements(
-        consumerId = consumer.id.some,
+      agreements <- agreementManagementService.getAgreements(
+        consumerId = payload.consumer.id.some,
         states = updatableStates.map(_.toPersistent)
       )
-      attributes    <- consumer.attributes.toList.traverse(PersistentTenantAttribute.fromAPI).toFuture
+      attributes <- payload.consumer.attributes.toList.traverse(PersistentTenantAttribute.fromAPI).toFuture
       uniqueEServiceIds = agreements.map(_.eserviceId).distinct
       // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
       eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
-      filteredEServices = eServices.filter(eServiceContainsAttribute(attributeUuid))
+      filteredEServices = eServices.filter(eServiceContainsAttribute(payload.attributeId))
       eServicesMap      = filteredEServices.fproductLeft(_.id).toMap
       filteredAgreement = agreements.filter(a => filteredEServices.exists(_.id == a.eserviceId))
       _ <- filteredAgreement.traverse(updateStates(attributes, eServicesMap))

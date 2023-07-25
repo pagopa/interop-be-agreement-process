@@ -29,7 +29,7 @@ object AgreementStateByAttributesFSM {
         if (agreement.consumerId == agreement.producerId) Active
         else if (!certifiedAttributesSatisfied(descriptor, consumerAttributes)) MissingCertifiedAttributes
         else if (
-          descriptor.agreementApprovalPolicy == Some(Automatic) &&
+          descriptor.agreementApprovalPolicy.contains(Automatic) &&
           declaredAttributesSatisfied(descriptor, consumerAttributes) &&
           verifiedAttributesSatisfied(agreement, descriptor, consumerAttributes)
         ) Active

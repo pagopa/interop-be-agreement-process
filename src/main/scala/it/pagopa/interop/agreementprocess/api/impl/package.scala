@@ -41,5 +41,7 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
   implicit def mailAttachmentFormat: RootJsonFormat[MailAttachment]                     = jsonFormat3(MailAttachment)
   implicit def interopEnvelopFormat: RootJsonFormat[InteropEnvelope]                    = jsonFormat5(InteropEnvelope)
   implicit def mailInfoFormat: RootJsonFormat[MailTemplate] = jsonFormat2(MailTemplate.apply)
+  implicit def computeAgreementPayloadFormat: RootJsonFormat[ComputeAgreementStatePayload] =
+    jsonFormat2(ComputeAgreementStatePayload)
 
 }

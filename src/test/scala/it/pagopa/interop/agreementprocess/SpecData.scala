@@ -3,12 +3,13 @@ package it.pagopa.interop.agreementprocess
 import cats.syntax.all._
 import it.pagopa.interop.agreementmanagement.client.model._
 import it.pagopa.interop.agreementprocess.model.{
-  CompactTenant,
-  TenantAttribute,
   CertifiedTenantAttribute,
-  VerifiedTenantAttribute,
+  CompactTenant,
+  ComputeAgreementStatePayload,
   DeclaredTenantAttribute,
-  TenantVerifier
+  TenantAttribute,
+  TenantVerifier,
+  VerifiedTenantAttribute
 }
 import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
 import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
@@ -16,27 +17,27 @@ import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldRes
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
 import it.pagopa.interop.catalogmanagement.model.{
-  CatalogDescriptor,
-  Published => CatalogPublished,
-  Deprecated => CatalogDeprecated,
-  Archived => CatalogArchived,
-  Draft => CatalogDraft,
   Automatic,
-  CatalogItem,
-  Rest,
+  CatalogAttributeValue,
   CatalogAttributes,
+  CatalogDescriptor,
+  CatalogItem,
   GroupAttribute,
+  Rest,
   SingleAttribute,
-  CatalogAttributeValue
+  Archived => CatalogArchived,
+  Deprecated => CatalogDeprecated,
+  Draft => CatalogDraft,
+  Published => CatalogPublished
 }
 import it.pagopa.interop.tenantmanagement.model.tenant.{
-  PersistentTenant,
-  PersistentExternalId,
-  PersistentTenantKind,
-  PersistentDeclaredAttribute,
   PersistentCertifiedAttribute,
-  PersistentVerifiedAttribute,
-  PersistentTenantVerifier
+  PersistentDeclaredAttribute,
+  PersistentExternalId,
+  PersistentTenant,
+  PersistentTenantKind,
+  PersistentTenantVerifier,
+  PersistentVerifiedAttribute
 }
 import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{Certified, PersistentAttribute}
 
@@ -96,6 +97,8 @@ object SpecData {
   )
 
   def compactTenant: CompactTenant = CompactTenant(id = UUID.randomUUID(), attributes = Nil)
+  def computeAgreementStatePayload: ComputeAgreementStatePayload =
+    ComputeAgreementStatePayload(attributeId = UUID.randomUUID(), consumer = compactTenant)
 
   def tenant: PersistentTenant = PersistentTenant(
     id = UUID.randomUUID(),

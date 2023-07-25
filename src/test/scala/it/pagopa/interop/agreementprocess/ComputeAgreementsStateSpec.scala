@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.{AgreementState, UpdateAgreementSeed}
+import it.pagopa.interop.agreementprocess.model.ComputeAgreementStatePayload
 import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 import it.pagopa.interop.commons.jwt.INTERNAL_ROLE
 import org.scalatest.matchers.should.Matchers._
@@ -27,6 +28,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val eService2   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor2 :: Nil)
       val eService3   = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor3 :: Nil)
       val tenant      = SpecData.compactTenant.copy(attributes = List(tenantAttr))
+      val payload     = ComputeAgreementStatePayload(attributeId, tenant)
 
       val suspendedAgreement1      =
         SpecData.suspendedByPlatformAgreement.copy(
@@ -114,7 +116,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
         ClientComponentState.ACTIVE
       )
 
-      Get() ~> service.computeAgreementsByAttribute(attributeId.toString, tenant) ~> check {
+      Get() ~> service.computeAgreementsByAttribute(payload) ~> check {
         status shouldEqual StatusCodes.NoContent
       }
     }
@@ -129,6 +131,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       val eService1      = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor1 :: Nil)
       val eService2      = SpecData.eService.copy(id = UUID.randomUUID(), descriptors = descriptor2 :: Nil)
       val tenant         = SpecData.compactTenant
+      val payload        = ComputeAgreementStatePayload(attributeId, tenant)
 
       val draftAgreement   = SpecData.draftAgreement.copy(eserviceId = eService1.id, descriptorId = descriptor1.id)
       val pendingAgreement = SpecData.pendingAgreement.copy(eserviceId = eService1.id, descriptorId = descriptor1.id)
@@ -153,14 +156,13 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
         ClientComponentState.INACTIVE
       )
 
-      Get() ~> service.computeAgreementsByAttribute(attributeId.toString, tenant) ~> check {
+      Get() ~> service.computeAgreementsByAttribute(payload) ~> check {
         status shouldEqual StatusCodes.NoContent
       }
     }
 
     "succeed and do not update agreements if status has not changed" in {
       implicit val contexts: Seq[(String, String)] = contextWithRole(INTERNAL_ROLE)
-      val attributeId                              = UUID.randomUUID()
 
       val descriptorAttr = SpecData.catalogCertifiedAttribute()
       val eServiceId1    = UUID.randomUUID()
@@ -180,7 +182,7 @@ class ComputeAgreementsStateSpec extends AnyWordSpecLike with SpecHelper with Sc
       mockEServiceRetrieve(eServiceId1, eService1)
       mockEServiceRetrieve(eServiceId2, eService2)
 
-      Get() ~> service.computeAgreementsByAttribute(attributeId.toString, SpecData.compactTenant) ~> check {
+      Get() ~> service.computeAgreementsByAttribute(SpecData.computeAgreementStatePayload) ~> check {
         status shouldEqual StatusCodes.NoContent
       }
     }
