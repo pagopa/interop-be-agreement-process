@@ -16,6 +16,8 @@ final case class PDFPayload(
   eService: String,
   producerName: String,
   consumerName: String,
+  producerValue: String,
+  consumerValue: String,
   certified: Seq[(ClientAttribute, PersistentCertifiedAttribute)],
   declared: Seq[(ClientAttribute, PersistentDeclaredAttribute)],
   verified: Seq[(ClientAttribute, PersistentVerifiedAttribute)],
