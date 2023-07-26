@@ -630,7 +630,7 @@ final case class AgreementApiServiceImpl(
         consumer <- tenantManagementService
           .getTenantById(agreement.consumerId)
         _        <-
-          if (consumer.mails.filter(_.kind == PersistentTenantMailKind.ContactEmail).isEmpty)
+          if (!consumer.mails.exists(_.kind == PersistentTenantMailKind.ContactEmail))
             Future.failed(ConsumerWithNotValidEmail(agreement.id, agreement.consumerId))
           else Future.unit
       } yield ()
@@ -654,7 +654,7 @@ final case class AgreementApiServiceImpl(
 
     for {
       uid    <- getUidFutureUUID(contexts)
-      _      <- if (agreement.state == Draft && newState == Pending) validateConsumerEmails(agreement) else Future.unit
+      _      <- if (agreement.state == Draft) validateConsumerEmails(agreement) else Future.unit
       stamps <- calculateStamps(newState, PersistentStamp(uid, offsetDateTimeSupplier.get()))
       updateSeed = getUpdateSeed(stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)
