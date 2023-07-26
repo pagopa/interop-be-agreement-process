@@ -632,9 +632,10 @@ final case class AgreementApiServiceImpl(
       for {
         consumer <- tenantManagementService
           .getTenantById(agreement.consumerId)
-        _        <- Future
-          .failed(ConsumerWithNotValidEmail(agreement.id, agreement.consumerId))
-          .whenA(consumer.mails.filter(_.kind == PersistentTenantMailKind.ContactEmail).isEmpty)
+        _        <-
+          if (consumer.mails.filter(_.kind == PersistentTenantMailKind.ContactEmail).isEmpty)
+            Future.failed(ConsumerWithNotValidEmail(agreement.id, agreement.consumerId))
+          else Future.unit
       } yield ()
 
     def createContractAndSendMail(
