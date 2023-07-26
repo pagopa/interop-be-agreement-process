@@ -2,33 +2,42 @@ package it.pagopa.interop.agreementprocess
 
 import cats.syntax.all._
 import it.pagopa.interop.agreementmanagement.client.model._
+import it.pagopa.interop.agreementprocess.model.{
+  CertifiedTenantAttribute,
+  CompactTenant,
+  ComputeAgreementStatePayload,
+  DeclaredTenantAttribute,
+  TenantAttribute,
+  TenantVerifier,
+  VerifiedTenantAttribute
+}
 import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
 import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
 
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
 import it.pagopa.interop.catalogmanagement.model.{
-  CatalogDescriptor,
-  Published => CatalogPublished,
-  Deprecated => CatalogDeprecated,
-  Archived => CatalogArchived,
-  Draft => CatalogDraft,
   Automatic,
-  CatalogItem,
-  Rest,
+  CatalogAttributeValue,
   CatalogAttributes,
+  CatalogDescriptor,
+  CatalogItem,
   GroupAttribute,
+  Rest,
   SingleAttribute,
-  CatalogAttributeValue
+  Archived => CatalogArchived,
+  Deprecated => CatalogDeprecated,
+  Draft => CatalogDraft,
+  Published => CatalogPublished
 }
 import it.pagopa.interop.tenantmanagement.model.tenant.{
-  PersistentTenant,
-  PersistentExternalId,
-  PersistentTenantKind,
-  PersistentDeclaredAttribute,
   PersistentCertifiedAttribute,
-  PersistentVerifiedAttribute,
+  PersistentDeclaredAttribute,
+  PersistentExternalId,
+  PersistentTenant,
+  PersistentTenantKind,
   PersistentTenantVerifier,
+  PersistentVerifiedAttribute,
   PersistentTenantMail
 }
 import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenantMailKind.ContactEmail
@@ -92,6 +101,10 @@ object SpecData {
     createdAt = timestamp
   )
 
+  def compactTenant: CompactTenant = CompactTenant(id = UUID.randomUUID(), attributes = Nil)
+  def computeAgreementStatePayload: ComputeAgreementStatePayload =
+    ComputeAgreementStatePayload(attributeId = UUID.randomUUID(), consumer = compactTenant)
+
   def tenant: PersistentTenant = PersistentTenant(
     id = UUID.randomUUID(),
     selfcareId = Some(UUID.randomUUID().toString),
@@ -128,8 +141,18 @@ object SpecData {
   def tenantCertifiedAttribute(id: UUID = UUID.randomUUID()): PersistentCertifiedAttribute =
     PersistentCertifiedAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None)
 
+  def compactTenantCertifiedAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(certified =
+      Some(CertifiedTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None))
+    )
+
   def tenantDeclaredAttribute(id: UUID = UUID.randomUUID()): PersistentDeclaredAttribute =
     PersistentDeclaredAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None)
+
+  def compactTenantDeclaredAttribute(id: UUID = UUID.randomUUID()): TenantAttribute =
+    TenantAttribute(declared =
+      Some(DeclaredTenantAttribute(id = id, assignmentTimestamp = timestamp, revocationTimestamp = None))
+    )
 
   def tenantVerifiedAttribute(
     id: UUID = UUID.randomUUID(),
@@ -149,10 +172,43 @@ object SpecData {
       revokedBy = Nil
     )
 
+  def compactTenantVerifiedAttribute(
+    id: UUID = UUID.randomUUID(),
+    verifierId: UUID = UUID.randomUUID()
+  ): TenantAttribute =
+    TenantAttribute(verified =
+      Some(
+        VerifiedTenantAttribute(
+          id = id,
+          assignmentTimestamp = timestamp,
+          verifiedBy = Seq(
+            TenantVerifier(id = verifierId, verificationDate = timestamp, expirationDate = timestamp.plusYears(9).some)
+          ),
+          revokedBy = Nil
+        )
+      )
+    )
+
+  def compactMatchingCertifiedAttributes: (CatalogAttributes, TenantAttribute) = {
+    val attributeId       = UUID.randomUUID()
+    val eServiceAttribute = catalogCertifiedAttribute(attributeId)
+    val tenantAttribute   = compactTenantCertifiedAttribute(attributeId)
+
+    (eServiceAttribute, tenantAttribute)
+  }
+
   def matchingCertifiedAttributes: (CatalogAttributes, PersistentCertifiedAttribute) = {
     val attributeId       = UUID.randomUUID()
     val eServiceAttribute = catalogCertifiedAttribute(attributeId)
     val tenantAttribute   = tenantCertifiedAttribute(attributeId)
+
+    (eServiceAttribute, tenantAttribute)
+  }
+
+  def compactMatchingDeclaredAttributes: (CatalogAttributes, TenantAttribute) = {
+    val attributeId       = UUID.randomUUID()
+    val eServiceAttribute = catalogCertifiedAttribute(attributeId)
+    val tenantAttribute   = compactTenantDeclaredAttribute(attributeId)
 
     (eServiceAttribute, tenantAttribute)
   }
@@ -171,6 +227,14 @@ object SpecData {
     val attributeId       = UUID.randomUUID()
     val eServiceAttribute = catalogVerifiedAttribute(attributeId)
     val tenantAttribute   = tenantVerifiedAttribute(attributeId, verifierId)
+
+    (eServiceAttribute, tenantAttribute)
+  }
+
+  def compactMatchingVerifiedAttributes(verifierId: UUID = UUID.randomUUID()): (CatalogAttributes, TenantAttribute) = {
+    val attributeId       = UUID.randomUUID()
+    val eServiceAttribute = catalogCertifiedAttribute(attributeId)
+    val tenantAttribute   = compactTenantVerifiedAttribute(attributeId, verifierId)
 
     (eServiceAttribute, tenantAttribute)
   }

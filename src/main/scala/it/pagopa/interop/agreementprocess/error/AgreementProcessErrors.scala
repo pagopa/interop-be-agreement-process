@@ -104,4 +104,6 @@ object AgreementProcessErrors {
         "0023",
         s"Agreement ${agreementId.toString} has a consumer tenant ${tenantId.toString} with no valid email"
       )
+
+  case object InvalidAttributeStructure extends ComponentError("0024", "Invalid Attribute Structure")
 }

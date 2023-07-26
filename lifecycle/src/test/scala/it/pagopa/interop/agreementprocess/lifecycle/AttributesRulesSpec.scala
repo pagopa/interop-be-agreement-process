@@ -32,7 +32,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      certifiedAttributesSatisfied(descriptor, consumer) shouldBe true
+      certifiedAttributesSatisfied(descriptor, consumer.attributes) shouldBe true
     }
 
     "return true if at least one attribute in every CatalogItem group attribute is satisfied" in {
@@ -57,7 +57,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      certifiedAttributesSatisfied(descriptor, consumer) shouldBe true
+      certifiedAttributesSatisfied(descriptor, consumer.attributes) shouldBe true
     }
 
     "return true if CatalogItem single and group attributes are satisfied" in {
@@ -79,7 +79,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      certifiedAttributesSatisfied(descriptor, consumer) shouldBe true
+      certifiedAttributesSatisfied(descriptor, consumer.attributes) shouldBe true
     }
 
     "return false if at least one CatalogItem single attribute is not satisfied" in {
@@ -95,7 +95,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
+      certifiedAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if at least one CatalogItem group attribute is not satisfied" in {
@@ -116,7 +116,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
+      certifiedAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if an CatalogItem single attribute is assigned but revoked" in {
@@ -131,7 +131,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
+      certifiedAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if the CatalogItem group attribute is assigned but revoked" in {
@@ -146,7 +146,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      certifiedAttributesSatisfied(descriptor, consumer) shouldBe false
+      certifiedAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
   }
 
@@ -168,7 +168,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      declaredAttributesSatisfied(descriptor, consumer) shouldBe true
+      declaredAttributesSatisfied(descriptor, consumer.attributes) shouldBe true
     }
 
     "return true if at least one attribute in every CatalogItem group attribute is satisfied" in {
@@ -193,7 +193,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      declaredAttributesSatisfied(descriptor, consumer) shouldBe true
+      declaredAttributesSatisfied(descriptor, consumer.attributes) shouldBe true
     }
 
     "return true if CatalogItem single and group attributes are satisfied" in {
@@ -215,7 +215,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      declaredAttributesSatisfied(descriptor, consumer) shouldBe true
+      declaredAttributesSatisfied(descriptor, consumer.attributes) shouldBe true
     }
 
     "return false if at least one CatalogItem single attribute is not satisfied" in {
@@ -231,7 +231,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      declaredAttributesSatisfied(descriptor, consumer) shouldBe false
+      declaredAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if at least one CatalogItem group attribute is not satisfied" in {
@@ -252,7 +252,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      declaredAttributesSatisfied(descriptor, consumer) shouldBe false
+      declaredAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if an CatalogItem single attribute is assigned but revoked" in {
@@ -267,7 +267,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      declaredAttributesSatisfied(descriptor, consumer) shouldBe false
+      declaredAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if the CatalogItem group attribute is assigned but revoked" in {
@@ -281,7 +281,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant    = SpecData.tenant.copy(attributes = tenantAttr)
 
-      declaredAttributesSatisfied(descriptor, consumer) shouldBe false
+      declaredAttributesSatisfied(descriptor, consumer.attributes) shouldBe false
     }
   }
 
@@ -305,7 +305,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe true
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe true
     }
 
     "return true if at least one attribute in every CatalogItem group attribute is satisfied" in {
@@ -332,7 +332,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe true
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe true
     }
 
     "return true if CatalogItem single and group attributes are satisfied" in {
@@ -356,7 +356,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe true
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe true
     }
 
     "return false if at least one CatalogItem single attribute is not satisfied" in {
@@ -377,7 +377,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if at least one CatalogItem group attribute is not satisfied" in {
@@ -403,7 +403,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if an CatalogItem single attribute is assigned but not verified" in {
@@ -420,7 +420,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if the CatalogItem group attribute is assigned but not verified" in {
@@ -437,7 +437,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if a single attribute is verified but not by the PersistentAgreement producer" in {
@@ -457,7 +457,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if a group attribute is verified but not by the PersistentAgreement producer" in {
@@ -477,7 +477,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if at least one single attribute is expired" in {
@@ -502,7 +502,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
 
     "return false if at least one group attribute is expired" in {
@@ -532,7 +532,7 @@ class AttributesRulesSpec extends AnyWordSpecLike {
       val descriptor: CatalogDescriptor  = SpecData.descriptor.copy(attributes = descriptorAttr)
       val consumer: PersistentTenant     = SpecData.tenant.copy(attributes = tenantAttr)
 
-      verifiedAttributesSatisfied(agreement, descriptor, consumer) shouldBe false
+      verifiedAttributesSatisfied(agreement, descriptor, consumer.attributes) shouldBe false
     }
   }
 }

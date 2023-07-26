@@ -46,9 +46,9 @@ import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentCertifiedAttribute,
   PersistentDeclaredAttribute,
   PersistentTenant,
+  PersistentTenantAttribute,
   PersistentVerifiedAttribute
 }
-
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -458,10 +458,10 @@ final case class AgreementApiServiceImpl(
     }
   }
 
-  override def computeAgreementsByAttribute(consumerId: String, attributeId: String)(implicit
-    contexts: Seq[(String, String)]
-  ): Route = authorize(ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE) {
-    val operationLabel = s"Recalculating agreements status for attribute $attributeId"
+  override def computeAgreementsByAttribute(
+    payload: ComputeAgreementStatePayload
+  )(implicit contexts: Seq[(String, String)]): Route = authorize(ADMIN_ROLE, INTERNAL_ROLE, M2M_ROLE) {
+    val operationLabel = s"Recalculating agreements status for attribute ${payload.attributeId}"
     logger.info(operationLabel)
 
     val allowedStateTransitions: Map[AgreementManagement.AgreementState, List[AgreementManagement.AgreementState]] =
@@ -522,13 +522,13 @@ final case class AgreementApiServiceImpl(
         )
     }
 
-    def updateStates(consumer: PersistentTenant, eServices: Map[UUID, CatalogItem])(
+    def updateStates(consumerAttributes: List[PersistentTenantAttribute], eServices: Map[UUID, CatalogItem])(
       agreement: PersistentAgreement
     ): Future[Unit] =
       eServices
         .get(agreement.eserviceId)
         .flatMap(_.descriptors.find(_.id == agreement.descriptorId))
-        .map(AgreementStateByAttributesFSM.nextState(agreement, _, consumer))
+        .map(AgreementStateByAttributesFSM.nextState(agreement, _, consumerAttributes))
         .fold {
           logger.error(
             s"Descriptor ${agreement.descriptorId} Service ${agreement.eserviceId} not found for agreement ${agreement.id}"
@@ -551,21 +551,18 @@ final case class AgreementApiServiceImpl(
     }
 
     val result: Future[Unit] = for {
-      consumerUuid  <- consumerId.toFutureUUID
-      attributeUuid <- attributeId.toFutureUUID
-      agreements    <- agreementManagementService.getAgreements(
-        consumerId = consumerUuid.some,
+      agreements <- agreementManagementService.getAgreements(
+        consumerId = payload.consumer.id.some,
         states = updatableStates.map(_.toPersistent)
       )
-      consumer      <- tenantManagementService
-        .getTenantById(consumerUuid)
+      attributes <- payload.consumer.attributes.toList.traverse(PersistentTenantAttribute.fromAPI).toFuture
       uniqueEServiceIds = agreements.map(_.eserviceId).distinct
       // Not using Future.traverse to not overload our backend. Execution time is not critical for this job
       eServices <- uniqueEServiceIds.traverse(catalogManagementService.getEServiceById)
-      filteredEServices = eServices.filter(eServiceContainsAttribute(attributeUuid))
+      filteredEServices = eServices.filter(eServiceContainsAttribute(payload.attributeId))
       eServicesMap      = filteredEServices.fproductLeft(_.id).toMap
       filteredAgreement = agreements.filter(a => filteredEServices.exists(_.id == a.eserviceId))
-      _ <- filteredAgreement.traverse(updateStates(consumer, eServicesMap))
+      _ <- filteredAgreement.traverse(updateStates(attributes, eServicesMap))
     } yield ()
 
     onComplete(result) {
@@ -580,7 +577,7 @@ final case class AgreementApiServiceImpl(
     consumer: PersistentTenant,
     payload: AgreementSubmissionPayload
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
-    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer)
+    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer.attributes)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
     val newState              = agreementStateByFlags(nextStateByAttributes, None, None, suspendedByPlatform)
 
@@ -718,7 +715,7 @@ final case class AgreementApiServiceImpl(
     consumer: PersistentTenant,
     requesterOrgId: UUID
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
-    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer)
+    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer.attributes)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, Active)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, Active)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
@@ -885,7 +882,7 @@ final case class AgreementApiServiceImpl(
     consumer: PersistentTenant,
     requesterOrgId: UUID
   )(implicit contexts: Seq[(String, String)]): Future[AgreementManagement.Agreement] = {
-    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer)
+    val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer.attributes)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, Suspended)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, Suspended)
     val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
@@ -1107,14 +1104,17 @@ final case class AgreementApiServiceImpl(
   private def validateCertifiedAttributes(descriptor: CatalogDescriptor, consumer: PersistentTenant): Future[Unit] =
     Future
       .failed(MissingCertifiedAttributesError(descriptor.id, consumer.id))
-      .unlessA(certifiedAttributesSatisfied(descriptor, consumer))
+      .unlessA(certifiedAttributesSatisfied(descriptor, consumer.attributes))
 
   private def verifiedAndDeclareSatisfied(
     agreement: PersistentAgreement,
     newDescriptor: CatalogDescriptor,
     tenant: PersistentTenant
   ): Boolean =
-    verifiedAttributesSatisfied(agreement, newDescriptor, tenant) && declaredAttributesSatisfied(newDescriptor, tenant)
+    verifiedAttributesSatisfied(agreement, newDescriptor, tenant.attributes) && declaredAttributesSatisfied(
+      newDescriptor,
+      tenant.attributes
+    )
 
   private def verifyConsumerDoesNotActivatePending(
     agreement: PersistentAgreement,

@@ -13,7 +13,7 @@ import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentCertifiedAttribute,
   PersistentDeclaredAttribute,
   PersistentVerifiedAttribute,
-  PersistentTenant,
+  PersistentTenantAttribute,
   PersistentTenantVerifier
 }
 
@@ -29,10 +29,13 @@ object AttributesRules {
     consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id)
   )
 
-  def certifiedAttributesSatisfied(descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
+  def certifiedAttributesSatisfied(
+    descriptor: CatalogDescriptor,
+    consumerAttributes: List[PersistentTenantAttribute]
+  ): Boolean =
     certifiedAttributesSatisfied(
       descriptor.attributes,
-      consumer.attributes.collect { case a: PersistentCertifiedAttribute => a }
+      consumerAttributes.collect { case a: PersistentCertifiedAttribute => a }
     )
 
   def declaredAttributesSatisfied(
@@ -41,10 +44,13 @@ object AttributesRules {
   ): Boolean =
     attributesSatisfied(eServiceAttributes.declared, consumerAttributes.filter(_.revocationTimestamp.isEmpty).map(_.id))
 
-  def declaredAttributesSatisfied(descriptor: CatalogDescriptor, consumer: PersistentTenant): Boolean =
+  def declaredAttributesSatisfied(
+    descriptor: CatalogDescriptor,
+    consumerAttributes: List[PersistentTenantAttribute]
+  ): Boolean =
     declaredAttributesSatisfied(
       descriptor.attributes,
-      consumer.attributes.collect { case a: PersistentDeclaredAttribute => a }
+      consumerAttributes.collect { case a: PersistentDeclaredAttribute => a }
     )
 
   def verifiedAttributesSatisfied(
@@ -64,12 +70,12 @@ object AttributesRules {
   def verifiedAttributesSatisfied(
     agreement: PersistentAgreement,
     descriptor: CatalogDescriptor,
-    consumer: PersistentTenant
+    consumerAttributes: List[PersistentTenantAttribute]
   ): Boolean =
     verifiedAttributesSatisfied(
       agreement.producerId,
       descriptor.attributes,
-      consumer.attributes.collect { case a: PersistentVerifiedAttribute => a }
+      consumerAttributes.collect { case a: PersistentVerifiedAttribute => a }
     )
 
   private def attributesSatisfied(requested: Seq[CatalogAttribute], assigned: Seq[UUID]): Boolean = {
