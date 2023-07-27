@@ -765,7 +765,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'                 
-  '/compute/agreementsState/consumers/{consumerId}/attributes/{attributeId}':
+  '/compute/agreementsState':
     parameters:
       - $ref: '#/components/parameters/CorrelationIdHeader'
       - $ref: '#/components/parameters/IpAddress'
@@ -1055,7 +1055,6 @@ components:
           format: date-time
       required:
         - id
-        - kind
         - assignmentTimestamp
     CertifiedTenantAttribute:
       type: object
@@ -1071,7 +1070,6 @@ components:
           format: date-time
       required:
         - id
-        - kind
         - assignmentTimestamp
     VerifiedTenantAttribute:
       type: object
@@ -1092,7 +1090,6 @@ components:
             $ref: '#/components/schemas/TenantRevoker'
       required:
         - id
-        - kind
         - assignmentTimestamp
         - verifiedBy
         - revokedBy
