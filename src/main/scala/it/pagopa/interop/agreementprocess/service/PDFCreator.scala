@@ -65,9 +65,15 @@ object PDFCreator extends PDFCreator with PDFManager {
       "activationTime"      -> activationTime,
       "activator"           -> pdfPayload.activator,
       "eServiceName"        -> pdfPayload.eService,
-      "producerName"        -> pdfPayload.producerName,
-      "consumerName"        -> pdfPayload.consumerName
+      "producerText" -> getTenantText(pdfPayload.producerName, pdfPayload.producerOrigin, pdfPayload.producerIPACode),
+      "consumerText" -> getTenantText(pdfPayload.consumerName, pdfPayload.consumerOrigin, pdfPayload.consumerIPACode)
     )
+  }
+
+  private def getTenantText(name: String, origin: String, value: String): String = {
+    if (origin == "IPA")
+      s"$name (codice IPA: ${value})"
+    else name
   }
 
   private def getDeclaredAttributesText(declared: Seq[(ClientAttribute, PersistentDeclaredAttribute)]): String =
