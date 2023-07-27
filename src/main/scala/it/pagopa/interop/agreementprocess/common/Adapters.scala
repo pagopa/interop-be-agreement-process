@@ -2,9 +2,13 @@ package it.pagopa.interop.agreementprocess.common
 
 import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.AgreementNotInExpectedState
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
+  AgreementNotInExpectedState,
+  InvalidAttributeStructure
+}
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementmanagement.model.agreement._
+import it.pagopa.interop.tenantmanagement.model.{tenant => TenantManagement}
 
 import java.util.UUID
 
@@ -342,5 +346,54 @@ object Adapters {
       contentType = p.contentType,
       path = newPath
     )
+  }
+
+  implicit class PersistentVerificationTenantVerifierObjectWrapper(
+    private val p: TenantManagement.PersistentTenantVerifier.type
+  ) extends AnyVal {
+    def fromAPI(p: TenantVerifier): TenantManagement.PersistentTenantVerifier =
+      TenantManagement.PersistentTenantVerifier(
+        id = p.id,
+        verificationDate = p.verificationDate,
+        expirationDate = p.expirationDate,
+        extensionDate = p.expirationDate
+      )
+  }
+
+  implicit class PersistentVerificationTenantRevokerObjectWrapper(
+    private val p: TenantManagement.PersistentTenantRevoker.type
+  ) extends AnyVal {
+    def fromAPI(p: TenantRevoker): TenantManagement.PersistentTenantRevoker = TenantManagement.PersistentTenantRevoker(
+      id = p.id,
+      verificationDate = p.verificationDate,
+      expirationDate = p.expirationDate,
+      extensionDate = p.expirationDate,
+      revocationDate = p.revocationDate
+    )
+  }
+
+  implicit class PersistentAttributesObjectWrapper(private val p: TenantManagement.PersistentTenantAttribute.type)
+      extends AnyVal {
+    def fromAPI(attribute: TenantAttribute): Either[Throwable, TenantManagement.PersistentTenantAttribute] =
+      attribute match {
+        case TenantAttribute(Some(declared), None, None)  =>
+          TenantManagement
+            .PersistentDeclaredAttribute(declared.id, declared.assignmentTimestamp, declared.revocationTimestamp)
+            .asRight
+        case TenantAttribute(None, Some(certified), None) =>
+          TenantManagement
+            .PersistentCertifiedAttribute(certified.id, certified.assignmentTimestamp, certified.revocationTimestamp)
+            .asRight
+        case TenantAttribute(None, None, Some(verified))  =>
+          TenantManagement
+            .PersistentVerifiedAttribute(
+              id = verified.id,
+              assignmentTimestamp = verified.assignmentTimestamp,
+              verifiedBy = verified.verifiedBy.toList.map(TenantManagement.PersistentTenantVerifier.fromAPI),
+              revokedBy = verified.revokedBy.toList.map(TenantManagement.PersistentTenantRevoker.fromAPI)
+            )
+            .asRight
+        case _                                            => InvalidAttributeStructure.asLeft
+      }
   }
 }

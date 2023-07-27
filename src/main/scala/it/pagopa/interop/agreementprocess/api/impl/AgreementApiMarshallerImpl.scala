@@ -37,4 +37,7 @@ case object AgreementApiMarshallerImpl extends AgreementApiMarshaller with Spray
 
   override implicit def toEntityMarshallerCompactEServices: ToEntityMarshaller[CompactEServices] =
     sprayJsonMarshaller[CompactEServices]
+
+  override implicit def fromEntityUnmarshallerComputeAgreementStatePayload
+    : FromEntityUnmarshaller[ComputeAgreementStatePayload] = sprayJsonUnmarshaller[ComputeAgreementStatePayload]
 }
