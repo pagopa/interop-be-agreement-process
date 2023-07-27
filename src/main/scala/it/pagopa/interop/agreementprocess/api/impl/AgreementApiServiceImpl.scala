@@ -1322,6 +1322,12 @@ final case class AgreementApiServiceImpl(
           stamps = agreement.stamps.copy(archiving = AgreementManagement.Stamp(uid, offsetDateTimeSupplier.get()).some)
         )
       )
+      _         <- authorizationManagementService.updateStateOnClients(
+        eServiceId = agreement.eserviceId,
+        consumerId = agreement.consumerId,
+        agreementId = agreement.id,
+        state = AuthorizationManagement.ClientComponentState.INACTIVE
+      )
     } yield agreement
 
     val result: Future[Agreement] = for {

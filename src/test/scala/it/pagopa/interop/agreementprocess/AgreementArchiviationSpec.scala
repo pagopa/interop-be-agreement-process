@@ -5,10 +5,12 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.events.ArchiveEvent
 import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.authorizationmanagement.client.model.ClientComponentState
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import scala.concurrent.Future
 
 class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with ScalatestRouteTest {
 
@@ -31,6 +33,11 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
       val now          = SpecData.when
       mockAgreementRetrieve(agreement.toPersistent)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement.copy(stamps = SpecData.archiviationStamps))
+      (mockAuthorizationManagementService
+        .updateStateOnClients(_: UUID, _: UUID, _: UUID, _: ClientComponentState)(_: Seq[(String, String)]))
+        .expects(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.INACTIVE, *)
+        .once()
+        .returns(Future.unit)
       mockArchiveEventSending(ArchiveEvent(agreement.id, now)).twice()
 
       Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
