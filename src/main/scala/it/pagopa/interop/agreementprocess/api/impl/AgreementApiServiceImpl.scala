@@ -3,7 +3,7 @@ package it.pagopa.interop.agreementprocess.api.impl
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Directives.onComplete
 import akka.http.scaladsl.server.Route
-import cats.implicits._
+import cats.syntax.all._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementmanagement.model.agreement.{MissingCertifiedAttributes, _}
@@ -53,6 +53,7 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenantMailKind
 
 final case class AgreementApiServiceImpl(
   agreementManagementService: AgreementManagementService,
@@ -624,6 +625,16 @@ final case class AgreementApiServiceImpl(
           stamps = stamps.toManagement
         )
 
+    def validateConsumerEmails(agreement: PersistentAgreement): Future[Unit] =
+      for {
+        consumer <- tenantManagementService
+          .getTenantById(agreement.consumerId)
+        _        <-
+          if (!consumer.mails.exists(_.kind == PersistentTenantMailKind.ContactEmail))
+            Future.failed(ConsumerWithNotValidEmail(agreement.id, agreement.consumerId))
+          else Future.unit
+      } yield ()
+
     def createContractAndSendMail(
       agreement: PersistentAgreement,
       seed: AgreementManagement.UpdateAgreementSeed
@@ -643,6 +654,7 @@ final case class AgreementApiServiceImpl(
 
     for {
       uid    <- getUidFutureUUID(contexts)
+      _      <- if (agreement.state == Draft) validateConsumerEmails(agreement) else Future.unit
       stamps <- calculateStamps(newState, PersistentStamp(uid, offsetDateTimeSupplier.get()))
       updateSeed = getUpdateSeed(stamps)
       updated <- agreementManagementService.updateAgreement(agreement.id, updateSeed)

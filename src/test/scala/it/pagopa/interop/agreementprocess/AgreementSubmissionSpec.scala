@@ -32,7 +32,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val descriptor =
         SpecData.publishedDescriptor.copy(agreementApprovalPolicy = Manual.some, attributes = descriptorAttr)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
-      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val consumer   =
+        SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr, mails = List(SpecData.validEmail))
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
@@ -54,6 +55,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
+      mockTenantRetrieve(agreement.consumerId, consumer)
       mockAgreementUpdate(
         agreement.id,
         expectedSeed,
@@ -80,7 +82,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       val descriptor =
         SpecData.publishedDescriptor.copy(agreementApprovalPolicy = Automatic.some, attributes = descriptorAttr)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor), producerId = producerId)
-      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val consumer   =
+        SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr, mails = List(SpecData.validEmail))
       val producer   = SpecData.tenant.copy(id = producerId)
       val agreement  =
         SpecData.draftAgreement.copy(
@@ -127,7 +130,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
         SpecData.publishedDescriptor.copy(agreementApprovalPolicy = Manual.some, attributes = descriptorAttr)
       val eService            =
         SpecData.eService.copy(producerId = consumerAndProducer, descriptors = Seq(descriptor))
-      val consumer            = SpecData.tenant.copy(id = consumerAndProducer, attributes = tenantAttr)
+      val consumer            =
+        SpecData.tenant.copy(id = consumerAndProducer, attributes = tenantAttr, mails = List(SpecData.validEmail))
       val producer            = consumer
       val agreement           =
         SpecData.draftAgreement.copy(
@@ -177,6 +181,33 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
         status shouldEqual StatusCodes.Conflict
+      }
+    }
+
+    "fail if agreement has a consumer without contact email" in {
+
+      val (eServiceCertAttr, tenantCertAttr) = SpecData.matchingCertifiedAttributes
+      val (eServiceDeclAttr, tenantDeclAttr) = SpecData.matchingDeclaredAttributes
+      val descriptorAttr                     = eServiceCertAttr.copy(declared = eServiceDeclAttr.declared)
+      val tenantAttr                         = List(tenantCertAttr, tenantDeclAttr)
+
+      val descriptor =
+        SpecData.publishedDescriptor.copy(agreementApprovalPolicy = Manual.some, attributes = descriptorAttr)
+      val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
+      val consumer   =
+        SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr, mails = Nil)
+      val agreement  =
+        SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
+      val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
+
+      mockAgreementRetrieve(agreement.toPersistent)
+      mockAgreementsRetrieve(Nil)
+      mockEServiceRetrieve(eService.id, eService)
+      mockTenantRetrieve(consumer.id, consumer)
+      mockTenantRetrieve(agreement.consumerId, consumer)
+
+      Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 
@@ -253,7 +284,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
-      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val consumer   =
+        SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr, mails = List(SpecData.validEmail))
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
@@ -275,6 +307,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
+      mockTenantRetrieve(agreement.consumerId, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {
@@ -289,7 +322,8 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
 
       val descriptor = SpecData.publishedDescriptor.copy(attributes = descriptorAttr)
       val eService   = SpecData.eService.copy(descriptors = Seq(descriptor))
-      val consumer   = SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr)
+      val consumer   =
+        SpecData.tenant.copy(id = requesterOrgId, attributes = tenantAttr, mails = List(SpecData.validEmail))
       val agreement  =
         SpecData.draftAgreement.copy(eserviceId = eService.id, descriptorId = descriptor.id, consumerId = consumer.id)
       val payload    = AgreementSubmissionPayload(Some("consumer-notes"))
@@ -311,6 +345,7 @@ class AgreementSubmissionSpec extends AnyWordSpecLike with SpecHelper with Scala
       mockAgreementsRetrieve(Nil)
       mockEServiceRetrieve(eService.id, eService)
       mockTenantRetrieve(consumer.id, consumer)
+      mockTenantRetrieve(agreement.consumerId, consumer)
       mockAgreementUpdate(agreement.id, expectedSeed, agreement)
 
       Get() ~> service.submitAgreement(agreement.id.toString, payload) ~> check {

@@ -99,5 +99,11 @@ object AgreementProcessErrors {
   final case class AttributeNotFound(attributeId: UUID)
       extends ComponentError("0022", s"Attribute ${attributeId.toString} not found")
 
+  final case class ConsumerWithNotValidEmail(agreementId: UUID, tenantId: UUID)
+      extends ComponentError(
+        "0024",
+        s"Agreement ${agreementId.toString} has a consumer tenant ${tenantId.toString} with no valid email"
+      )
+
   case object InvalidAttributeStructure extends ComponentError("0023", "Invalid Attribute Structure")
 }
