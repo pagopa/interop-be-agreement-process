@@ -29,9 +29,7 @@ import it.pagopa.interop.catalogmanagement.model.{
   CatalogDescriptorState,
   CatalogItem,
   Deprecated,
-  GroupAttribute,
-  Published,
-  SingleAttribute
+  Published
 }
 import it.pagopa.interop.certifiedMailSender.InteropEnvelope
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
@@ -543,11 +541,8 @@ final case class AgreementApiServiceImpl(
       val declared  = eService.descriptors.flatMap(_.attributes.declared)
       val verified  = eService.descriptors.flatMap(_.attributes.verified)
       (certified ++ declared ++ verified)
-        .flatMap {
-          case single: SingleAttribute => Seq(single.id.id)
-          case group: GroupAttribute   => group.ids.map(_.id)
-        }
-        .contains(attributeId)
+        .flatMap(_.map(_.id))
+        .exists(_ == attributeId)
     }
 
     val result: Future[Unit] = for {
@@ -1001,12 +996,12 @@ final case class AgreementApiServiceImpl(
       case _                          => stateByAttribute
     }
 
-  private def matchingAttributes(eServiceAttributes: Seq[CatalogAttribute], consumerAttributes: Seq[UUID]): Seq[UUID] =
+  private def matchingAttributes(
+    eServiceAttributes: Seq[Seq[CatalogAttribute]],
+    consumerAttributes: Seq[UUID]
+  ): Seq[UUID] =
     eServiceAttributes
-      .flatMap {
-        case single: SingleAttribute => Seq(single.id.id)
-        case group: GroupAttribute   => group.ids.map(_.id)
-      }
+      .flatMap(_.map(_.id))
       .intersect(consumerAttributes)
 
   private def matchingCertifiedAttributes(

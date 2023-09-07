@@ -18,13 +18,11 @@ import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
 import it.pagopa.interop.catalogmanagement.model.{
   Automatic,
-  CatalogAttributeValue,
+  CatalogAttribute,
   CatalogAttributes,
   CatalogDescriptor,
   CatalogItem,
-  GroupAttribute,
   Rest,
-  SingleAttribute,
   Archived => CatalogArchived,
   Deprecated => CatalogDeprecated,
   Draft => CatalogDraft,
@@ -118,15 +116,13 @@ object SpecData {
     kind = PersistentTenantKind.PA.some
   )
 
-  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): SingleAttribute =
-    SingleAttribute(CatalogAttributeValue(id, explicitAttributeVerification = false))
+  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Seq[CatalogAttribute] =
+    Seq(CatalogAttribute(id, explicitAttributeVerification = false))
 
-  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): GroupAttribute =
-    GroupAttribute(
-      Seq(
-        CatalogAttributeValue(id1, explicitAttributeVerification = false),
-        CatalogAttributeValue(id2, explicitAttributeVerification = false)
-      )
+  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): Seq[CatalogAttribute] =
+    Seq(
+      CatalogAttribute(id1, explicitAttributeVerification = false),
+      CatalogAttribute(id2, explicitAttributeVerification = false)
     )
 
   def catalogCertifiedAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
