@@ -13,7 +13,7 @@ import it.pagopa.interop.authorizationmanagement.client.model.{
 import it.pagopa.interop.catalogmanagement.model.CatalogItem
 import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, PersistentAgreementState}
 import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
-import it.pagopa.interop.certifiedMailSender.InteropEnvelope
+import it.pagopa.interop.commons.mail.InteropEnvelope
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, UID, USER_ROLES}

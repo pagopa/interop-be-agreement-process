@@ -33,7 +33,8 @@ import it.pagopa.interop.catalogmanagement.model.{
   Published,
   SingleAttribute
 }
-import it.pagopa.interop.certifiedMailSender.InteropEnvelope
+import it.pagopa.interop.commons.mail.InteropEnvelope
+import it.pagopa.interop.commons.mail.Mail
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt._
@@ -859,9 +860,11 @@ final case class AgreementApiServiceImpl(
       version            <- eservice.descriptors
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
+      producerAddress    <- Mail.addresses(producer.digitalAddress).toFuture
+      consumerAddress    <- Mail.addresses(consumer.digitalAddress).toFuture
     } yield InteropEnvelope(
       id = envelopeId,
-      recipients = List(producer.digitalAddress, consumer.digitalAddress),
+      recipients = producerAddress ++ consumerAddress,
       subject = subject,
       body = createBody(
         activationDate = activationDate,
