@@ -1,13 +1,7 @@
 package it.pagopa.interop.agreementprocess.lifecycle
 
 import it.pagopa.interop.agreementmanagement.model.agreement._
-import it.pagopa.interop.catalogmanagement.model.{
-  CatalogDescriptor,
-  CatalogAttribute,
-  SingleAttribute,
-  GroupAttribute,
-  CatalogAttributes
-}
+import it.pagopa.interop.catalogmanagement.model.{CatalogDescriptor, CatalogAttribute, CatalogAttributes}
 import it.pagopa.interop.commons.utils.service.OffsetDateTimeSupplier
 import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentCertifiedAttribute,
@@ -78,11 +72,6 @@ object AttributesRules {
       consumerAttributes.collect { case a: PersistentVerifiedAttribute => a }
     )
 
-  private def attributesSatisfied(requested: Seq[CatalogAttribute], assigned: Seq[UUID]): Boolean = {
-    requested.forall {
-      case SingleAttribute(value) => assigned.contains(value.id)
-      case GroupAttribute(values) => values.map(_.id).intersect(assigned).nonEmpty
-      case _                      => true
-    }
-  }
+  private def attributesSatisfied(requested: Seq[Seq[CatalogAttribute]], assigned: Seq[UUID]): Boolean = 
+    requested.forall(_.map(_.id).intersect(assigned).nonEmpty)
 }
