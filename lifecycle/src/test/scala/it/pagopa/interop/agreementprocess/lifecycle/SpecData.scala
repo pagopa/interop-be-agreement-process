@@ -7,9 +7,7 @@ import it.pagopa.interop.catalogmanagement.model.{
   CatalogDescriptor,
   Rest,
   CatalogAttributes,
-  SingleAttribute,
-  CatalogAttributeValue,
-  GroupAttribute
+  CatalogAttribute
 }
 import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentCertifiedAttribute,
@@ -75,15 +73,13 @@ object SpecData {
     kind = Some(PersistentTenantKind.PA)
   )
 
-  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): SingleAttribute =
-    SingleAttribute(id = CatalogAttributeValue(id, explicitAttributeVerification = false))
+  def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Seq[CatalogAttribute] =
+    Seq(CatalogAttribute(id = id, explicitAttributeVerification = false))
 
-  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): GroupAttribute =
-    GroupAttribute(ids =
-      Seq(
-        CatalogAttributeValue(id1, explicitAttributeVerification = false),
-        CatalogAttributeValue(id2, explicitAttributeVerification = false)
-      )
+  def catalogGroupAttributes(id1: UUID = UUID.randomUUID(), id2: UUID = UUID.randomUUID()): Seq[CatalogAttribute] =
+    Seq(
+      CatalogAttribute(id1, explicitAttributeVerification = false),
+      CatalogAttribute(id2, explicitAttributeVerification = false)
     )
 
   def catalogCertifiedAttribute(id: UUID = UUID.randomUUID()): CatalogAttributes =
