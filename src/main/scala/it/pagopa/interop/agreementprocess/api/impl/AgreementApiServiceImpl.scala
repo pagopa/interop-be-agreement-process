@@ -31,8 +31,8 @@ import it.pagopa.interop.catalogmanagement.model.{
   Deprecated,
   Published
 }
-import it.pagopa.interop.commons.mail.InteropEnvelope
-import it.pagopa.interop.commons.mail.Mail
+import it.pagopa.interop.commons.mail.{Mail, TextMail}
+import it.pagopa.interop.commons.mail.Mail._
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt._
@@ -846,7 +846,7 @@ final case class AgreementApiServiceImpl(
 
     val subject: String = activationMailTemplate.subject.interpolate(Map("agreementId" -> agreement.id.toString))
 
-    val envelope: Future[InteropEnvelope] = for {
+    val envelope: Future[TextMail] = for {
       producerSelfcareId <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(producerTenant.id))
       consumerSelfcareId <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(consumerTenant.id))
       activationDate     <- agreement.stamps.activation.map(_.when).toFuture(StampNotFound("activation"))
@@ -857,7 +857,7 @@ final case class AgreementApiServiceImpl(
         .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
       producerAddress    <- Mail.addresses(producer.digitalAddress).toFuture
       consumerAddress    <- Mail.addresses(consumer.digitalAddress).toFuture
-    } yield InteropEnvelope(
+    } yield TextMail(
       id = envelopeId,
       recipients = producerAddress ++ consumerAddress,
       subject = subject,
@@ -871,7 +871,7 @@ final case class AgreementApiServiceImpl(
       attachments = List.empty
     )
 
-    envelope.flatMap(certifiedMailQueueService.send[InteropEnvelope]).map(_ => ())
+    envelope.flatMap(certifiedMailQueueService.send[TextMail]).map(_ => ())
   }
 
   private def suspend(
