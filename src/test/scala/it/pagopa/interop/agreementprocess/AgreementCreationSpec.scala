@@ -83,7 +83,7 @@ class AgreementCreationSpec extends AnyWordSpecLike with SpecHelper with Scalate
       }
     }
 
-    "fail if Descriptor is not in suspended or published state" in {
+    "fail if Descriptor is not in published state" in {
       val attributeId          = UUID.randomUUID()
       val descriptorAttributes = catalogCertifiedAttribute(attributeId)
       val descriptor           = SpecData.draftDescriptor.copy(attributes = descriptorAttributes)

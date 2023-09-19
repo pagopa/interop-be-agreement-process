@@ -72,6 +72,6 @@ object AttributesRules {
       consumerAttributes.collect { case a: PersistentVerifiedAttribute => a }
     )
 
-  private def attributesSatisfied(requested: Seq[Seq[CatalogAttribute]], assigned: Seq[UUID]): Boolean = 
+  private def attributesSatisfied(requested: Seq[Seq[CatalogAttribute]], assigned: Seq[UUID]): Boolean =
     requested.forall(_.map(_.id).intersect(assigned).nonEmpty)
 }

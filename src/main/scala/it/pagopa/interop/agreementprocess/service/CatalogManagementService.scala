@@ -24,7 +24,7 @@ object CatalogManagementService {
   }
   def validateCreationOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[CatalogDescriptor]   = {
     val allowedStatus: List[CatalogDescriptorState] =
-      List(Published, Suspended)
+      List(Published)
     validateLatestDescriptor(eservice, descriptorId, allowedStatus)
   }
   def validateSubmitOnDescriptor(eservice: CatalogItem, descriptorId: UUID): Future[CatalogDescriptor]     = {
