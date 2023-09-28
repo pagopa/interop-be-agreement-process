@@ -41,14 +41,11 @@ object Dependencies {
       namespace %% "interop-selfcare-user-registry-client" % userRegistryManagementVersion
 
     lazy val commons             = namespace %% "interop-commons-utils"         % commonsVersion
+    lazy val commonsMailManager  = namespace %% "interop-commons-mail-manager"  % commonsVersion
     lazy val commonsFileManager  = namespace %% "interop-commons-file-manager"  % commonsVersion
     lazy val commonsJWT          = namespace %% "interop-commons-jwt"           % commonsVersion
     lazy val commonsCqrs         = namespace %% "interop-commons-cqrs"          % commonsVersion
     lazy val commonsQueueManager = namespace %% "interop-commons-queue-manager" % commonsVersion
-
-    lazy val certifiedMailSenderModels =
-      namespace %% "interop-be-certified-mail-sender-models" % certifiedMailSenderModelsVersion
-
   }
 
   private[this] object cats {
@@ -118,7 +115,7 @@ object Dependencies {
       pagopa.authorizationManagementClient     % Compile,
       pagopa.catalogManagementModels           % Compile,
       pagopa.tenantManagementModels            % Compile,
-      pagopa.certifiedMailSenderModels         % Compile,
+      pagopa.commonsMailManager                % Compile,
       pagopa.commons                           % Compile,
       pagopa.commonsFileManager                % Compile,
       pagopa.commonsJWT                        % Compile,
