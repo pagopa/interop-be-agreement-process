@@ -26,7 +26,8 @@ import it.pagopa.interop.catalogmanagement.model.{
   Archived => CatalogArchived,
   Deprecated => CatalogDeprecated,
   Draft => CatalogDraft,
-  Published => CatalogPublished
+  Published => CatalogPublished,
+  Deliver
 }
 import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentCertifiedAttribute,
@@ -96,7 +97,9 @@ object SpecData {
     technology = Rest,
     descriptors = Nil,
     attributes = None,
-    createdAt = timestamp
+    createdAt = timestamp,
+    riskAnalysis = Seq.empty,
+    mode = Deliver
   )
 
   def compactTenant: CompactTenant = CompactTenant(id = UUID.randomUUID(), attributes = Nil)

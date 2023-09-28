@@ -20,7 +20,7 @@ import it.pagopa.interop.agreementmanagement.model.agreement.{
 import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{PersistentAttribute, Declared}
 import it.pagopa.interop.catalogmanagement.model.{CatalogItem, Rest, CatalogAttributes}
 import it.pagopa.interop.tenantmanagement.model.tenant.{PersistentTenant, PersistentExternalId, PersistentTenantKind}
-import it.pagopa.interop.catalogmanagement.model.{CatalogDescriptor, Published, Automatic}
+import it.pagopa.interop.catalogmanagement.model.{CatalogDescriptor, Published, Automatic, Deliver}
 
 import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
@@ -154,7 +154,9 @@ object FakeDependencies {
             archivedAt = None
           ) :: Nil,
           attributes = None,
-          createdAt = OffsetDateTime.now()
+          createdAt = OffsetDateTime.now(),
+          riskAnalysis = Seq.empty,
+          mode = Deliver
         )
       )
   }

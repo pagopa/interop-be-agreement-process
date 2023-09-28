@@ -7,7 +7,8 @@ import it.pagopa.interop.catalogmanagement.model.{
   CatalogDescriptor,
   Rest,
   CatalogAttributes,
-  CatalogAttribute
+  CatalogAttribute,
+  Deliver
 }
 import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentCertifiedAttribute,
@@ -36,7 +37,9 @@ object SpecData {
     technology = Rest,
     descriptors = Nil,
     attributes = None,
-    createdAt = timestamp
+    createdAt = timestamp,
+    riskAnalysis = Seq.empty,
+    mode = Deliver
   )
 
   def descriptor: CatalogDescriptor = CatalogDescriptor(
