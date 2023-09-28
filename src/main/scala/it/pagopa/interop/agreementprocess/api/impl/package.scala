@@ -2,9 +2,8 @@ package it.pagopa.interop.agreementprocess.api
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import it.pagopa.interop.agreementprocess.model._
-import it.pagopa.interop.certifiedMailSender.{InteropEnvelope, MailAttachment}
 import it.pagopa.interop.commons.utils.SprayCommonFormats.{offsetDateTimeFormat, uuidFormat}
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json._
 
 package object impl extends SprayJsonSupport with DefaultJsonProtocol {
 
@@ -38,8 +37,6 @@ package object impl extends SprayJsonSupport with DefaultJsonProtocol {
     jsonFormat4(VerifiedTenantAttribute)
   implicit def tenantAttributeFormat: RootJsonFormat[TenantAttribute]                   = jsonFormat3(TenantAttribute)
   implicit def compactTenantFormat: RootJsonFormat[CompactTenant]                       = jsonFormat2(CompactTenant)
-  implicit def mailAttachmentFormat: RootJsonFormat[MailAttachment]                     = jsonFormat3(MailAttachment)
-  implicit def interopEnvelopFormat: RootJsonFormat[InteropEnvelope]                    = jsonFormat5(InteropEnvelope)
   implicit def mailInfoFormat: RootJsonFormat[MailTemplate] = jsonFormat2(MailTemplate.apply)
   implicit def computeAgreementPayloadFormat: RootJsonFormat[ComputeAgreementStatePayload] =
     jsonFormat2(ComputeAgreementStatePayload)
