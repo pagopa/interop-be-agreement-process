@@ -106,4 +106,13 @@ object AgreementProcessErrors {
       )
 
   case object InvalidAttributeStructure extends ComponentError("0023", "Invalid Attribute Structure")
+
+  final case class InstitutionNotFound(selfcareId: UUID)
+      extends ComponentError("0024", s"Institution $selfcareId not found")
+
+  final case class UserNotFound(selfcareId: UUID, userId: UUID)
+      extends ComponentError("0025", s"User $userId not found for institution $selfcareId")
+
+  final case class SelfcareEntityNotFilled(className: String, field: String)
+      extends ComponentError("0026", s"Selfcare entity $className with field $field not filled")
 }

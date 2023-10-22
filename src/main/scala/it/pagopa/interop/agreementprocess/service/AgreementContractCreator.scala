@@ -1,6 +1,7 @@
 package it.pagopa.interop.agreementprocess.service
 
 import akka.http.scaladsl.model.MediaTypes
+import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.{DocumentSeed, UpdateAgreementSeed}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{MissingUserInfo, StampNotFound}
@@ -9,7 +10,6 @@ import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
-import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import it.pagopa.interop.catalogmanagement.model.CatalogItem
 import it.pagopa.interop.agreementmanagement.model.agreement.PersistentAgreement
 import it.pagopa.interop.tenantmanagement.model.tenant.{
@@ -18,12 +18,14 @@ import it.pagopa.interop.tenantmanagement.model.tenant.{
   PersistentDeclaredAttribute,
   PersistentVerifiedAttribute
 }
+import it.pagopa.interop.commons.utils.AkkaUtils.getSelfcareIdFutureUUID
 
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import it.pagopa.interop.agreementprocess.common.model.UserResponse
 
 final class AgreementContractCreator(
   pdfCreator: PDFCreator,
@@ -31,7 +33,7 @@ final class AgreementContractCreator(
   uuidSupplier: UUIDSupplier,
   agreementManagementService: AgreementManagementService,
   attributeManagementService: AttributeManagementService,
-  userRegistry: UserRegistryService,
+  selfcareV2ClientService: SelfcareV2ClientService,
   offsetDateTimeSupplier: OffsetDateTimeSupplier
 )(implicit readModel: ReadModelService) {
 
@@ -121,25 +123,25 @@ final class AgreementContractCreator(
     seed: UpdateAgreementSeed
   )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[(String, OffsetDateTime)] =
     for {
-      submission <- seed.stamps.submission.toFuture(StampNotFound("submission"))
-      response   <- userRegistry.getUserById(submission.who)
-      submitter  <- getUserText(response).toFuture(MissingUserInfo(submission.who))
+      selfcareUuidd   <- getSelfcareIdFutureUUID(contexts)
+      submission      <- seed.stamps.submission.toFuture(StampNotFound("submission"))
+      userResponse    <- selfcareV2ClientService.getUserById(selfcareUuidd, submission.who).map(_.toApi)
+      userResponseApi <- userResponse.toFuture.recoverWith { case _ => Future.failed(MissingUserInfo(submission.who)) }
+      submitter = getUserText(userResponseApi)
     } yield (submitter, submission.when)
 
   def getActivationInfo(
     seed: UpdateAgreementSeed
   )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[(String, OffsetDateTime)] =
     for {
-      activation <- seed.stamps.activation.toFuture(StampNotFound("activation"))
-      response   <- userRegistry.getUserById(activation.who)
-      activator  <- getUserText(response).toFuture(MissingUserInfo(activation.who))
+      selfcareUuidd   <- getSelfcareIdFutureUUID(contexts)
+      activation      <- seed.stamps.activation.toFuture(StampNotFound("activation"))
+      userResponse    <- selfcareV2ClientService.getUserById(selfcareUuidd, activation.who).map(_.toApi)
+      userResponseApi <- userResponse.toFuture.recoverWith { case _ => Future.failed(MissingUserInfo(activation.who)) }
+      activator = getUserText(userResponseApi)
     } yield (activator, activation.when)
 
-  def getUserText(user: UserResource): Option[String] = for {
-    name       <- user.name
-    familyName <- user.familyName
-    fiscalCode <- user.fiscalCode
-  } yield s"${name.value} ${familyName.value} ($fiscalCode)"
+  def getUserText(user: UserResponse): String = s"${user.name} ${user.surname} (${user.taxCode})"
 
   def getPdfPayload(
     agreement: PersistentAgreement,

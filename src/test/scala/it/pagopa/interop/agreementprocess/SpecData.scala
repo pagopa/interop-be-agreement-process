@@ -11,9 +11,6 @@ import it.pagopa.interop.agreementprocess.model.{
   TenantVerifier,
   VerifiedTenantAttribute
 }
-import it.pagopa.interop.selfcare.userregistry.client.model.CertifiableFieldResourceOfstringEnums.Certification
-import it.pagopa.interop.selfcare.userregistry.client.model.{CertifiableFieldResourceOfstring, UserResource}
-
 import java.time.{OffsetDateTime, ZoneOffset}
 import java.util.UUID
 import it.pagopa.interop.catalogmanagement.model.{
@@ -41,6 +38,7 @@ import it.pagopa.interop.tenantmanagement.model.tenant.{
 }
 import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenantMailKind.ContactEmail
 import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute.{Certified, PersistentAttribute}
+import it.pagopa.interop.selfcare.v2.client.model.UserResponse
 
 object SpecData {
 
@@ -331,10 +329,11 @@ object SpecData {
     createdAt = timestamp
   )
 
-  def userResource(name: String, familyName: String, fiscalCode: String): UserResource = UserResource(
-    familyName = Some(CertifiableFieldResourceOfstring(Certification.SPID, familyName)),
-    fiscalCode = Some(fiscalCode),
-    id = SpecData.who,
-    name = Some(CertifiableFieldResourceOfstring(Certification.SPID, name))
+  def userResource(name: String, familyName: String, fiscalCode: String, email: String): UserResponse = UserResponse(
+    surname = Some(familyName),
+    taxCode = Some(fiscalCode),
+    id = Some(SpecData.who.toString),
+    name = Some(name),
+    email = Some(email)
   )
 }

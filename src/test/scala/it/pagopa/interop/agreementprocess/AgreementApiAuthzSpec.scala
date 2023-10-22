@@ -28,8 +28,7 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
   val fakeTenantManagementService: TenantManagementService               = new FakeTenantManagementService()
   val fakeAttributeManagementService: AttributeManagementService         = new FakeAttributeManagementService()
   val fakeAuthorizationManagementService: AuthorizationManagementService = new FakeAuthorizationManagementService()
-  val fakePartyProcessService: PartyProcessService                       = new FakePartyProcessService()
-  val fakeUserRegistryService: UserRegistryService                       = new FakeUserRegistryService()
+  val fakeSelfcareV2ClientService: SelfcareV2ClientService               = new FakeSelfcareV2ClientService()
   val fakePDFCreator: PDFCreator                                         = new FakePDFCreator()
   val fakeFileManager: FileManager                                       = new FakeFileManager()
   val fakerQueueService: QueueService                                    = new FakeQueueService()
@@ -47,8 +46,7 @@ class AgreementApiAuthzSpec extends AnyWordSpecLike with MockFactory with AuthzS
     tenantManagementService = fakeTenantManagementService,
     attributeManagementService = fakeAttributeManagementService,
     authorizationManagementService = fakeAuthorizationManagementService,
-    partyProcessService = fakePartyProcessService,
-    userRegistry = fakeUserRegistryService,
+    selfcareV2ClientService = fakeSelfcareV2ClientService,
     pdfCreator = fakePDFCreator,
     fileManager = fakeFileManager,
     offsetDateTimeSupplier = OffsetDateTimeSupplier,

@@ -10,20 +10,20 @@ import it.pagopa.interop.authorizationmanagement.client.model.{
   ClientAgreementAndEServiceDetailsUpdate,
   ClientComponentState
 }
+import it.pagopa.interop.selfcare.v2.client.model.{UserResponse, Institution}
 import it.pagopa.interop.catalogmanagement.model.CatalogItem
 import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, PersistentAgreementState}
 import it.pagopa.interop.tenantmanagement.model.tenant.PersistentTenant
 import it.pagopa.interop.commons.mail.TextMail
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
-import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, UID, USER_ROLES}
-import it.pagopa.interop.selfcare.partyprocess.client.model.Institution
-import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
+import it.pagopa.interop.commons.utils.{ORGANIZATION_ID_CLAIM, UID, USER_ROLES, SELFCARE_ID_CLAIM}
 import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementprocess.events.ArchiveEvent
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import org.scalamock.scalatest.MockFactory
 import spray.json.JsonWriter
+import cats.syntax.all._
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -35,13 +35,15 @@ trait SpecHelper extends MockFactory {
 
   val bearerToken: String  = "bearerToken"
   val requesterOrgId: UUID = UUID.randomUUID()
+  val selfcareId: UUID     = UUID.randomUUID()
 
   implicit val contexts: Seq[(String, String)] =
     Seq(
       "bearer"              -> "bearerToken",
       ORGANIZATION_ID_CLAIM -> requesterOrgId.toString,
       USER_ROLES            -> "admin",
-      UID                   -> SpecData.who.toString
+      UID                   -> SpecData.who.toString,
+      SELFCARE_ID_CLAIM     -> selfcareId.toString
     )
 
   val agreementApiMarshaller: AgreementApiMarshaller = AgreementApiMarshallerImpl
@@ -51,8 +53,7 @@ trait SpecHelper extends MockFactory {
   val mockTenantManagementService: TenantManagementService               = mock[TenantManagementService]
   val mockAttributeManagementService: AttributeManagementService         = mock[AttributeManagementService]
   val mockAuthorizationManagementService: AuthorizationManagementService = mock[AuthorizationManagementService]
-  val mockUserRegistryService: UserRegistryService                       = mock[UserRegistryService]
-  val mockPartyProcessService: PartyProcessService                       = mock[PartyProcessService]
+  val mockSelfcareV2ClientService: SelfcareV2ClientService               = mock[SelfcareV2ClientService]
   val mockPDFCreator: PDFCreator                                         = mock[PDFCreator]
   val mockFileManager: FileManager                                       = mock[FileManager]
   val mockOffsetDateTimeSupplier: OffsetDateTimeSupplier                 = () => SpecData.when
@@ -66,8 +67,7 @@ trait SpecHelper extends MockFactory {
     mockTenantManagementService,
     mockAttributeManagementService,
     mockAuthorizationManagementService,
-    mockPartyProcessService,
-    mockUserRegistryService,
+    mockSelfcareV2ClientService,
     mockPDFCreator,
     mockFileManager,
     mockOffsetDateTimeSupplier,
@@ -192,10 +192,10 @@ trait SpecHelper extends MockFactory {
       .once()
       .returns(Future.unit)
 
-  def mockUserRegistryRetrieve(user: UserResource) =
-    (mockUserRegistryService
-      .getUserById(_: UUID)(_: Seq[(String, String)]))
-      .expects(*, *)
+  def mockUserRegistryRetrieve(user: UserResponse) =
+    (mockSelfcareV2ClientService
+      .getUserById(_: UUID, _: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+      .expects(*, *, *, *)
       .once()
       .returns(Future.successful(user))
 
@@ -227,23 +227,23 @@ trait SpecHelper extends MockFactory {
       .returns(Future.successful("sent"))
 
   def mockGetInstitution(selfcareId: String) =
-    (mockPartyProcessService
-      .getInstitution(_: String)(_: Seq[(String, String)], _: ExecutionContext))
-      .expects(*, *, *)
+    (mockSelfcareV2ClientService
+      .getInstitution(_: UUID)(_: Seq[(String, String)], _: ExecutionContext))
+      .expects(UUID.fromString(selfcareId), *, *)
       .returns(
         Future.successful(
           Institution(
-            id = UUID.fromString(selfcareId),
-            externalId = "externalId",
-            originId = "originId",
-            description = "description",
-            digitalAddress = "digitalAddress",
-            address = "address",
-            zipCode = "zipCode",
-            taxCode = "taxCode",
-            origin = "origin",
+            id = UUID.fromString(selfcareId).some,
+            externalId = "externalId".some,
+            originId = "originId".some,
+            description = "description".some,
+            digitalAddress = "digitalAddress".some,
+            address = "address".some,
+            zipCode = "zipCode".some,
+            taxCode = "taxCode".some,
+            origin = "origin".some,
             institutionType = None,
-            attributes = Seq.empty
+            attributes = Seq.empty.some
           )
         )
       )
@@ -296,8 +296,8 @@ trait SpecHelper extends MockFactory {
     mockAgreementContract
     mockTenantRetrieve(consumer.id, consumer)
     mockTenantRetrieve(producer.id, producer)
-    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
-    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
+    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c", "e"))
+    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f", "g"))
     mockAgreementUpdate(
       agreement.id,
       expectedSeed,
@@ -337,8 +337,8 @@ trait SpecHelper extends MockFactory {
     mockFileManagerWrite
     mockAgreementContract
     mockTenantRetrieve(producer.id, producer)
-    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
-    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
+    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c", "e"))
+    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f", "g"))
     mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
     mockGetInstitution(consumer.selfcareId.get)
     mockGetInstitution(producer.selfcareId.get)
@@ -370,8 +370,8 @@ trait SpecHelper extends MockFactory {
     mockPDFCreatorCreate
     mockFileManagerWrite
     mockAgreementContract
-    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c"))
-    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f"))
+    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c", "e"))
+    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f", "g"))
     mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
     mockGetInstitution(consumer.selfcareId.get)
     mockGetInstitution(producer.selfcareId.get)

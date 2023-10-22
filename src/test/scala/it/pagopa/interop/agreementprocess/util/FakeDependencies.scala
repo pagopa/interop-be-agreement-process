@@ -7,8 +7,6 @@ import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.authorizationmanagement.client.model._
 import it.pagopa.interop.commons.files.service.FileManager
-import it.pagopa.interop.selfcare.partyprocess.client.model.Institution
-import it.pagopa.interop.selfcare.userregistry.client.model.UserResource
 import spray.json.JsonWriter
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.agreementprocess.common.Adapters._
@@ -21,6 +19,7 @@ import it.pagopa.interop.attributeregistrymanagement.model.persistence.attribute
 import it.pagopa.interop.catalogmanagement.model.{CatalogItem, Rest, CatalogAttributes}
 import it.pagopa.interop.tenantmanagement.model.tenant.{PersistentTenant, PersistentExternalId, PersistentTenantKind}
 import it.pagopa.interop.catalogmanagement.model.{CatalogDescriptor, Published, Automatic, Deliver}
+import it.pagopa.interop.selfcare.v2.client.model.{UserResponse, Institution}
 
 import java.io.{ByteArrayOutputStream, File}
 import java.time.OffsetDateTime
@@ -194,43 +193,18 @@ object FakeDependencies {
         )
       )
   }
-
-  class FakePartyProcessService extends PartyProcessService {
+  class FakeSelfcareV2ClientService extends SelfcareV2ClientService {
     override def getInstitution(
-      selfcareId: String
-    )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution] = Future.successful(
-      Institution(
-        id = UUID.randomUUID(),
-        externalId = "",
-        originId = "",
-        description = "",
-        digitalAddress = "",
-        address = "",
-        zipCode = "",
-        taxCode = "",
-        origin = "",
-        institutionType = None,
-        attributes = Seq.empty
-      )
-    )
-  }
+      selfcareId: UUID
+    )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[Institution] =
+      Future.successful(Institution())
 
-  class FakeUserRegistryService extends UserRegistryService {
-    override def getUserById(id: UUID)(implicit contexts: Seq[(String, String)]): Future[UserResource] =
-      Future.successful(
-        UserResource(
-          birthDate = None,
-          email = None,
-          familyName = None,
-          fiscalCode = None,
-          id = UUID.randomUUID(),
-          name = None,
-          workContacts = None
-        )
-      )
+    override def getUserById(selfcareId: UUID, userId: UUID)(implicit
+      contexts: Seq[(String, String)],
+      ec: ExecutionContext
+    ): Future[UserResponse] = Future.successful(UserResponse())
   }
-
-  class FakePDFCreator extends PDFCreator {
+  class FakePDFCreator              extends PDFCreator              {
     override def create(template: String, pdfPayload: PDFPayload): Future[Array[Byte]] = Future.successful(Array.empty)
   }
 
