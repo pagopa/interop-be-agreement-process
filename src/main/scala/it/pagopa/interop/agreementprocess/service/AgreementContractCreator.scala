@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import it.pagopa.interop.agreementprocess.common.model.UserResponse
+import it.pagopa.interop.agreementprocess.service.model.UserResponse
 
 final class AgreementContractCreator(
   pdfCreator: PDFCreator,

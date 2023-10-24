@@ -8,7 +8,7 @@ import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
   SelfcareEntityNotFilled
 }
 import it.pagopa.interop.commons.utils.TypeConversions._
-import it.pagopa.interop.agreementprocess.common.model.{Institution, UserResponse}
+import it.pagopa.interop.agreementprocess.service.model.{Institution, UserResponse}
 import it.pagopa.interop.selfcare.v2.client.{model => SelfcareV2Dependency}
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementmanagement.model.agreement._

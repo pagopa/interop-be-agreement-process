@@ -1,4 +1,4 @@
-package it.pagopa.interop.agreementprocess.common.model
+package it.pagopa.interop.agreementprocess.service.model
 
 import java.util.UUID
 
