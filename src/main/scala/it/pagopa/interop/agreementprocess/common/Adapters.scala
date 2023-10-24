@@ -401,7 +401,7 @@ object Adapters {
       }
   }
 
-  implicit class UserResourceWrapper(private val ist: SelfcareV2Dependency.Institution) extends AnyVal {
+  implicit class InstitutionWrapper(private val ist: SelfcareV2Dependency.Institution) extends AnyVal {
     def toApi: Either[Throwable, Institution] = for {
       id             <- ist.id.toRight(SelfcareEntityNotFilled(ist.getClass().getName(), "id"))
       digitalAddress <- ist.digitalAddress.toRight(SelfcareEntityNotFilled(ist.getClass().getName(), "digitalAddress"))
