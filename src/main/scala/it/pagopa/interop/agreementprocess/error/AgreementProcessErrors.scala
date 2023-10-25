@@ -111,7 +111,7 @@ object AgreementProcessErrors {
       extends ComponentError("0024", s"Institution $selfcareId not found")
 
   final case class UserNotFound(selfcareId: UUID, userId: UUID)
-      extends ComponentError("0025", s"User $userId not found for institution $selfcareId")
+      extends ComponentError("0025", s"User $userId not found for selfcare institution $selfcareId")
 
   final case class SelfcareEntityNotFilled(className: String, field: String)
       extends ComponentError("0026", s"Selfcare entity $className with field $field not filled")

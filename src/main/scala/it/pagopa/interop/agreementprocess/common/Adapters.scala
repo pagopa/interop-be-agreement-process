@@ -416,7 +416,6 @@ object Adapters {
       name    <- ur.name.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "name"))
       surname <- ur.surname.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "surname"))
       taxCode <- ur.taxCode.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "taxCode"))
-      email   <- ur.email.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "email"))
-    } yield UserResponse(id = uuid, name = name, surname = surname, taxCode = taxCode, email = email)
+    } yield UserResponse(id = uuid, name = name, surname = surname, taxCode = taxCode, email = ur.email)
   }
 }
