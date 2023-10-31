@@ -25,8 +25,8 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
 
   override def upgradeById(agreementId: UUID, seed: UpgradeAgreementSeed)(implicit
     contexts: Seq[(String, String)]
-  ): Future[Agreement] = withHeaders { (bearerToken, correlationId, ip) =>
-    val request = api.upgradeAgreementById(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+  ): Future[Agreement] = withHeaders { (bearerToken, correlationId) =>
+    val request = api.upgradeAgreementById(correlationId, agreementId, seed)(BearerToken(bearerToken))
     invoker.invoke(request, s"Upgrading agreement by id = $agreementId")
   }
 
@@ -39,8 +39,8 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
   } yield agreement
 
   override def createAgreement(seed: AgreementSeed)(implicit contexts: Seq[(String, String)]): Future[Agreement] =
-    withHeaders { (bearerToken, correlationId, ip) =>
-      val request: ApiRequest[Agreement] = api.addAgreement(correlationId, seed, ip)(BearerToken(bearerToken))
+    withHeaders { (bearerToken, correlationId) =>
+      val request: ApiRequest[Agreement] = api.addAgreement(correlationId, seed)(BearerToken(bearerToken))
       invoker.invoke(request, "Creating agreement")
     }
 
@@ -106,31 +106,31 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
 
   override def updateAgreement(agreementId: UUID, seed: UpdateAgreementSeed)(implicit
     contexts: Seq[(String, String)]
-  ): Future[Agreement] = withHeaders { (bearerToken, correlationId, ip) =>
+  ): Future[Agreement] = withHeaders { (bearerToken, correlationId) =>
     val request: ApiRequest[Agreement] =
-      api.updateAgreementById(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+      api.updateAgreementById(correlationId, agreementId, seed)(BearerToken(bearerToken))
     invoker.invoke(request, s"Updating agreement with id = $agreementId")
   }
 
   override def addAgreementContract(agreementId: UUID, seed: DocumentSeed)(implicit
     contexts: Seq[(String, String)]
-  ): Future[Document] = withHeaders { (bearerToken, correlationId, ip) =>
+  ): Future[Document] = withHeaders { (bearerToken, correlationId) =>
     val request: ApiRequest[Document] =
-      api.addAgreementContract(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+      api.addAgreementContract(correlationId, agreementId, seed)(BearerToken(bearerToken))
     invoker.invoke(request, s"Adding  agreement with id = $agreementId")
   }
 
   override def deleteAgreement(agreementId: UUID)(implicit contexts: Seq[(String, String)]): Future[Unit] =
-    withHeaders { (bearerToken, correlationId, ip) =>
-      val request = api.deleteAgreement(correlationId, agreementId.toString, ip)(BearerToken(bearerToken))
+    withHeaders { (bearerToken, correlationId) =>
+      val request = api.deleteAgreement(correlationId, agreementId.toString)(BearerToken(bearerToken))
       invoker.invoke(request, s"Deleting agreement by id = $agreementId")
     }
 
   def addConsumerDocument(agreementId: UUID, seed: DocumentSeed)(implicit
     contexts: Seq[(String, String)]
   ): Future[Document] =
-    withHeaders { (bearerToken, correlationId, ip) =>
-      val request = api.addAgreementConsumerDocument(correlationId, agreementId, seed, ip)(BearerToken(bearerToken))
+    withHeaders { (bearerToken, correlationId) =>
+      val request = api.addAgreementConsumerDocument(correlationId, agreementId, seed)(BearerToken(bearerToken))
       invoker.invoke(request, s"Adding document to agreement = ${agreementId.toString()}")
     }
 
@@ -148,9 +148,9 @@ final class AgreementManagementServiceImpl(invoker: AgreementManagementInvoker, 
 
   override def removeConsumerDocument(agreementId: UUID, documentId: UUID)(implicit
     contexts: Seq[(String, String)]
-  ): Future[Unit] = withHeaders { (bearerToken, correlationId, ip) =>
+  ): Future[Unit] = withHeaders { (bearerToken, correlationId) =>
     val request =
-      api.removeAgreementConsumerDocument(correlationId, agreementId, documentId, ip)(BearerToken(bearerToken))
+      api.removeAgreementConsumerDocument(correlationId, agreementId, documentId)(BearerToken(bearerToken))
 
     invoker
       .invoke(request, s"Removing document = ${documentId.toString()} from agreement = ${agreementId.toString()}")
