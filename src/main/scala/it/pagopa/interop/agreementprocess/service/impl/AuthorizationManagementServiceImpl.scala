@@ -24,13 +24,12 @@ final class AuthorizationManagementServiceImpl(invoker: AuthorizationManagementI
   override def updateStateOnClients(eServiceId: UUID, consumerId: UUID, agreementId: UUID, state: ClientComponentState)(
     implicit contexts: Seq[(String, String)]
   ): Future[Unit] =
-    withHeaders { (bearerToken, correlationId, ip) =>
+    withHeaders { (bearerToken, correlationId) =>
       val request = api.updateAgreementState(
         correlationId,
         eserviceId = eServiceId,
         consumerId = consumerId,
-        clientAgreementDetailsUpdate = ClientAgreementDetailsUpdate(agreementId = agreementId, state = state),
-        ip
+        clientAgreementDetailsUpdate = ClientAgreementDetailsUpdate(agreementId = agreementId, state = state)
       )(BearerToken(bearerToken))
       invoker
         .invoke(request, s"Update Agreement state on all clients")
@@ -43,13 +42,12 @@ final class AuthorizationManagementServiceImpl(invoker: AuthorizationManagementI
     eServiceId: UUID,
     consumerId: UUID,
     payload: ClientAgreementAndEServiceDetailsUpdate
-  )(implicit contexts: Seq[(String, String)]): Future[Unit] = withHeaders { (bearerToken, correlationId, ip) =>
+  )(implicit contexts: Seq[(String, String)]): Future[Unit] = withHeaders { (bearerToken, correlationId) =>
     val request = api.updateAgreementAndEServiceStates(
       correlationId,
       eserviceId = eServiceId,
       consumerId = consumerId,
-      clientAgreementAndEServiceDetailsUpdate = payload,
-      ip
+      clientAgreementAndEServiceDetailsUpdate = payload
     )(BearerToken(bearerToken))
     invoker
       .invoke(request, s"Update Agreement and EService states on all clients")
