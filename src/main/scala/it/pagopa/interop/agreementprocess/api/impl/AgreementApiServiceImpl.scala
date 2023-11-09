@@ -60,8 +60,7 @@ final case class AgreementApiServiceImpl(
   tenantManagementService: TenantManagementService,
   attributeManagementService: AttributeManagementService,
   authorizationManagementService: AuthorizationManagementService,
-  partyProcessService: PartyProcessService,
-  userRegistry: UserRegistryService,
+  selfcareV2ClientService: SelfcareV2ClientService,
   pdfCreator: PDFCreator,
   fileManager: FileManager,
   offsetDateTimeSupplier: OffsetDateTimeSupplier,
@@ -85,7 +84,7 @@ final case class AgreementApiServiceImpl(
     uuidSupplier,
     agreementManagementService,
     attributeManagementService,
-    userRegistry,
+    selfcareV2ClientService,
     offsetDateTimeSupplier
   )
 
@@ -847,24 +846,27 @@ final case class AgreementApiServiceImpl(
     val subject: String = activationMailTemplate.subject.interpolate(Map("agreementId" -> agreement.id.toString))
 
     val envelope: Future[TextMail] = for {
-      producerSelfcareId <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(producerTenant.id))
-      consumerSelfcareId <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(consumerTenant.id))
-      activationDate     <- agreement.stamps.activation.map(_.when).toFuture(StampNotFound("activation"))
-      producer           <- partyProcessService.getInstitution(producerSelfcareId)
-      consumer           <- partyProcessService.getInstitution(consumerSelfcareId)
-      version            <- eservice.descriptors
+      producerSelfcareId         <- producerTenant.selfcareId.toFuture(SelfcareIdNotFound(producerTenant.id))
+      consumerSelfcareId         <- consumerTenant.selfcareId.toFuture(SelfcareIdNotFound(consumerTenant.id))
+      producerSelfcareUuid       <- producerSelfcareId.toFutureUUID
+      consumerSelfcareUuid       <- consumerSelfcareId.toFutureUUID
+      activationDate             <- agreement.stamps.activation.map(_.when).toFuture(StampNotFound("activation"))
+      producer                   <- selfcareV2ClientService.getInstitution(producerSelfcareUuid).map(_.toApi)
+      consumer                   <- selfcareV2ClientService.getInstitution(consumerSelfcareUuid).map(_.toApi)
+      (producerApi, consumerApi) <- producer.toFuture.zip(consumer.toFuture)
+      version                    <- eservice.descriptors
         .find(_.id == agreement.descriptorId)
         .toFuture(DescriptorNotFound(eServiceId = eservice.id, descriptorId = agreement.descriptorId))
-      producerAddress    <- Mail.addresses(producer.digitalAddress).toFuture
-      consumerAddress    <- Mail.addresses(consumer.digitalAddress).toFuture
+      producerAddress            <- Mail.addresses(producerApi.digitalAddress).toFuture
+      consumerAddress            <- Mail.addresses(consumerApi.digitalAddress).toFuture
     } yield TextMail(
       id = envelopeId,
       recipients = producerAddress ++ consumerAddress,
       subject = subject,
       body = createBody(
         activationDate = activationDate,
-        producer = producer.description,
-        consumer = consumer.description,
+        producer = producerApi.description,
+        consumer = consumerApi.description,
         eserviceName = eservice.name,
         eserviceVersion = version.version
       ),

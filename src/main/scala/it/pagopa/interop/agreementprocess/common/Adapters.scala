@@ -4,8 +4,12 @@ import cats.implicits._
 import it.pagopa.interop.agreementmanagement.client.{model => AgreementManagement}
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
   AgreementNotInExpectedState,
-  InvalidAttributeStructure
+  InvalidAttributeStructure,
+  SelfcareEntityNotFilled
 }
+import it.pagopa.interop.commons.utils.TypeConversions._
+import it.pagopa.interop.agreementprocess.service.model.{Institution, UserResponse}
+import it.pagopa.interop.selfcare.v2.client.{model => SelfcareV2Dependency}
 import it.pagopa.interop.agreementprocess.model._
 import it.pagopa.interop.agreementmanagement.model.agreement._
 import it.pagopa.interop.tenantmanagement.model.{tenant => TenantManagement}
@@ -395,5 +399,23 @@ object Adapters {
             .asRight
         case _                                            => InvalidAttributeStructure.asLeft
       }
+  }
+
+  implicit class InstitutionWrapper(private val ist: SelfcareV2Dependency.Institution) extends AnyVal {
+    def toApi: Either[Throwable, Institution] = for {
+      id             <- ist.id.toRight(SelfcareEntityNotFilled(ist.getClass().getName(), "id"))
+      digitalAddress <- ist.digitalAddress.toRight(SelfcareEntityNotFilled(ist.getClass().getName(), "digitalAddress"))
+      description    <- ist.description.toRight(SelfcareEntityNotFilled(ist.getClass().getName(), "description"))
+    } yield (Institution(id = id, digitalAddress = digitalAddress, description = description))
+  }
+
+  implicit class UserResponseWrapper(private val ur: SelfcareV2Dependency.UserResponse) extends AnyVal {
+    def toApi: Either[Throwable, UserResponse] = for {
+      id      <- ur.id.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "id"))
+      uuid    <- id.toUUID.toEither
+      name    <- ur.name.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "name"))
+      surname <- ur.surname.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "surname"))
+      taxCode <- ur.taxCode.toRight(SelfcareEntityNotFilled(ur.getClass().getName(), "taxCode"))
+    } yield UserResponse(id = uuid, name = name, surname = surname, taxCode = taxCode)
   }
 }

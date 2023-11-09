@@ -17,6 +17,7 @@ import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.service._
 import it.pagopa.interop.agreementprocess.service.impl._
 import it.pagopa.interop.authorizationmanagement.client.api.PurposeApi
+import it.pagopa.interop.selfcare.v2.client.api.{InstitutionsApi, UsersApi}
 import it.pagopa.interop.commons.cqrs.service.{MongoDbReadModelService, ReadModelService}
 import it.pagopa.interop.commons.files.service.FileManager
 import it.pagopa.interop.commons.jwt.service.JWTReader
@@ -29,8 +30,6 @@ import it.pagopa.interop.commons.utils.TypeConversions._
 import it.pagopa.interop.commons.utils.errors.{Problem => CommonProblem}
 import it.pagopa.interop.commons.utils.service.{OffsetDateTimeSupplier, UUIDSupplier}
 import it.pagopa.interop.commons.utils.{AkkaUtils, OpenapiUtils}
-import it.pagopa.interop.selfcare.partyprocess.client.api.ProcessApi
-import it.pagopa.interop.selfcare.userregistry.client.api.UserApi
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
@@ -39,7 +38,7 @@ trait Dependencies {
   implicit val loggerTI: LoggerTakingImplicit[ContextFieldsToLog] =
     Logger.takingImplicit[ContextFieldsToLog]("OAuth2JWTValidatorAsContexts")
 
-  implicit val userRegistryApiKeyValue: UserRegistryApiKeyValue = UserRegistryApiKeyValue()
+  implicit val selfcareV2ClientApiKeyValue: SelfcareV2ClientApiKeyValue = SelfcareV2ClientApiKeyValue()
 
   implicit val readModelService: ReadModelService = new MongoDbReadModelService(
     ApplicationConfiguration.readModelConfig
@@ -61,16 +60,11 @@ trait Dependencies {
       new PurposeApi(ApplicationConfiguration.authorizationManagementURL)
     )
 
-  def partyProcess(implicit actorSystem: ActorSystem[_]): PartyProcessService =
-    new PartyProcessServiceImpl(
-      PartyProcessServiceInvoker()(actorSystem.classicSystem),
-      new ProcessApi(ApplicationConfiguration.partyProcessURL)
-    )
-
-  def userRegistry(implicit actorSystem: ActorSystem[_]): UserRegistryService =
-    new UserRegistryServiceImpl(
-      UserRegistryManagementInvoker()(actorSystem.classicSystem),
-      UserApi(ApplicationConfiguration.userRegistryURL)
+  def selfcareV2Client(implicit actorSystem: ActorSystem[_]): SelfcareV2ClientService =
+    new SelfcareV2ClientServiceImpl(
+      SelfcareV2ClientInvoker()(actorSystem.classicSystem),
+      new InstitutionsApi(ApplicationConfiguration.selfcareV2ClientURL),
+      new UsersApi(ApplicationConfiguration.selfcareV2ClientURL)
     )
 
   def getJwtValidator(): Future[JWTReader] = JWTConfiguration.jwtReader
@@ -125,8 +119,7 @@ trait Dependencies {
         TenantManagementServiceImpl,
         AttributeManagementServiceImpl,
         authorizationManagement(blockingEc),
-        partyProcess,
-        userRegistry,
+        selfcareV2Client,
         PDFCreator,
         fileManager(blockingEc),
         OffsetDateTimeSupplier,
