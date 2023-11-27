@@ -141,7 +141,7 @@ final class AgreementContractCreator(
       activator = getUserText(userResponseApi)
     } yield (activator, activation.when)
 
-  def getUserText(user: UserResponse): String = s"${user.name} ${user.surname} (${user.taxCode})"
+  def getUserText(user: UserResponse): String = s"${user.name} ${user.surname}"
 
   def getPdfPayload(
     agreement: PersistentAgreement,
