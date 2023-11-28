@@ -329,7 +329,7 @@ object SpecData {
     createdAt = timestamp
   )
 
-  def userResource(name: String, familyName: String, fiscalCode: String, email: String): UserResponse = UserResponse(
+  def userResponse(name: String, familyName: String, fiscalCode: String, email: String): UserResponse = UserResponse(
     surname = Some(familyName),
     taxCode = Some(fiscalCode),
     id = Some(SpecData.who.toString),
