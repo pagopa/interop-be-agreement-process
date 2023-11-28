@@ -329,6 +329,12 @@ object SpecData {
     createdAt = timestamp
   )
 
-  def userResource(name: String, familyName: String, email: String): UserResponse =
-    UserResponse(surname = Some(familyName), id = Some(SpecData.who.toString), name = Some(name), email = Some(email))
+  def userResponse(name: String, familyName: String, fiscalCode: String, email: String): UserResponse =
+    UserResponse(
+      surname = Some(familyName),
+      taxCode = Some(fiscalCode),
+      id = Some(SpecData.who.toString),
+      name = Some(name),
+      email = Some(email)
+    )
 }
