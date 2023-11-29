@@ -296,8 +296,8 @@ trait SpecHelper extends MockFactory {
     mockAgreementContract
     mockTenantRetrieve(consumer.id, consumer)
     mockTenantRetrieve(producer.id, producer)
-    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c", "e"))
-    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f", "g"))
+    mockUserRegistryRetrieve(SpecData.userResponse("a", "b", "c", "e"))
+    mockUserRegistryRetrieve(SpecData.userResponse("d", "e", "f", "g"))
     mockAgreementUpdate(
       agreement.id,
       expectedSeed,
@@ -337,8 +337,8 @@ trait SpecHelper extends MockFactory {
     mockFileManagerWrite
     mockAgreementContract
     mockTenantRetrieve(producer.id, producer)
-    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c", "e"))
-    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f", "g"))
+    mockUserRegistryRetrieve(SpecData.userResponse("a", "b", "c", "e"))
+    mockUserRegistryRetrieve(SpecData.userResponse("d", "e", "f", "g"))
     mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
     mockGetInstitution(consumer.selfcareId.get)
     mockGetInstitution(producer.selfcareId.get)
@@ -370,8 +370,8 @@ trait SpecHelper extends MockFactory {
     mockPDFCreatorCreate
     mockFileManagerWrite
     mockAgreementContract
-    mockUserRegistryRetrieve(SpecData.userResource("a", "b", "c", "e"))
-    mockUserRegistryRetrieve(SpecData.userResource("d", "e", "f", "g"))
+    mockUserRegistryRetrieve(SpecData.userResponse("a", "b", "c", "e"))
+    mockUserRegistryRetrieve(SpecData.userResponse("d", "e", "f", "g"))
     mockClientStateUpdate(agreement.eserviceId, agreement.consumerId, agreement.id, ClientComponentState.ACTIVE)
     mockGetInstitution(consumer.selfcareId.get)
     mockGetInstitution(producer.selfcareId.get)
