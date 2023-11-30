@@ -59,7 +59,13 @@ object SpecData {
   final val archivingStamps            = activationStamps.copy(archiving = defaultStamp)
 
   final val validEmail =
-    PersistentTenantMail(kind = ContactEmail, address = "address", description = None, createdAt = timestamp)
+    PersistentTenantMail(
+      id = UUID.randomUUID().toString,
+      kind = ContactEmail,
+      address = "address",
+      description = None,
+      createdAt = timestamp
+    )
 
   def descriptor: CatalogDescriptor = CatalogDescriptor(
     id = UUID.randomUUID(),
@@ -114,7 +120,9 @@ object SpecData {
     updatedAt = None,
     mails = Nil,
     name = "test_name",
-    kind = PersistentTenantKind.PA.some
+    kind = PersistentTenantKind.PA.some,
+    onboardedAt = None,
+    subUnitType = None
   )
 
   def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Seq[CatalogAttribute] =
