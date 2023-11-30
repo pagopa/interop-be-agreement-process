@@ -73,7 +73,9 @@ object SpecData {
     updatedAt = None,
     mails = Nil,
     name = "test_name",
-    kind = Some(PersistentTenantKind.PA)
+    kind = Some(PersistentTenantKind.PA),
+    onboardedAt = None,
+    subUnitType = None
   )
 
   def catalogSingleAttribute(id: UUID = UUID.randomUUID()): Seq[CatalogAttribute] =
