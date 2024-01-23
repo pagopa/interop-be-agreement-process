@@ -247,7 +247,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = agreement.verifiedAttributes,
         suspendedByConsumer = Some(true),
         suspendedByProducer = None,
-        suspendedByPlatform = Some(true),
+        suspendedByPlatform = Some(false),
         stamps = SpecData.suspensionByConsumerStamps,
         suspendedAt = SpecData.suspensionByConsumerStamps.suspensionByConsumer.map(_.when)
       )
@@ -283,7 +283,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = agreement.verifiedAttributes,
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
-        suspendedByPlatform = Some(true),
+        suspendedByPlatform = Some(false),
         stamps = SpecData.suspensionByProducerStamps,
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
@@ -326,7 +326,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = agreement.verifiedAttributes,
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
-        suspendedByPlatform = Some(true),
+        suspendedByPlatform = Some(false),
         stamps = SpecData.suspensionByProducerStamps,
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
@@ -370,7 +370,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = agreement.verifiedAttributes,
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
-        suspendedByPlatform = Some(true),
+        suspendedByPlatform = Some(false),
         stamps = SpecData.suspensionByProducerStamps,
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )

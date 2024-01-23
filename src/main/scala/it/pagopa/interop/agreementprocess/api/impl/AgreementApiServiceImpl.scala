@@ -960,7 +960,7 @@ final case class AgreementApiServiceImpl(
 
   private def suspendedByPlatformFlag(fsmState: PersistentAgreementState): Option[Boolean] =
     // TODO Which states enable the suspendedByPlatform?
-    List(Suspended, MissingCertifiedAttributes)
+    List(MissingCertifiedAttributes)
       .contains(fsmState)
       .some
 
