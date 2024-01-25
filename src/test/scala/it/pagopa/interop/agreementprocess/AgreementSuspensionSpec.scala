@@ -283,7 +283,7 @@ class AgreementSuspensionSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = agreement.verifiedAttributes,
         suspendedByConsumer = None,
         suspendedByProducer = Some(true),
-        suspendedByPlatform = Some(false),
+        suspendedByPlatform = Some(true),
         stamps = SpecData.suspensionByProducerStamps,
         suspendedAt = SpecData.suspensionByProducerStamps.suspensionByProducer.map(_.when)
       )
