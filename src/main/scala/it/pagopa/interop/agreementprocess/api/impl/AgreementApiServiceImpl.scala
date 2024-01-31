@@ -885,10 +885,14 @@ final case class AgreementApiServiceImpl(
     val nextStateByAttributes = AgreementStateByAttributesFSM.nextState(agreement, descriptor, consumer.attributes)
     val suspendedByConsumer   = suspendedByConsumerFlag(agreement, requesterOrgId, Suspended)
     val suspendedByProducer   = suspendedByProducerFlag(agreement, requesterOrgId, Suspended)
-    val suspendedByPlatform   = suspendedByPlatformFlag(nextStateByAttributes)
 
     val newState =
-      agreementStateByFlags(nextStateByAttributes, suspendedByProducer, suspendedByConsumer, suspendedByPlatform)
+      agreementStateByFlags(
+        nextStateByAttributes,
+        suspendedByProducer,
+        suspendedByConsumer,
+        agreement.suspendedByPlatform
+      )
 
     for {
       uid <- getUidFutureUUID(contexts)
@@ -901,7 +905,7 @@ final case class AgreementApiServiceImpl(
         verifiedAttributes = agreement.verifiedAttributes.map(_.toManagement),
         suspendedByConsumer = suspendedByConsumer,
         suspendedByProducer = suspendedByProducer,
-        suspendedByPlatform = suspendedByPlatform,
+        suspendedByPlatform = agreement.suspendedByPlatform,
         stamps = agreement.stamps.toManagement
           .copy(
             suspensionByConsumer = suspensionByConsumerStamp.map(_.toManagement),
@@ -960,7 +964,7 @@ final case class AgreementApiServiceImpl(
 
   private def suspendedByPlatformFlag(fsmState: PersistentAgreementState): Option[Boolean] =
     // TODO Which states enable the suspendedByPlatform?
-    List(MissingCertifiedAttributes)
+    List(Suspended, MissingCertifiedAttributes)
       .contains(fsmState)
       .some
 

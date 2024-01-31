@@ -246,7 +246,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = Some(false),
         suspendedByProducer = None,
-        suspendedByPlatform = Some(false),
+        suspendedByPlatform = Some(true),
         stamps = SpecData.activationStamps
       )
 
@@ -282,7 +282,7 @@ class AgreementActivationSpec extends AnyWordSpecLike with SpecHelper with Scala
         verifiedAttributes = Nil,
         suspendedByConsumer = None,
         suspendedByProducer = Some(false),
-        suspendedByPlatform = Some(false),
+        suspendedByPlatform = Some(true),
         stamps = SpecData.activationStamps
       )
 
