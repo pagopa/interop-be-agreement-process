@@ -200,7 +200,7 @@ object ReadModelAgreementQueries extends ReadModelQuery {
     )(Filters.or)
 
   private def listTenantFilters(name: Option[String]): Bson = {
-    val nameFilter = name.map(Filters.regex("tenants.data.name", _, "i"))
+    val nameFilter = name.map(safeRegex("tenants.data.name", _, "i"))
 
     mapToVarArgs(nameFilter.toList)(Filters.and).getOrElse(Filters.empty())
   }
@@ -303,7 +303,7 @@ object ReadModelAgreementQueries extends ReadModelQuery {
     consumersIds: List[String],
     producersIds: List[String]
   ): Bson = {
-    val nameFilter         = name.map(Filters.regex("eservices.data.name", _, "i"))
+    val nameFilter         = name.map(safeRegex("eservices.data.name", _, "i"))
     val consumersIdsFilter = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
     val producersIdsFilter = mapToVarArgs(producersIds.map(Filters.eq("data.producerId", _)))(Filters.or)
 
