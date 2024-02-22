@@ -104,7 +104,7 @@ object ReadModelAgreementQueries extends ReadModelQuery {
               Document("""{ $filter: {
               input: "$eservices.data.descriptors",
               as: "descr",         
-              cond: {  $eq: ["$$descr.id" , "$data.descriptorId"]}}} }""")
+              cond: {  $eq: ["$$descr.id" , "$data.descriptorId"]}}}""")
             )
           ),
           unwind("$currentDescriptor"),
@@ -116,10 +116,10 @@ object ReadModelAgreementQueries extends ReadModelQuery {
               input: "$eservices.data.descriptors",
               as: "upgradable",         
               cond: { $and: [
-                      {$gt:["$$upgradable.activatedAt", "$currentDescriptor.activatedAt"]}, 
-                      {$in:["$$upgradable.state", ['""" + CatalogManagement.Published + """', '""" +
-                  CatalogManagement.Suspended + """']]}
-                  ]}}} }"""
+                      {$gt:["$$upgradable.publishedAt", "$currentDescriptor.publishedAt"]}, 
+                      {$in:["$$upgradable.state", ['""" + CatalogManagement.Published.toString + """', '""" +
+                  CatalogManagement.Suspended.toString + """']]}
+                  ]}}}"""
               )
             )
           ),
@@ -133,6 +133,10 @@ object ReadModelAgreementQueries extends ReadModelQuery {
     val countPipeline: Seq[Bson] = {
       Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }"""))))
     }
+
+    System.out.println("*******************************************")
+    System.out.println(eServicesLookupPipeline ++ upgradablePipeline)
+    System.out.println("*******************************************")
 
     for {
       agreements <- readModel.aggregate[PersistentAgreement](
