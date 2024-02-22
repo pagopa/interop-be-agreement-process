@@ -134,10 +134,6 @@ object ReadModelAgreementQueries extends ReadModelQuery {
       Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }"""))))
     }
 
-    System.out.println("*******************************************")
-    System.out.println(eServicesLookupPipeline ++ upgradablePipeline)
-    System.out.println("*******************************************")
-
     for {
       agreements <- readModel.aggregate[PersistentAgreement](
         "agreements",
