@@ -104,7 +104,7 @@ object ReadModelAgreementQueries extends ReadModelQuery {
               Document("""{ $filter: {
               input: "$eservices.data.descriptors",
               as: "descr",         
-              cond: {  $eq: ["$$descr.id" , "$data.descriptorId"]}}} }""")
+              cond: {  $eq: ["$$descr.id" , "$data.descriptorId"]}}}""")
             )
           ),
           unwind("$currentDescriptor"),
@@ -116,10 +116,10 @@ object ReadModelAgreementQueries extends ReadModelQuery {
               input: "$eservices.data.descriptors",
               as: "upgradable",         
               cond: { $and: [
-                      {$gt:["$$upgradable.activatedAt", "$currentDescriptor.activatedAt"]}, 
-                      {$in:["$$upgradable.state", ['""" + CatalogManagement.Published + """', '""" +
-                  CatalogManagement.Suspended + """']]}
-                  ]}}} }"""
+                      {$gt:["$$upgradable.publishedAt", "$currentDescriptor.publishedAt"]}, 
+                      {$in:["$$upgradable.state", ['""" + CatalogManagement.Published.toString + """', '""" +
+                  CatalogManagement.Suspended.toString + """']]}
+                  ]}}}"""
               )
             )
           ),
