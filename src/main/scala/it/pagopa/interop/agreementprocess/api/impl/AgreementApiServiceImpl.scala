@@ -1284,6 +1284,7 @@ final case class AgreementApiServiceImpl(
     eServiceName: Option[String],
     consumersIds: String,
     producersIds: String,
+    states: String,
     offset: Int,
     limit: Int
   )(implicit
@@ -1296,10 +1297,12 @@ final case class AgreementApiServiceImpl(
     logger.info(operationLabel)
 
     val result: Future[CompactEServices] = for {
-      eservices <- ReadModelAgreementQueries.listEServicesAgreements(
+      statesEnum <- parseArrayParameters(states).traverse(AgreementState.fromValue).toFuture
+      eservices  <- ReadModelAgreementQueries.listEServicesAgreements(
         eServiceName = eServiceName,
         consumersIds = parseArrayParameters(consumersIds),
         producersIds = parseArrayParameters(producersIds),
+        states = statesEnum,
         offset = offset,
         limit = limit
       )
