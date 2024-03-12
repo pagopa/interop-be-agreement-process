@@ -64,11 +64,6 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
         status shouldEqual StatusCodes.NotFound
       }
     }
-// case object Draft
-// case object Pending
-// case object Archived
-// case object MissingCertifiedAttributes
-// case object Rejected
     "fail if agreement is in Pending state" in {
       val agreement =
         SpecData.agreement.copy(state = AgreementManagement.AgreementState.PENDING, consumerId = requesterOrgId)
