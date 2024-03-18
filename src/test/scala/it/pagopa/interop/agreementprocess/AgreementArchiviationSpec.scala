@@ -64,5 +64,48 @@ class AgreementArchiviationSpec extends AnyWordSpecLike with SpecHelper with Sca
         status shouldEqual StatusCodes.NotFound
       }
     }
+    "fail if agreement is in Pending state" in {
+      val agreement =
+        SpecData.agreement.copy(state = AgreementManagement.AgreementState.PENDING, consumerId = requesterOrgId)
+
+      mockAgreementRetrieve(agreement.toPersistent)
+
+      Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+    "fail if agreement is in Draft state" in {
+      val agreement =
+        SpecData.agreement.copy(state = AgreementManagement.AgreementState.DRAFT, consumerId = requesterOrgId)
+
+      mockAgreementRetrieve(agreement.toPersistent)
+
+      Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+    "fail if agreement is in MissingCertifiedAttributes state" in {
+      val agreement =
+        SpecData.agreement.copy(
+          state = AgreementManagement.AgreementState.MISSING_CERTIFIED_ATTRIBUTES,
+          consumerId = requesterOrgId
+        )
+
+      mockAgreementRetrieve(agreement.toPersistent)
+
+      Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+    "fail if agreement is in Rejected state" in {
+      val agreement =
+        SpecData.agreement.copy(state = AgreementManagement.AgreementState.REJECTED, consumerId = requesterOrgId)
+
+      mockAgreementRetrieve(agreement.toPersistent)
+
+      Get() ~> service.archiveAgreement(agreement.id.toString) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
   }
 }
