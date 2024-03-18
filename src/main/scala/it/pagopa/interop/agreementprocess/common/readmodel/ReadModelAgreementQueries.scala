@@ -301,13 +301,17 @@ object ReadModelAgreementQueries extends ReadModelQuery {
   private def listEServiceAgreementsFilters(
     name: Option[String],
     consumersIds: List[String],
-    producersIds: List[String]
+    producersIds: List[String],
+    states: List[AgreementState]
   ): Bson = {
     val nameFilter         = name.map(n => Filters.regex("eservices.data.name", escape(n), "i"))
     val consumersIdsFilter = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
     val producersIdsFilter = mapToVarArgs(producersIds.map(Filters.eq("data.producerId", _)))(Filters.or)
+    val statesFilter       = listStatesFilter(states)
 
-    mapToVarArgs(nameFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList)(Filters.and)
+    mapToVarArgs(nameFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList ++ statesFilter.toList)(
+      Filters.and
+    )
       .getOrElse(Filters.empty())
   }
 
@@ -315,10 +319,11 @@ object ReadModelAgreementQueries extends ReadModelQuery {
     eServiceName: Option[String],
     consumersIds: List[String],
     producersIds: List[String],
+    states: List[AgreementState],
     offset: Int,
     limit: Int
   )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PaginatedResult[CompactEService]] = {
-    val query: Bson               = listEServiceAgreementsFilters(eServiceName, consumersIds, producersIds)
+    val query: Bson               = listEServiceAgreementsFilters(eServiceName, consumersIds, producersIds, states)
     val filterPipeline: Seq[Bson] = Seq(
       lookup("eservices", "data.eserviceId", "data.id", "eservices"),
       unwind("$eservices", UnwindOptions().preserveNullAndEmptyArrays(false)),
