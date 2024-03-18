@@ -1350,6 +1350,7 @@ final case class AgreementApiServiceImpl(
       agreementUUID  <- agreementId.toFutureUUID
       agreement      <- agreementManagementService.getAgreementById(agreementUUID)
       _              <- assertRequesterIsConsumer(requesterOrgId, agreement)
+      _              <- agreement.assertArchivableState.toFuture
       updated        <- archive(agreement.toManagement)
       _ <- archivingPurposesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
       _ <- archivingEservicesQueueService.send[ArchiveEvent](ArchiveEvent(updated.id, offsetDateTimeSupplier.get()))
