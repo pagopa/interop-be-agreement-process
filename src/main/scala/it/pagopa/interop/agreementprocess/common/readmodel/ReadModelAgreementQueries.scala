@@ -1,22 +1,22 @@
 package it.pagopa.interop.agreementprocess.common.readmodel
 
-import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.model.agreement.{PersistentAgreement, PersistentAgreementState}
+import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
+import it.pagopa.interop.agreementprocess.api.impl._
+import it.pagopa.interop.agreementprocess.common.Adapters._
+import it.pagopa.interop.agreementprocess.model.{AgreementState, CompactEService, CompactOrganization}
+import it.pagopa.interop.catalogmanagement.{model => CatalogManagement}
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
-import it.pagopa.interop.agreementprocess.model.{AgreementState, CompactEService}
-import scala.concurrent.{ExecutionContext, Future}
 import org.mongodb.scala.Document
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.Accumulators.first
-import org.mongodb.scala.model.Aggregates.{`match`, count, lookup, project, sort, unwind, addFields, group}
-import org.mongodb.scala.model.{Filters, Field, UnwindOptions}
+import org.mongodb.scala.model.Aggregates._
 import org.mongodb.scala.model.Projections.{computed, fields, include}
 import org.mongodb.scala.model.Sorts.ascending
-import it.pagopa.interop.agreementmanagement.model.persistence.JsonFormats._
-import it.pagopa.interop.catalogmanagement.{model => CatalogManagement}
-import it.pagopa.interop.agreementprocess.model.CompactOrganization
-import it.pagopa.interop.agreementprocess.api.impl._
+import org.mongodb.scala.model.{Field, Filters, UnwindOptions}
+
 import java.util.UUID
+import scala.concurrent.{ExecutionContext, Future}
 
 object ReadModelAgreementQueries extends ReadModelQuery {
 
@@ -298,23 +298,6 @@ object ReadModelAgreementQueries extends ReadModelQuery {
     } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
   }
 
-  private def listEServiceAgreementsFilters(
-    name: Option[String],
-    consumersIds: List[String],
-    producersIds: List[String],
-    states: List[AgreementState]
-  ): Bson = {
-    val nameFilter         = name.map(n => Filters.regex("eservices.data.name", escape(n), "i"))
-    val consumersIdsFilter = mapToVarArgs(consumersIds.map(Filters.eq("data.consumerId", _)))(Filters.or)
-    val producersIdsFilter = mapToVarArgs(producersIds.map(Filters.eq("data.producerId", _)))(Filters.or)
-    val statesFilter       = listStatesFilter(states)
-
-    mapToVarArgs(nameFilter.toList ++ consumersIdsFilter.toList ++ producersIdsFilter.toList ++ statesFilter.toList)(
-      Filters.and
-    )
-      .getOrElse(Filters.empty())
-  }
-
   def listEServicesAgreements(
     eServiceName: Option[String],
     consumersIds: List[String],
@@ -323,45 +306,42 @@ object ReadModelAgreementQueries extends ReadModelQuery {
     offset: Int,
     limit: Int
   )(implicit ec: ExecutionContext, readModel: ReadModelService): Future[PaginatedResult[CompactEService]] = {
-    val query: Bson               = listEServiceAgreementsFilters(eServiceName, consumersIds, producersIds, states)
-    val filterPipeline: Seq[Bson] = Seq(
-      lookup("eservices", "data.eserviceId", "data.id", "eservices"),
-      unwind("$eservices", UnwindOptions().preserveNullAndEmptyArrays(false)),
-      `match`(query),
-      group(
-        Document("""{ "_id": "$data.eserviceId" } """),
-        first("eserviceId", "$data.eserviceId"),
-        first("eserviceName", "$eservices.data.name")
-      )
+    val agreementQuery: Bson = listAgreementsFilters(
+      eServicesIds = Nil,
+      consumersIds = consumersIds,
+      producersIds = producersIds,
+      descriptorsIds = Nil,
+      states = states,
+      showOnlyUpgradeable = false
     )
 
+    def eserviceQuery(eserviceIds: Seq[String]): Bson =
+      `match`(
+        mapToVarArgs(
+          eServiceName.map(n => Filters.regex("data.name", escape(n), "i")).toList :+
+            Filters.in("data.id", eserviceIds: _*)
+        )(Filters.and).getOrElse(Filters.empty())
+      )
+
     for {
-      // Using aggregate to perform case insensitive sorting
-      //   N.B.: Required because DocumentDB does not support collation
-      agreements <- readModel.aggregate[CompactEService](
-        "agreements",
-        filterPipeline ++
-          Seq(
-            project(
-              fields(
-                computed("data", Document("""{ "id": "$eserviceId", "name": "$eserviceName" }""")),
-                computed("lowerName", Document("""{ "$toLower" : "$eserviceName" }"""))
-              )
-            ),
-            sort(ascending("lowerName"))
+      agreementEservicesIds <- readModel
+        .distinct[String]("agreements", "data.eserviceId", agreementQuery)
+      eservicesFilters = eserviceQuery(agreementEservicesIds)
+      eservices <- readModel.aggregate[CompactEService](
+        "eservices",
+        Seq(
+          eservicesFilters,
+          project(
+            fields(
+              computed("data", Document("""{ "id": "$data.id", "name": "$data.name" }""")),
+              computed("lowerName", Document("""{ "$toLower" : "$data.name" }"""))
+            )
           ),
+          sort(ascending("lowerName"))
+        ),
         offset = offset,
         limit = limit
       )
-      // Note: This could be obtained using $facet function (avoiding to execute the query twice),
-      //   but it is not supported by DocumentDB
-      count      <- readModel.aggregate[TotalCountResult](
-        "agreements",
-        filterPipeline ++
-          Seq(count("totalCount"), project(computed("data", Document("""{ "totalCount" : "$totalCount" }""")))),
-        offset = 0,
-        limit = Int.MaxValue
-      )
-    } yield PaginatedResult(results = agreements, totalCount = count.headOption.map(_.totalCount).getOrElse(0))
+    } yield PaginatedResult(results = eservices, totalCount = agreementEservicesIds.size)
   }
 }
