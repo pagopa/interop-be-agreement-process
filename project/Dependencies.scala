@@ -37,8 +37,8 @@ object Dependencies {
       namespace %% "interop-be-catalog-management-models" % catalogManagementVersion
     lazy val selfcareV2Client =
       namespace %% "interop-selfcare-v2-client" % selfcareV2ClientVersion
-    lazy val tenantManagementModels = namespace %% "interop-be-tenant-management-models" % tenantManagementVersion
-
+    lazy val tenantManagementModels = namespace %% "interop-be-tenant-management-models"   % tenantManagementVersion
+   
     lazy val commons             = namespace %% "interop-commons-utils"         % commonsVersion
     lazy val commonsMailManager  = namespace %% "interop-commons-mail-manager"  % commonsVersion
     lazy val commonsFileManager  = namespace %% "interop-commons-file-manager"  % commonsVersion
@@ -91,12 +91,7 @@ object Dependencies {
 
   object Jars {
     lazy val overrides: Seq[ModuleID] =
-      Seq(
-        jackson.annotations % Compile,
-        jackson.core        % Compile,
-        jackson.databind    % Compile,
-        pagopa.commonsCqrs  % Compile
-      )
+      Seq(jackson.annotations % Compile, jackson.core % Compile, jackson.databind % Compile)
     lazy val `server`: Seq[ModuleID]  = Seq(
       // For making Java 12 happy
       "javax.annotation"                       % "javax.annotation-api" % "1.3.2" % "compile",
@@ -145,7 +140,10 @@ object Dependencies {
         pagopa.agreementManagementModels % Compile,
         scalatest.core                   % Test
       )
-    lazy val events: Seq[ModuleID]    =
-      Seq(pagopa.commonsQueueManager % Compile, pagopa.commons % Compile)
+    lazy val events: Seq[ModuleID] =
+      Seq(
+        pagopa.commonsQueueManager       % Compile,
+        pagopa.commons                   % Compile
+      )  
   }
 }
