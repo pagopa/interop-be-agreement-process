@@ -1293,7 +1293,7 @@ final case class AgreementApiServiceImpl(
     toEntityMarshallerProblem: ToEntityMarshaller[Problem]
   ): Route = authorize(ADMIN_ROLE, API_ROLE, SECURITY_ROLE, SUPPORT_ROLE) {
     val operationLabel =
-      s"Retrieving EServices with consumers $consumersIds, producers $producersIds"
+      s"Retrieving EServices with consumers $consumersIds, producers $producersIds, states $states, offset $offset, limit $limit"
     logger.info(operationLabel)
 
     val result: Future[CompactEServices] = for {
