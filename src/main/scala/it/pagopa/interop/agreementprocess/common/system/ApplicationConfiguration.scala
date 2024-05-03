@@ -8,13 +8,9 @@ object ApplicationConfiguration {
 
   val serverPort: Int                    = config.getInt("agreement-process.port")
   val agreementManagementURL: String     = config.getString("agreement-process.services.agreement-management")
-  val catalogManagementURL: String       = config.getString("agreement-process.services.catalog-management")
-  val tenantManagementURL: String        = config.getString("agreement-process.services.tenant-management")
   val authorizationManagementURL: String = config.getString("agreement-process.services.authorization-management")
   val selfcareV2ClientURL: String        = config.getString("agreement-process.services.selfcare-v2-client")
   val jwtAudience: Set[String] = config.getString("agreement-process.jwt.audience").split(",").toSet.filter(_.nonEmpty)
-  val attributeRegistryManagementURL: String =
-    config.getString("agreement-process.services.attribute-registry-management")
 
   require(jwtAudience.nonEmpty, "Audience cannot be empty")
 
