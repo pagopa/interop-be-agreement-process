@@ -4,7 +4,12 @@ import akka.http.scaladsl.model.MediaTypes
 import it.pagopa.interop.agreementprocess.common.Adapters._
 import it.pagopa.interop.agreementmanagement.client.model.{DocumentSeed, UpdateAgreementSeed}
 import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
-import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{MissingUserInfo, StampNotFound}
+import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
+  MissingUserInfo,
+  StampNotFound,
+  MissingUsersInfo,
+  SelfcareIdNotFound
+}
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
 import it.pagopa.interop.commons.cqrs.service.ReadModelService
 import it.pagopa.interop.commons.files.service.FileManager
@@ -119,14 +124,26 @@ final class AgreementContractCreator(
 
   }
 
-  def getSubmissionInfo(
-    seed: UpdateAgreementSeed
-  )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[(String, OffsetDateTime)] =
+  def getSubmissionInfo(seed: UpdateAgreementSeed, consumer: PersistentTenant, producer: PersistentTenant)(implicit
+    contexts: Seq[(String, String)],
+    ec: ExecutionContext
+  ): Future[(String, OffsetDateTime)] =
     for {
-      selfcareUuidd   <- getSelfcareIdFutureUUID(contexts)
-      submission      <- seed.stamps.submission.toFuture(StampNotFound("submission"))
-      userResponse    <- selfcareV2ClientService.getUserById(selfcareUuidd, submission.who).map(_.toApi)
-      userResponseApi <- userResponse.toFuture.recoverWith { case _ => Future.failed(MissingUserInfo(submission.who)) }
+      submission                 <- seed.stamps.submission.toFuture(StampNotFound("submission"))
+      consumerSelfcareId         <- consumer.selfcareId.toFuture(SelfcareIdNotFound(consumer.id))
+      producerSelfcareId         <- producer.selfcareId.toFuture(SelfcareIdNotFound(producer.id))
+      consumerSelfcareUuid       <- consumerSelfcareId.toFutureUUID
+      producerSelfcareUuid       <- producerSelfcareId.toFutureUUID
+      consumerSelfcare           <- selfcareV2ClientService.getInstitution(consumerSelfcareUuid).map(_.toApi)
+      producerSelfcare           <- selfcareV2ClientService.getInstitution(producerSelfcareUuid).map(_.toApi)
+      (consumerApi, producerApi) <- consumerSelfcare.toFuture.zip(producerSelfcare.toFuture)
+      userResponse               <- selfcareV2ClientService
+        .getUserById(consumerSelfcareUuid, consumerApi.id)
+        .recoverWith { case _ => selfcareV2ClientService.getUserById(producerSelfcareUuid, producerApi.id) }
+        .map(_.toApi)
+      userResponseApi            <- userResponse.toFuture.recoverWith { case _ =>
+        Future.failed(MissingUsersInfo(consumerApi.id, producerApi.id))
+      }
       submitter = getUserText(userResponseApi)
     } yield (submitter, submission.when)
 
@@ -152,7 +169,7 @@ final class AgreementContractCreator(
   )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[PDFPayload] = {
     for {
       (certified, declared, verified)  <- getAttributeInvolved(consumer, seed)
-      (submitter, submissionTimestamp) <- getSubmissionInfo(seed)
+      (submitter, submissionTimestamp) <- getSubmissionInfo(seed, consumer, producer)
       (activator, activationTimestamp) <- getActivationInfo(seed)
     } yield PDFPayload(
       today = offsetDateTimeSupplier.get(),
