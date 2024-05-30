@@ -115,11 +115,4 @@ object AgreementProcessErrors {
 
   final case class SelfcareEntityNotFilled(className: String, field: String)
       extends ComponentError("0026", s"Selfcare entity $className with field $field not filled")
-
-  final case class MissingUsersInfo(consumerId: UUID, producerId: UUID)
-      extends ComponentError(
-        "0027",
-        s"Some mandatory info are missing for consumer ${consumerId.toString()} and producer ${producerId.toString()}"
-      )
-
 }

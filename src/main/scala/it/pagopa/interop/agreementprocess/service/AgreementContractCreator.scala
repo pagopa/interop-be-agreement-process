@@ -7,7 +7,6 @@ import it.pagopa.interop.agreementprocess.common.system.ApplicationConfiguration
 import it.pagopa.interop.agreementprocess.error.AgreementProcessErrors.{
   MissingUserInfo,
   StampNotFound,
-  MissingUsersInfo,
   SelfcareIdNotFound
 }
 import it.pagopa.interop.agreementprocess.service.util.PDFPayload
@@ -124,25 +123,19 @@ final class AgreementContractCreator(
 
   }
 
-  def getSubmissionInfo(seed: UpdateAgreementSeed, consumer: PersistentTenant, producer: PersistentTenant)(implicit
+  def getSubmissionInfo(seed: UpdateAgreementSeed, consumer: PersistentTenant)(implicit
     contexts: Seq[(String, String)],
     ec: ExecutionContext
   ): Future[(String, OffsetDateTime)] =
     for {
-      submission                 <- seed.stamps.submission.toFuture(StampNotFound("submission"))
-      consumerSelfcareId         <- consumer.selfcareId.toFuture(SelfcareIdNotFound(consumer.id))
-      producerSelfcareId         <- producer.selfcareId.toFuture(SelfcareIdNotFound(producer.id))
-      consumerSelfcareUuid       <- consumerSelfcareId.toFutureUUID
-      producerSelfcareUuid       <- producerSelfcareId.toFutureUUID
-      consumerSelfcare           <- selfcareV2ClientService.getInstitution(consumerSelfcareUuid).map(_.toApi)
-      producerSelfcare           <- selfcareV2ClientService.getInstitution(producerSelfcareUuid).map(_.toApi)
-      (consumerApi, producerApi) <- consumerSelfcare.toFuture.zip(producerSelfcare.toFuture)
-      userResponse               <- selfcareV2ClientService
-        .getUserById(consumerSelfcareUuid, consumerApi.id)
-        .recoverWith { case _ => selfcareV2ClientService.getUserById(producerSelfcareUuid, producerApi.id) }
+      submission           <- seed.stamps.submission.toFuture(StampNotFound("submission"))
+      consumerSelfcareId   <- consumer.selfcareId.toFuture(SelfcareIdNotFound(consumer.id))
+      consumerSelfcareUuid <- consumerSelfcareId.toFutureUUID
+      userResponse         <- selfcareV2ClientService
+        .getUserById(consumerSelfcareUuid, submission.who)
         .map(_.toApi)
-      userResponseApi            <- userResponse.toFuture.recoverWith { case _ =>
-        Future.failed(MissingUsersInfo(consumerApi.id, producerApi.id))
+      userResponseApi      <- userResponse.toFuture.recoverWith { case _ =>
+        Future.failed(MissingUserInfo(consumer.id))
       }
       submitter = getUserText(userResponseApi)
     } yield (submitter, submission.when)
@@ -169,7 +162,7 @@ final class AgreementContractCreator(
   )(implicit contexts: Seq[(String, String)], ec: ExecutionContext): Future[PDFPayload] = {
     for {
       (certified, declared, verified)  <- getAttributeInvolved(consumer, seed)
-      (submitter, submissionTimestamp) <- getSubmissionInfo(seed, consumer, producer)
+      (submitter, submissionTimestamp) <- getSubmissionInfo(seed, consumer)
       (activator, activationTimestamp) <- getActivationInfo(seed)
     } yield PDFPayload(
       today = offsetDateTimeSupplier.get(),
